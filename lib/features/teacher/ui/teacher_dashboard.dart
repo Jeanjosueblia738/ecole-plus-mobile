@@ -10,10 +10,11 @@ import '../../grades/ui/grade_input_screen.dart';
 import 'attendance_input_screen.dart';
 import 'teacher_my_classes_screen.dart';
 import 'teacher_stats_screen.dart';
+import '../../cahier/ui/cahier_screen.dart';
+import '../../messaging/ui/messaging_screen.dart';
 
 class TeacherDashboard extends ConsumerStatefulWidget {
   const TeacherDashboard({super.key});
-
   @override
   ConsumerState<TeacherDashboard> createState() => _TeacherDashboardState();
 }
@@ -30,14 +31,18 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
   }
 
   Future<void> _loadData() async {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() => _loading = true);
     try {
       final results = await Future.wait([
         TeacherApiService.getMyClasses().catchError((_) => <dynamic>[]),
         TeacherApiService.getStats().catchError((_) => <String, dynamic>{}),
       ]);
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _classes = results[0] as List<dynamic>;
         _stats = results[1] as Map<String, dynamic>?;
@@ -45,7 +50,9 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
       });
     } catch (e) {
       debugPrint('ECOLE+ teacher: $e');
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -58,9 +65,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
 
     final today =
         DateFormat('EEEE d MMMM yyyy', 'fr_FR').format(DateTime.now());
-    final firstName = auth.firstName ?? '';
-    final lastName = auth.lastName ?? '';
-    final fullName = '$firstName $lastName'.trim();
+    final fullName = '${auth.firstName ?? ''} ${auth.lastName ?? ''}'.trim();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
@@ -105,7 +110,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // ── Carte profil enseignant ────────────────────────────────
+            // ── Carte profil ───────────────────────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -119,16 +124,14 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
               ),
               child: Row(children: [
                 CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  child: Text(
-                    fullName.isNotEmpty ? fullName[0].toUpperCase() : 'P',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold),
-                  ),
-                ),
+                    radius: 30,
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    child: Text(
+                        fullName.isNotEmpty ? fullName[0].toUpperCase() : 'P',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold))),
                 const SizedBox(width: 16),
                 Expanded(
                     child: Column(
@@ -155,97 +158,88 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
 
             const SizedBox(height: 16),
 
-            // ── KPIs ──────────────────────────────────────────────────
+            // ── KPIs ───────────────────────────────────────────────────
             const Text('Statistiques',
                 style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: textDark)),
             const SizedBox(height: 10),
-
             Row(children: [
               _KpiCard(
-                label: 'Mes classes',
-                value: _classes.length.toString(),
-                icon: Icons.class_outlined,
-                color: const Color(0xFF7C3AED),
-                isLoading: _loading,
-              ),
+                  label: 'Mes classes',
+                  value: _classes.length.toString(),
+                  icon: Icons.class_outlined,
+                  color: const Color(0xFF7C3AED),
+                  isLoading: _loading),
               const SizedBox(width: 12),
               _KpiCard(
-                label: 'Total élèves',
-                value: (_stats?['totalStudents'] ?? 0).toString(),
-                icon: Icons.people_alt_outlined,
-                color: primaryBlue,
-                isLoading: _loading,
-              ),
+                  label: 'Total élèves',
+                  value: (_stats?['totalStudents'] ?? 0).toString(),
+                  icon: Icons.people_alt_outlined,
+                  color: primaryBlue,
+                  isLoading: _loading),
             ]),
             const SizedBox(height: 12),
             Row(children: [
               _KpiCard(
-                label: 'Notes saisies',
-                value: (_stats?['totalGrades'] ?? 0).toString(),
-                icon: Icons.grade_outlined,
-                color: successGreen,
-                isLoading: _loading,
-              ),
+                  label: 'Notes saisies',
+                  value: (_stats?['totalGrades'] ?? 0).toString(),
+                  icon: Icons.grade_outlined,
+                  color: successGreen,
+                  isLoading: _loading),
               const SizedBox(width: 12),
               _KpiCard(
-                label: 'Absences',
-                value: (_stats?['totalAbsences'] ?? 0).toString(),
-                icon: Icons.event_busy_outlined,
-                color: dangerRed,
-                isLoading: _loading,
-              ),
+                  label: 'Absences',
+                  value: (_stats?['totalAbsences'] ?? 0).toString(),
+                  icon: Icons.event_busy_outlined,
+                  color: dangerRed,
+                  isLoading: _loading),
             ]),
 
             const SizedBox(height: 20),
 
-            // ── Actions rapides ───────────────────────────────────────
+            // ── Actions rapides ────────────────────────────────────────
             const Text('Actions rapides',
                 style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: textDark)),
             const SizedBox(height: 12),
-
             Row(children: [
               _ActionBtn(
-                icon: Icons.how_to_reg_outlined,
-                label: 'Faire\nl\'appel',
-                color: primaryBlue,
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const AttendanceInputScreen(
-                            className: '', subject: '', duration: '55'))),
-              ),
+                  icon: Icons.how_to_reg_outlined,
+                  label: 'Faire\nl\'appel',
+                  color: primaryBlue,
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const AttendanceInputScreen(
+                              className: '', subject: '', duration: '55')))),
               const SizedBox(width: 12),
               _ActionBtn(
-                icon: Icons.grade_outlined,
-                label: 'Saisir\nles notes',
-                color: const Color(0xFF7C3AED),
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const GradeInputScreen(
-                            className: '', trimestre: 'T1'))),
-              ),
+                  icon: Icons.grade_outlined,
+                  label: 'Saisir\nles notes',
+                  color: const Color(0xFF7C3AED),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const GradeInputScreen(
+                              className: '', trimestre: 'T1')))),
               const SizedBox(width: 12),
               _ActionBtn(
-                icon: Icons.bar_chart_outlined,
-                label: 'Mes\nstatistiques',
-                color: successGreen,
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const TeacherStatsScreen())),
-              ),
+                  icon: Icons.bar_chart_outlined,
+                  label: 'Mes\nstatistiques',
+                  color: successGreen,
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const TeacherStatsScreen()))),
             ]),
 
             const SizedBox(height: 20),
 
-            // ── Mes classes ───────────────────────────────────────────
+            // ── Mes classes ────────────────────────────────────────────
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               const Text('Mes classes',
                   style: TextStyle(
@@ -261,7 +255,6 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
               ),
             ]),
             const SizedBox(height: 10),
-
             if (_loading)
               const Center(
                   child: Padding(
@@ -291,60 +284,72 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
 
             const SizedBox(height: 20),
 
-            // ── Modules ───────────────────────────────────────────────
+            // ── Modules ────────────────────────────────────────────────
             const Text('Modules',
                 style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: textDark)),
             const SizedBox(height: 12),
-
             _ModuleTile(
-              icon: Icons.class_outlined,
-              title: 'Mes classes',
-              subtitle: '${_classes.length} classe(s) assignée(s)',
-              color: primaryBlue,
-              onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const TeacherMyClassesScreen())),
-            ),
+                icon: Icons.book_outlined,
+                title: 'Cahier de texte',
+                subtitle: 'Registre pédagogique officiel',
+                color: const Color(0xFF0D9488),
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const CahierScreen()))),
             const SizedBox(height: 10),
             _ModuleTile(
-              icon: Icons.how_to_reg_outlined,
-              title: 'Appel & Présences',
-              subtitle: 'Enregistrer les présences quotidiennes',
-              color: successGreen,
-              onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const AttendanceInputScreen(
-                          className: '', subject: '', duration: '55'))),
-            ),
+                icon: Icons.class_outlined,
+                title: 'Mes classes',
+                subtitle: '${_classes.length} classe(s) assignée(s)',
+                color: primaryBlue,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const TeacherMyClassesScreen()))),
             const SizedBox(height: 10),
             _ModuleTile(
-              icon: Icons.grade_outlined,
-              title: 'Saisie des notes',
-              subtitle: 'Devoirs, compositions, examens',
-              color: const Color(0xFF7C3AED),
-              onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const GradeInputScreen(
-                          className: '', trimestre: 'T1'))),
-            ),
+                icon: Icons.how_to_reg_outlined,
+                title: 'Appel & Présences',
+                subtitle: 'Enregistrer les présences quotidiennes',
+                color: successGreen,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const AttendanceInputScreen(
+                            className: '', subject: '', duration: '55')))),
             const SizedBox(height: 10),
             _ModuleTile(
-              icon: Icons.bar_chart_outlined,
-              title: 'Statistiques',
-              subtitle: 'Performances et analyses de mes classes',
-              color: infoBlue,
-              onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const TeacherStatsScreen())),
-            ),
-
+                icon: Icons.grade_outlined,
+                title: 'Saisie des notes',
+                subtitle: 'Devoirs, compositions, examens',
+                color: const Color(0xFF7C3AED),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const GradeInputScreen(
+                            className: '', trimestre: 'T1')))),
+            const SizedBox(height: 10),
+            _ModuleTile(
+                icon: Icons.bar_chart_outlined,
+                title: 'Statistiques',
+                subtitle: 'Performances et analyses de mes classes',
+                color: infoBlue,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const TeacherStatsScreen()))),
+            const SizedBox(height: 10),
+            _ModuleTile(
+                icon: Icons.chat_outlined,
+                title: 'Messagerie',
+                subtitle: 'Communication interne',
+                color: const Color(0xFF1B3A6B),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const MessagingScreen()))),
             const SizedBox(height: 20),
           ]),
         ),
@@ -354,13 +359,11 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
 }
 
 // ── Widgets ────────────────────────────────────────────────────────────────
-
 class _KpiCard extends StatelessWidget {
   final String label, value;
   final IconData icon;
   final Color color;
   final bool isLoading;
-
   const _KpiCard(
       {required this.label,
       required this.value,
@@ -419,7 +422,6 @@ class _ActionBtn extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
-
   const _ActionBtn(
       {required this.icon,
       required this.label,
@@ -459,7 +461,6 @@ class _ActionBtn extends StatelessWidget {
 class _ClassCard extends StatelessWidget {
   final dynamic classData;
   final VoidCallback onTap;
-
   const _ClassCard({required this.classData, required this.onTap});
 
   @override
@@ -470,21 +471,18 @@ class _ClassCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade100),
-        ),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade100)),
         child: Row(children: [
           Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: primaryBlue.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child:
-                const Icon(Icons.class_outlined, color: primaryBlue, size: 22),
-          ),
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                  color: primaryBlue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.class_outlined,
+                  color: primaryBlue, size: 22)),
           const SizedBox(width: 12),
           Expanded(
               child: Column(
@@ -508,7 +506,6 @@ class _ModuleTile extends StatelessWidget {
   final String title, subtitle;
   final Color color;
   final VoidCallback onTap;
-
   const _ModuleTile(
       {required this.icon,
       required this.title,
@@ -524,10 +521,9 @@ class _ModuleTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: 0.2))),
         child: Row(children: [
           Container(
               padding: const EdgeInsets.all(10),

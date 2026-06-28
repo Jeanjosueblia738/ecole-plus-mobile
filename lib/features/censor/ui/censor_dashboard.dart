@@ -6,6 +6,8 @@ import '../../../core/services/students_api_service.dart';
 import '../../../core/services/attendance_api_service.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
+import '../../cahier/ui/cahier_directeur_screen.dart';
+import '../../student/ui/attendance_history_screen.dart';
 
 class CensorDashboard extends ConsumerStatefulWidget {
   const CensorDashboard({super.key});
@@ -137,19 +139,44 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
                     fontWeight: FontWeight.bold,
                     color: textDark)),
             const SizedBox(height: 12),
+
+            // ── Cahier de texte (lecture seule pour censeur) ──
             _buildAction(
                 Icons.book_outlined,
                 'Cahier de texte',
                 'Registre pédagogique officiel',
                 const Color(0xFF0D9488),
-                () {}),
+                () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CahierDirecteurScreen()))),
             const SizedBox(height: 10),
-            _buildAction(Icons.grade_outlined, 'Notes & Bulletins',
-                'Consulter les résultats', const Color(0xFF7C3AED), () {}),
+
+            // ── Notes & Bulletins (lecture) ──
+            _buildAction(
+                Icons.grade_outlined,
+                'Notes & Bulletins',
+                'Consulter les résultats',
+                const Color(0xFF7C3AED),
+                () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content:
+                        Text('Sélectionnez un élève pour voir ses notes')))),
             const SizedBox(height: 10),
-            _buildAction(Icons.event_busy_outlined, 'Absences',
-                'Suivi des présences', dangerRed, () {}),
+
+            // ── Absences (vue) ──
+            _buildAction(
+                Icons.event_busy_outlined,
+                'Absences',
+                'Suivi des présences',
+                dangerRed,
+                () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            const AttendanceHistoryScreen(history: [])))),
             const SizedBox(height: 10),
+
+            // ── Messagerie ──
             _buildAction(
                 Icons.chat_outlined,
                 'Messagerie',
