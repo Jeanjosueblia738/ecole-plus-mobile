@@ -5,10 +5,13 @@ import '../core/providers/profile_provider.dart';
 import '../core/security/user_role.dart';
 import '../features/auth/ui/login_screen.dart';
 import '../features/admin/ui/admin_dashboard.dart';
+import '../features/censor/ui/censor_dashboard.dart';
+import '../features/surveillant/ui/surveillant_dashboard.dart';
+import '../features/accountant/ui/accountant_dashboard.dart';
+import '../features/secretary/ui/secretary_dashboard.dart';
 import '../features/teacher/ui/teacher_dashboard.dart';
 import '../features/parent/ui/parent_dashboard.dart';
 import '../features/student/ui/student_dashboard.dart';
-import '../features/censor/ui/censor_dashboard.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key});
