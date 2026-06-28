@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../security/user_role.dart';
 
-// ─── Modèle profil utilisateur ────────────────────────────────────────────
 class UserProfile {
   final String id;
   final String fullName;
@@ -43,6 +42,10 @@ class UserProfile {
 
   String get roleLabel => switch (role) {
         UserRole.admin => 'Administrateur',
+        UserRole.censor => 'Censeur',
+        UserRole.surveillant => 'Surveillant Général',
+        UserRole.secretary => 'Secrétaire',
+        UserRole.accountant => 'Comptable',
         UserRole.teacher => 'Enseignant',
         UserRole.parent => 'Parent d\'élève',
         UserRole.student => 'Élève',
@@ -101,11 +104,14 @@ class UserProfile {
         langue: json['langue'] ?? 'fr',
       );
 
-  // Profils par défaut selon le rôle
   factory UserProfile.defaultForRole(UserRole role) => UserProfile(
         id: 'user_${role.name}',
         fullName: switch (role) {
           UserRole.admin => 'Administrateur ECOLE+',
+          UserRole.censor => 'Censeur ECOLE+',
+          UserRole.surveillant => 'Surveillant Général',
+          UserRole.secretary => 'Secrétaire ECOLE+',
+          UserRole.accountant => 'Comptable ECOLE+',
           UserRole.teacher => 'M. Koné Enseignant',
           UserRole.parent => 'M. Kouassi Jean-Baptiste',
           UserRole.student => 'Élève ECOLE+',
@@ -116,6 +122,10 @@ class UserProfile {
         etablissement: 'Lycée Excellence Abidjan',
         poste: switch (role) {
           UserRole.admin => 'Directeur Général',
+          UserRole.censor => 'Censeur / Directeur des études',
+          UserRole.surveillant => 'Surveillant Général',
+          UserRole.secretary => 'Secrétaire de scolarité',
+          UserRole.accountant => 'Comptable / Caissier',
           UserRole.teacher => 'Professeur de Mathématiques',
           UserRole.parent => 'Parent d\'élève',
           UserRole.student => '3ème A',
@@ -123,10 +133,8 @@ class UserProfile {
       );
 }
 
-// ─── Notifier ─────────────────────────────────────────────────────────────
 class ProfileNotifier extends StateNotifier<UserProfile?> {
   static const _key = 'user_profile';
-
   ProfileNotifier() : super(null);
 
   Future<void> loadForRole(UserRole role) async {
@@ -146,17 +154,12 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
         '${_key}_${profile.role.name}', jsonEncode(profile.toJson()));
   }
 
-  Future<void> updateNotifs({
-    bool? absence,
-    bool? note,
-    bool? paiement,
-  }) async {
-    if (state == null) return;
+  Future<void> updateNotifs({bool? absence, bool? note, bool? paiement}) async {
+    if (state == null) {
+      return;
+    }
     await update(state!.copyWith(
-      notifAbsence: absence,
-      notifNote: note,
-      notifPaiement: paiement,
-    ));
+        notifAbsence: absence, notifNote: note, notifPaiement: paiement));
   }
 }
 

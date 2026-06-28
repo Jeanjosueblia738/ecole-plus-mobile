@@ -34,11 +34,21 @@ class AuthState {
   bool get isTeacher => role == UserRole.teacher;
   bool get isParent => role == UserRole.parent;
   bool get isStudent => role == UserRole.student;
+  bool get isCensor => role == UserRole.censor;
+  bool get isSurveillant => role == UserRole.surveillant;
+  bool get isSecretary => role == UserRole.secretary;
+  bool get isAccountant => role == UserRole.accountant;
 
   String get fullName {
-    if (firstName != null && lastName != null) return '$firstName $lastName';
-    if (firstName != null) return firstName!;
-    if (lastName != null) return lastName!;
+    if (firstName != null && lastName != null) {
+      return '$firstName $lastName';
+    }
+    if (firstName != null) {
+      return firstName!;
+    }
+    if (lastName != null) {
+      return lastName!;
+    }
     return email ?? '';
   }
 
@@ -75,7 +85,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> _checkStoredAuth() async {
     final isLogged = await AuthStorageService.isLoggedIn();
-    if (!isLogged) return;
+    if (!isLogged) {
+      return;
+    }
     final role = await AuthStorageService.getUserRole();
     final tenantCode = await AuthStorageService.getTenantCode();
     final tenantName = await AuthStorageService.getTenantName();
@@ -114,11 +126,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
         final teacher = data['teacher'] as Map<String, dynamic>;
         final tenant = data['tenant'] as Map<String, dynamic>;
-
         await AuthStorageService.write(
             'first_name', teacher['firstName'] ?? '');
         await AuthStorageService.write('last_name', teacher['lastName'] ?? '');
-
         state = state.copyWith(
           role: UserRole.teacher,
           tenantCode: tenant['code'],
@@ -137,15 +147,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
         final user = data['user'] as Map<String, dynamic>;
         final tenant = data['tenant'] as Map<String, dynamic>;
-
-        // Sauvegarder firstName, lastName, className si élève
         await AuthStorageService.write('first_name', user['firstName'] ?? '');
         await AuthStorageService.write('last_name', user['lastName'] ?? '');
         if (user['class'] != null) {
           await AuthStorageService.write(
               'class_name', user['class']['name'] ?? '');
         }
-
         state = state.copyWith(
           role: _parseRole(user['role']),
           tenantCode: tenant['code'],
@@ -163,18 +170,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(isLoading: false, error: message.toString());
     } catch (e) {
       state = state.copyWith(
-        isLoading: false,
-        error: 'Impossible de joindre le serveur',
-      );
+          isLoading: false, error: 'Impossible de joindre le serveur');
     }
   }
 
   Future<void> loginAs(UserRole role) async {
-    state = AuthState(
-      role: role,
-      tenantCode: 'DEMO',
-      tenantName: 'Mode Demo',
-    );
+    state = AuthState(role: role, tenantCode: 'DEMO', tenantName: 'Mode Demo');
   }
 
   Future<void> logout() async {
@@ -188,13 +189,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
         'ADMIN' => UserRole.admin,
         'FOUNDER' => UserRole.admin,
         'DIRECTOR' => UserRole.admin,
-        'CENSOR' => UserRole.admin,
-        'SURVEILLANT' => UserRole.admin,
-        'SECRETARY' => UserRole.admin,
-        'ACCOUNTANT' => UserRole.admin,
-        'CASHIER' => UserRole.admin,
+        'CENSOR' => UserRole.censor,
+        'SURVEILLANT' => UserRole.surveillant,
+        'EDUCATOR' => UserRole.surveillant,
+        'SECRETARY' => UserRole.secretary,
+        'ACCOUNTANT' => UserRole.accountant,
+        'CASHIER' => UserRole.accountant,
         'TEACHER' => UserRole.teacher,
-        'EDUCATOR' => UserRole.teacher,
         'PARENT' => UserRole.parent,
         'STUDENT' => UserRole.student,
         _ => null,
