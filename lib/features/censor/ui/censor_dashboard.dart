@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/services/students_api_service.dart';
 import '../../../core/services/attendance_api_service.dart';
 import '../../settings/ui/settings_screen.dart';
+import '../../messaging/ui/messaging_screen.dart';
 
 class CensorDashboard extends ConsumerStatefulWidget {
   const CensorDashboard({super.key});
@@ -136,14 +137,28 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
                     fontWeight: FontWeight.bold,
                     color: textDark)),
             const SizedBox(height: 12),
-            _buildAction(Icons.book_outlined, 'Cahier de texte',
-                'Registre pédagogique officiel', const Color(0xFF0D9488)),
+            _buildAction(
+                Icons.book_outlined,
+                'Cahier de texte',
+                'Registre pédagogique officiel',
+                const Color(0xFF0D9488),
+                () {}),
             const SizedBox(height: 10),
             _buildAction(Icons.grade_outlined, 'Notes & Bulletins',
-                'Consulter les résultats', const Color(0xFF7C3AED)),
+                'Consulter les résultats', const Color(0xFF7C3AED), () {}),
             const SizedBox(height: 10),
             _buildAction(Icons.event_busy_outlined, 'Absences',
-                'Suivi des présences', dangerRed),
+                'Suivi des présences', dangerRed, () {}),
+            const SizedBox(height: 10),
+            _buildAction(
+                Icons.chat_outlined,
+                'Messagerie',
+                'Communication interne',
+                const Color(0xFF1B3A6B),
+                () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const MessagingScreen()))),
           ]),
         ),
       ),
@@ -187,10 +202,10 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
         ),
       );
 
-  Widget _buildAction(
-          IconData icon, String title, String subtitle, Color color) =>
+  Widget _buildAction(IconData icon, String title, String subtitle, Color color,
+          VoidCallback onTap) =>
       InkWell(
-        onTap: () {},
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(14),

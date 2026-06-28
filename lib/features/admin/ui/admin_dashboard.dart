@@ -14,6 +14,7 @@ import '../../finance/ui/finance_dashboard_screen.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../cahier/ui/cahier_screen.dart';
 import '../../users/ui/users_screen.dart';
+import '../../messaging/ui/messaging_screen.dart';
 
 class AdminDashboard extends ConsumerStatefulWidget {
   const AdminDashboard({super.key});
@@ -256,6 +257,14 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                 color: const Color(0xFF0D9488),
                 onTap: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const CahierScreen())),
+              ),
+
+              DashboardTile(
+                icon: Icons.chat_outlined,
+                title: 'Messagerie',
+                color: const Color(0xFF1B3A6B),
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const MessagingScreen())),
               ),
               ...[
                 (

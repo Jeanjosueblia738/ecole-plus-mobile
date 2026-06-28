@@ -7,8 +7,8 @@ import '../../../core/services/parent_api_service.dart';
 import '../../settings/ui/settings_screen.dart';
 import 'parent_payment_screen.dart';
 import 'parent_grades_screen.dart';
-import 'parent_messages_screen.dart';
 import '../../student/ui/attendance_history_screen.dart';
+import '../../messaging/ui/messaging_screen.dart';
 
 class ParentDashboard extends ConsumerStatefulWidget {
   const ParentDashboard({super.key});
@@ -37,36 +37,34 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
     }
     setState(() => _loading = true);
     try {
-      try {
-        final child = await ParentApiService.getMyChild()
-            .timeout(const Duration(seconds: 15));
+      final child = await ParentApiService.getMyChild()
+          .timeout(const Duration(seconds: 15));
+      if (!mounted) {
+        return;
+      }
+      setState(() => _child = child);
+
+      if (child['id'] != null) {
+        final studentId = child['id'] as String;
+        final results = await Future.wait([
+          ParentApiService.getChildGrades(studentId, trimestre: _trimestre)
+              .catchError((_) => <String, dynamic>{}),
+          ParentApiService.getChildAttendance(studentId)
+              .catchError((_) => <String, dynamic>{}),
+          ParentApiService.getChildFinance(studentId)
+              .catchError((_) => <String, dynamic>{}),
+        ]);
         if (!mounted) {
           return;
         }
-        setState(() => _child = child);
-
-        if (child['id'] != null) {
-          final studentId = child['id'] as String;
-          final results = await Future.wait([
-            ParentApiService.getChildGrades(studentId, trimestre: _trimestre)
-                .catchError((_) => <String, dynamic>{}),
-            ParentApiService.getChildAttendance(studentId)
-                .catchError((_) => <String, dynamic>{}),
-            ParentApiService.getChildFinance(studentId)
-                .catchError((_) => <String, dynamic>{}),
-          ]);
-          if (!mounted) {
-            return;
-          }
-          setState(() {
-            _grades = results[0] as Map<String, dynamic>?;
-            _attendance = results[1] as Map<String, dynamic>?;
-            _finance = results[2] as Map<String, dynamic>?;
-          });
-        }
-      } catch (e) {
-        debugPrint('ECOLE+ parent: $e');
+        setState(() {
+          _grades = results[0] as Map<String, dynamic>?;
+          _attendance = results[1] as Map<String, dynamic>?;
+          _finance = results[2] as Map<String, dynamic>?;
+        });
       }
+    } catch (e) {
+      debugPrint('ECOLE+ parent: $e');
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -271,12 +269,11 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                     onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ParentPaymentScreen(
-                            studentId: _child!['id'] as String,
-                            studentName:
-                                '${_child!['firstName']} ${_child!['lastName']}',
-                          ),
-                        )).then((_) => _loadData()),
+                            builder: (_) => ParentPaymentScreen(
+                                  studentId: _child!['id'] as String,
+                                  studentName:
+                                      '${_child!['firstName']} ${_child!['lastName']}',
+                                ))).then((_) => _loadData()),
                     icon: const Icon(Icons.phone_android, size: 18),
                     label: const Text('Payer via Mobile Money'),
                     style: ElevatedButton.styleFrom(
@@ -322,14 +319,14 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                               const AttendanceHistoryScreen(history: [])))),
               const SizedBox(height: 10),
               _NavTile(
-                  icon: Icons.message_outlined,
+                  icon: Icons.chat_outlined,
                   title: 'Messagerie',
-                  subtitle: 'Messages de l\'école et notifications',
-                  color: successGreen,
+                  subtitle: 'Contacter l\'école directement',
+                  color: const Color(0xFF1B3A6B),
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const ParentMessagesScreen()))),
+                          builder: (_) => const MessagingScreen()))),
             ],
 
             const SizedBox(height: 20),
@@ -356,17 +353,16 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
       ),
       child: Row(children: [
         CircleAvatar(
-          radius: 30,
-          backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-          backgroundColor: Colors.white.withValues(alpha: 0.2),
-          child: photoUrl == null
-              ? Text(name[0].toUpperCase(),
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold))
-              : null,
-        ),
+            radius: 30,
+            backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
+            child: photoUrl == null
+                ? Text(name[0].toUpperCase(),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold))
+                : null),
         const SizedBox(width: 16),
         Expanded(
             child:
@@ -414,7 +410,6 @@ class _KpiTile extends StatelessWidget {
   final String label, value;
   final IconData icon;
   final Color color;
-
   const _KpiTile(
       {required this.label,
       required this.value,
@@ -491,7 +486,6 @@ class _NavTile extends StatelessWidget {
   final String title, subtitle;
   final Color color;
   final VoidCallback onTap;
-
   const _NavTile(
       {required this.icon,
       required this.title,
@@ -507,10 +501,9 @@ class _NavTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: 0.2))),
         child: Row(children: [
           Container(
               padding: const EdgeInsets.all(10),

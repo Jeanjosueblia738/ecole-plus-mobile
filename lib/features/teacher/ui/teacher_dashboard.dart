@@ -10,7 +10,6 @@ import '../../grades/ui/grade_input_screen.dart';
 import 'attendance_input_screen.dart';
 import 'teacher_my_classes_screen.dart';
 import 'teacher_stats_screen.dart';
-import '../../cahier/ui/cahier_screen.dart';
 
 class TeacherDashboard extends ConsumerStatefulWidget {
   const TeacherDashboard({super.key});
@@ -219,7 +218,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const AttendanceInputScreen(
-                            className: "", subject: "", duration: "55"))),
+                            className: '', subject: '', duration: '55'))),
               ),
               const SizedBox(width: 12),
               _ActionBtn(
@@ -230,7 +229,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const GradeInputScreen(
-                            className: "", trimestre: "T1"))),
+                            className: '', trimestre: 'T1'))),
               ),
               const SizedBox(width: 12),
               _ActionBtn(
@@ -299,14 +298,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                     fontWeight: FontWeight.bold,
                     color: textDark)),
             const SizedBox(height: 12),
-            _ModuleTile(
-              icon: Icons.book_outlined,
-              title: 'Cahier de texte',
-              subtitle: 'Registre pédagogique officiel',
-              color: const Color(0xFF0D9488),
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const CahierScreen())),
-            ),
+
             _ModuleTile(
               icon: Icons.class_outlined,
               title: 'Mes classes',
@@ -327,7 +319,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                   context,
                   MaterialPageRoute(
                       builder: (_) => const AttendanceInputScreen(
-                          className: "", subject: "", duration: "55"))),
+                          className: '', subject: '', duration: '55'))),
             ),
             const SizedBox(height: 10),
             _ModuleTile(
@@ -339,7 +331,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                   context,
                   MaterialPageRoute(
                       builder: (_) => const GradeInputScreen(
-                          className: "", trimestre: "T1"))),
+                          className: '', trimestre: 'T1'))),
             ),
             const SizedBox(height: 10),
             _ModuleTile(
