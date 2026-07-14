@@ -9,6 +9,7 @@ import '../../../shared/widgets/dashboard_tile.dart';
 import 'admin_stats_screen.dart';
 import 'admin_validation_screen.dart';
 import 'class_management_screen.dart';
+import '../../analytics/ui/dropout_risk_screen.dart';
 import '../../student/ui/student_list_screen.dart';
 import '../../finance/ui/finance_dashboard_screen.dart';
 import '../../settings/ui/settings_screen.dart';
@@ -260,6 +261,16 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
               color: primaryBlue,
               onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const AdminStatsScreen())),
+            ),
+            const SizedBox(height: 10),
+            DashboardTile(
+              icon: Icons.psychology_outlined,
+              title: 'Risque décrochage',
+              color: dangerRed,
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const DropoutRiskScreen())),
             ),
             const SizedBox(height: 10),
             DashboardTile(

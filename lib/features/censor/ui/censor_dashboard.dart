@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/services/students_api_service.dart';
 import '../../../core/services/attendance_api_service.dart';
 import '../../admin/ui/admin_validation_screen.dart';
+import '../../analytics/ui/dropout_risk_screen.dart';
 import '../../cahier/ui/cahier_directeur_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
 import '../../settings/ui/settings_screen.dart';
@@ -257,6 +258,16 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const CahierDirecteurScreen()))),
+            const SizedBox(height: 10),
+            _buildAction(
+                Icons.psychology_outlined,
+                'Risque décrochage',
+                'IA prédictive — élèves à risque',
+                dangerRed,
+                () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const DropoutRiskScreen()))),
             const SizedBox(height: 10),
             _buildAction(
                 Icons.grade_outlined,

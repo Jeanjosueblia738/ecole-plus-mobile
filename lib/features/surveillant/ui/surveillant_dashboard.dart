@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/services/students_api_service.dart';
 import '../../../core/services/attendance_api_service.dart';
 import '../../admin/ui/admin_validation_screen.dart';
+import '../../analytics/ui/dropout_risk_screen.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../student/ui/student_list_screen.dart';
 import '../../teacher/ui/attendance_input_screen.dart';
@@ -227,6 +228,16 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
                 subtitle: 'Traiter les absences justifiées',
                 color: successGreen,
                 onTap: _openJustifications),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.psychology_outlined,
+                title: 'Risque décrochage',
+                subtitle: 'IA prédictive — élèves à risque',
+                color: dangerRed,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const DropoutRiskScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.people_alt_outlined,
