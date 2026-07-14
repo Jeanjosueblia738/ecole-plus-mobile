@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/attendance_provider.dart';
-import '../../../core/session/user_session.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../student/data/attendance_store.dart';
 
@@ -10,7 +10,10 @@ class AdminValidationScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!UserSession.isAdmin) {
+    final auth = ref.watch(authProvider);
+    final canValidate =
+        auth.isAdmin || auth.isSurveillant || auth.isCensor;
+    if (!canValidate) {
       return const Scaffold(body: Center(child: Text('Accès refusé')));
     }
 

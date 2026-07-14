@@ -21,23 +21,80 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscure = true;
   bool _useDemoMode = false;
 
+  /// Tous les profils (API) — le mapping app se fait dans auth_provider.
   static const _roles = [
     {
       'value': 'ADMIN',
       'label': 'Administrateur',
-      'icon': Icons.admin_panel_settings_rounded
+      'icon': Icons.admin_panel_settings_rounded,
+      'group': 'direction',
+    },
+    {
+      'value': 'FOUNDER',
+      'label': 'Fondateur',
+      'icon': Icons.apartment_rounded,
+      'group': 'direction',
+    },
+    {
+      'value': 'DIRECTOR',
+      'label': 'Directeur',
+      'icon': Icons.account_balance_rounded,
+      'group': 'direction',
+    },
+    {
+      'value': 'CENSOR',
+      'label': 'Censeur',
+      'icon': Icons.menu_book_rounded,
+      'group': 'staff',
+    },
+    {
+      'value': 'SURVEILLANT',
+      'label': 'Surveillant Général',
+      'icon': Icons.security_rounded,
+      'group': 'staff',
+    },
+    {
+      'value': 'EDUCATOR',
+      'label': 'Éducateur',
+      'icon': Icons.groups_rounded,
+      'group': 'staff',
+    },
+    {
+      'value': 'SECRETARY',
+      'label': 'Secrétaire',
+      'icon': Icons.badge_outlined,
+      'group': 'staff',
+    },
+    {
+      'value': 'ACCOUNTANT',
+      'label': 'Comptable',
+      'icon': Icons.calculate_outlined,
+      'group': 'staff',
+    },
+    {
+      'value': 'CASHIER',
+      'label': 'Caissier',
+      'icon': Icons.point_of_sale_rounded,
+      'group': 'staff',
     },
     {
       'value': 'TEACHER',
       'label': 'Enseignant',
-      'icon': Icons.cast_for_education_rounded
+      'icon': Icons.cast_for_education_rounded,
+      'group': 'pedagogie',
     },
     {
       'value': 'PARENT',
       'label': 'Parent',
-      'icon': Icons.family_restroom_rounded
+      'icon': Icons.family_restroom_rounded,
+      'group': 'famille',
     },
-    {'value': 'STUDENT', 'label': 'Elève', 'icon': Icons.school_rounded},
+    {
+      'value': 'STUDENT',
+      'label': 'Élève',
+      'icon': Icons.school_rounded,
+      'group': 'famille',
+    },
   ];
 
   @override
@@ -61,10 +118,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Color _getRoleColor(String role) => switch (role) {
-        'ADMIN' => primaryBlue,
+        'ADMIN' || 'FOUNDER' || 'DIRECTOR' => primaryBlue,
+        'CENSOR' => const Color(0xFF0D9488),
+        'SURVEILLANT' || 'EDUCATOR' => const Color(0xFFEA580C),
+        'SECRETARY' => const Color(0xFF0891B2),
+        'ACCOUNTANT' || 'CASHIER' => successGreen,
         'TEACHER' => const Color(0xFF7C3AED),
         'PARENT' => successGreen,
-        _ => const Color(0xFFF59E0B),
+        'STUDENT' => const Color(0xFFF59E0B),
+        _ => textGrey,
+      };
+
+  UserRole _toAppRole(String apiRole) => switch (apiRole) {
+        'ADMIN' || 'FOUNDER' || 'DIRECTOR' => UserRole.admin,
+        'CENSOR' => UserRole.censor,
+        'SURVEILLANT' || 'EDUCATOR' => UserRole.surveillant,
+        'SECRETARY' => UserRole.secretary,
+        'ACCOUNTANT' || 'CASHIER' => UserRole.accountant,
+        'TEACHER' => UserRole.teacher,
+        'PARENT' => UserRole.parent,
+        'STUDENT' => UserRole.student,
+        _ => UserRole.admin,
       };
 
   @override
@@ -166,15 +240,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   label: r['label'] as String,
                                   color: _getRoleColor(r['value'] as String),
                                   onTap: () {
-                                    final role = switch (r['value']) {
-                                      'ADMIN' => UserRole.admin,
-                                      'TEACHER' => UserRole.teacher,
-                                      'PARENT' => UserRole.parent,
-                                      _ => UserRole.student,
-                                    };
                                     ref
                                         .read(authProvider.notifier)
-                                        .loginAs(role);
+                                        .loginAs(_toAppRole(
+                                            r['value'] as String));
                                   },
                                 )),
                           ] else ...[
@@ -225,9 +294,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             const SizedBox(height: 14),
 
-                            // Sélecteur rôle
+                            // Sélecteur rôle — tout le personnel + famille
                             DropdownButtonFormField<String>(
                               initialValue: _selectedRole,
+                              isExpanded: true,
                               decoration: InputDecoration(
                                 labelText: 'Profil',
                                 prefixIcon: const Icon(Icons.person_outline,
@@ -245,11 +315,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               items: _roles
                                   .map((r) => DropdownMenuItem(
                                         value: r['value'] as String,
-                                        child: Text(r['label'] as String),
+                                        child: Text(
+                                          r['label'] as String,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ))
                                   .toList(),
                               onChanged: (v) =>
                                   setState(() => _selectedRole = v!),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Choisissez le profil correspondant à votre compte. '
+                              'Personnel école : Admin, Censeur, Surveillant, Secrétaire, Comptable…',
+                              style: TextStyle(
+                                  fontSize: 11, color: Colors.grey.shade500),
                             ),
                             const SizedBox(height: 24),
 

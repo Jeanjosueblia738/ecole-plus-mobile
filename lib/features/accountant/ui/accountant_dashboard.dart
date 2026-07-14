@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/students_api_service.dart';
+import '../../finance/ui/finance_dashboard_screen.dart';
+import '../../finance/ui/payment_history_screen.dart';
+import '../../finance/ui/payment_screen.dart';
+import '../../finance/ui/unpaid_students_screen.dart';
 import '../../settings/ui/settings_screen.dart';
 
 class AccountantDashboard extends ConsumerStatefulWidget {
@@ -184,21 +188,40 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                 title: 'Enregistrer un paiement',
                 subtitle: 'Encaisser des frais de scolarité',
                 color: successGreen,
-                onTap: () {}),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const PaymentScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.receipt_long_outlined,
                 title: 'Historique des paiements',
                 subtitle: 'Voir tous les paiements',
                 color: primaryBlue,
-                onTap: () {}),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const PaymentHistoryScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.warning_amber_outlined,
                 title: 'Liste des impayés',
                 subtitle: '$_unpaidCount élève(s) non à jour',
                 color: dangerRed,
-                onTap: () {}),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const UnpaidStudentsScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'Espace finance',
+                subtitle: 'Frais, Mobile Money, synthèse',
+                color: const Color(0xFF0D9488),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const FinanceDashboardScreen()))),
           ]),
         ),
       ),

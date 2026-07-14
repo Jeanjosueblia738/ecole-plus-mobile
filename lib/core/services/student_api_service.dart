@@ -23,9 +23,12 @@ class StudentApiService {
   }
 
   // Emploi du temps de l'élève
-  static Future<List<dynamic>> getMyTimetable() async {
-    final response = await ApiClient.instance.get('/timetable/my-class');
-    return response.data as List<dynamic>;
+  static Future<Map<String, dynamic>> getMyTimetable({String? year}) async {
+    final response = await ApiClient.instance.get(
+      '/timetable/my-class',
+      params: {if (year != null) 'year': year},
+    );
+    return response.data as Map<String, dynamic>;
   }
 
   // Situation financière

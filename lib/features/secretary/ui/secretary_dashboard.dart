@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/student_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/students_api_service.dart';
+import '../../grades/ui/bulletin_screen.dart';
 import '../../settings/ui/settings_screen.dart';
+import '../../student/ui/student_form_screen.dart';
+import '../../student/ui/student_list_screen.dart';
 
 class SecretaryDashboard extends ConsumerStatefulWidget {
   const SecretaryDashboard({super.key});
@@ -40,6 +44,36 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
         setState(() => _loading = false);
       }
     }
+  }
+
+  Future<void> _openDocuments() async {
+    final students = ref.read(studentProvider);
+    if (students.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aucun élève disponible')),
+      );
+      return;
+    }
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Bulletins & documents'),
+        children: students
+            .map((s) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(ctx, s.id),
+                  child: Text('${s.fullName} — ${s.className}'),
+                ))
+            .toList(),
+      ),
+    );
+    if (selected == null || !mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            BulletinScreen(studentId: selected, trimestre: 'T1'),
+      ),
+    );
   }
 
   @override
@@ -139,21 +173,27 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
                 title: 'Inscrire un élève',
                 subtitle: 'Créer un nouveau dossier',
                 color: primaryBlue,
-                onTap: () {}),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const StudentFormScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.people_alt_outlined,
                 title: 'Liste des élèves',
                 subtitle: 'Gérer les dossiers scolaires',
                 color: color,
-                onTap: () {}),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const StudentListScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.description_outlined,
                 title: 'Documents',
-                subtitle: 'Certificats et attestations',
+                subtitle: 'Bulletins et attestations',
                 color: const Color(0xFF7C3AED),
-                onTap: () {}),
+                onTap: _openDocuments),
           ]),
         ),
       ),

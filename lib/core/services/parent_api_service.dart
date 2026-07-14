@@ -36,4 +36,19 @@ class ParentApiService {
     );
     return response.data as Map<String, dynamic>;
   }
+
+  // Alertes de paiement du parent
+  static Future<List<dynamic>> getMyAlerts() async {
+    final response = await ApiClient.instance.get('/finance/alerts/me');
+    return response.data as List<dynamic>;
+  }
+
+  // Emploi du temps de l'enfant
+  static Future<Map<String, dynamic>> getChildTimetable({String? year}) async {
+    final response = await ApiClient.instance.get(
+      '/timetable/my-child',
+      params: {if (year != null) 'year': year},
+    );
+    return response.data as Map<String, dynamic>;
+  }
 }

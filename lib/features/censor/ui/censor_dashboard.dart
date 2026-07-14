@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/student_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/students_api_service.dart';
 import '../../../core/services/attendance_api_service.dart';
-import '../../settings/ui/settings_screen.dart';
-import '../../messaging/ui/messaging_screen.dart';
+import '../../admin/ui/admin_validation_screen.dart';
 import '../../cahier/ui/cahier_directeur_screen.dart';
-import '../../student/ui/attendance_history_screen.dart';
+import '../../messaging/ui/messaging_screen.dart';
+import '../../settings/ui/settings_screen.dart';
+import '../../student/ui/grades_screen.dart';
+import '../../student/ui/student_list_screen.dart';
+import '../../timetable/ui/timetable_screen.dart';
 
 class CensorDashboard extends ConsumerStatefulWidget {
   const CensorDashboard({super.key});
@@ -53,6 +57,80 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
         setState(() => _loading = false);
       }
     }
+  }
+
+  Future<void> _openNotesBulletins() async {
+    final students = ref.read(studentProvider);
+    if (students.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aucun élève disponible')),
+      );
+      return;
+    }
+    final selected = await showDialog<(String, String)>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Notes & Bulletins'),
+        children: students
+            .map((s) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(ctx, (s.id, s.fullName)),
+                  child: Text('${s.fullName} — ${s.className}'),
+                ))
+            .toList(),
+      ),
+    );
+    if (selected == null || !mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GradesScreen(
+          studentId: selected.$1,
+          studentName: selected.$2,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openTimetable() async {
+    final classes = ref
+        .read(classNamesProvider)
+        .where((c) => c != 'Toutes')
+        .toList();
+    if (classes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aucune classe disponible')),
+      );
+      return;
+    }
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Emploi du temps — classe'),
+        children: classes
+            .map((c) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(ctx, c),
+                  child: Text(c),
+                ))
+            .toList(),
+      ),
+    );
+    if (selected == null || !mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TimetableScreen(
+          className: selected,
+          canEdit: true,
+        ),
+      ),
+    );
+  }
+
+  void _openJustifications() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AdminValidationScreen()),
+    );
   }
 
   @override
@@ -132,6 +210,36 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
               const SizedBox(width: 12),
               const Expanded(child: SizedBox()),
             ]),
+            if (_pendingJustifications > 0) ...[
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: _openJustifications,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: warningYellow.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: warningYellow.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.warning_amber_outlined,
+                        color: warningYellow),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '$_pendingJustifications justification(s) à valider',
+                        style: const TextStyle(
+                            fontSize: 13, color: Color(0xFF92400E)),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right,
+                        color: warningYellow.withValues(alpha: 0.7)),
+                  ]),
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             const Text('Actions rapides',
                 style: TextStyle(
@@ -140,7 +248,6 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
                     color: textDark)),
             const SizedBox(height: 12),
 
-            // ── Cahier de texte (lecture seule pour censeur) ──
             _buildAction(
                 Icons.book_outlined,
                 'Cahier de texte',
@@ -151,32 +258,37 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
                     MaterialPageRoute(
                         builder: (_) => const CahierDirecteurScreen()))),
             const SizedBox(height: 10),
-
-            // ── Notes & Bulletins (lecture) ──
             _buildAction(
                 Icons.grade_outlined,
                 'Notes & Bulletins',
-                'Consulter les résultats',
+                'Consulter notes et bulletins par élève',
                 const Color(0xFF7C3AED),
-                () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content:
-                        Text('Sélectionnez un élève pour voir ses notes')))),
+                _openNotesBulletins),
             const SizedBox(height: 10),
-
-            // ── Absences (vue) ──
             _buildAction(
-                Icons.event_busy_outlined,
-                'Absences',
-                'Suivi des présences',
-                dangerRed,
+                Icons.calendar_month_outlined,
+                'Emploi du temps',
+                'Consulter et gérer l\'EDT par classe',
+                const Color(0xFF4338CA),
+                _openTimetable),
+            const SizedBox(height: 10),
+            _buildAction(
+                Icons.check_circle_outlined,
+                'Valider justifications',
+                'Traiter les absences justifiées',
+                successGreen,
+                _openJustifications),
+            const SizedBox(height: 10),
+            _buildAction(
+                Icons.people_alt_outlined,
+                'Liste des élèves',
+                'Consulter les dossiers scolaires',
+                primaryBlue,
                 () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) =>
-                            const AttendanceHistoryScreen(history: [])))),
+                        builder: (_) => const StudentListScreen()))),
             const SizedBox(height: 10),
-
-            // ── Messagerie ──
             _buildAction(
                 Icons.chat_outlined,
                 'Messagerie',

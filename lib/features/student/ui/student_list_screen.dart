@@ -20,7 +20,8 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
     // Riverpod : lecture réactive — la liste se met à jour automatiquement
     final students = ref.watch(studentProvider);
     final classNames = ref.watch(classNamesProvider);
-    final isAdmin = ref.watch(authProvider).isAdmin;
+    final auth = ref.watch(authProvider);
+    final canManageStudents = auth.isAdmin || auth.isSecretary;
 
     // Sécurité : si la classe sélectionnée n'existe plus, on reset
     if (!classNames.contains(_selectedClass)) {
@@ -41,7 +42,7 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
         backgroundColor: const Color(0xFF1E3A8A),
         foregroundColor: Colors.white,
       ),
-      floatingActionButton: isAdmin
+      floatingActionButton: canManageStudents
           ? FloatingActionButton(
               onPressed: () => Navigator.push(
                 context,
@@ -121,9 +122,10 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
                         ),
                         title: Text(student.fullName),
                         subtitle: Text(student.className),
-                        trailing:
-                            isAdmin ? const Icon(Icons.edit, size: 18) : null,
-                        onTap: isAdmin
+                        trailing: canManageStudents
+                            ? const Icon(Icons.edit, size: 18)
+                            : null,
+                        onTap: canManageStudents
                             ? () => Navigator.push(
                                   context,
                                   MaterialPageRoute(

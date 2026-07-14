@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../security/user_role.dart';
+import '../session/user_session.dart';
 import '../services/auth_api_service.dart';
 import '../services/auth_storage_service.dart';
 
@@ -96,8 +97,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final firstName = await AuthStorageService.read('first_name');
     final lastName = await AuthStorageService.read('last_name');
     final className = await AuthStorageService.read('class_name');
+    final parsed = _parseRole(role);
+    if (parsed != null) {
+      UserSession.setRole(parsed);
+    }
     state = state.copyWith(
-      role: _parseRole(role),
+      role: parsed,
       tenantCode: tenantCode,
       tenantName: tenantName,
       userId: userId,
@@ -125,14 +130,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
           password: password,
         );
         final teacher = data['teacher'] as Map<String, dynamic>;
-        final tenant = data['tenant'] as Map<String, dynamic>;
+        final tenant = data['tenant'] as Map<String, dynamic>?;
         await AuthStorageService.write(
             'first_name', teacher['firstName'] ?? '');
         await AuthStorageService.write('last_name', teacher['lastName'] ?? '');
+        UserSession.setRole(UserRole.teacher);
         state = state.copyWith(
           role: UserRole.teacher,
-          tenantCode: tenant['code'],
-          tenantName: tenant['name'],
+          tenantCode: tenant?['code'] ?? tenantCode,
+          tenantName: tenant?['name'] ?? tenantCode,
           userId: teacher['id'],
           email: teacher['email'],
           firstName: teacher['firstName'],
@@ -147,14 +153,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
         final user = data['user'] as Map<String, dynamic>;
         final tenant = data['tenant'] as Map<String, dynamic>;
+        final expected = _parseRole(role);
+        final actual = _parseRole(user['role'] as String?);
+
+        if (actual == null) {
+          await AuthStorageService.clearAll();
+          state = state.copyWith(
+            isLoading: false,
+            error: 'Rôle non reconnu pour ce compte',
+          );
+          return;
+        }
+
+        if (expected != null && expected != actual) {
+          await AuthStorageService.clearAll();
+          state = state.copyWith(
+            isLoading: false,
+            error:
+                'Profil incorrect. Ce compte est « ${actual.label} ». Sélectionnez le bon profil.',
+          );
+          return;
+        }
+
         await AuthStorageService.write('first_name', user['firstName'] ?? '');
         await AuthStorageService.write('last_name', user['lastName'] ?? '');
         if (user['class'] != null) {
           await AuthStorageService.write(
               'class_name', user['class']['name'] ?? '');
         }
+        UserSession.setRole(actual);
         state = state.copyWith(
-          role: _parseRole(user['role']),
+          role: actual,
           tenantCode: tenant['code'],
           tenantName: tenant['name'],
           userId: user['id'],
@@ -175,11 +204,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> loginAs(UserRole role) async {
+    UserSession.setRole(role);
     state = AuthState(role: role, tenantCode: 'DEMO', tenantName: 'Mode Demo');
   }
 
   Future<void> logout() async {
     await AuthApiService.logout();
+    await UserSession.clear();
     state = const AuthState();
   }
 

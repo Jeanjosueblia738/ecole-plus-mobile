@@ -7,7 +7,9 @@ import '../../../core/services/parent_api_service.dart';
 import '../../settings/ui/settings_screen.dart';
 import 'parent_payment_screen.dart';
 import 'parent_grades_screen.dart';
+import 'parent_alerts_screen.dart';
 import '../../student/ui/attendance_history_screen.dart';
+import '../../student/ui/student_timetable_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
 
 class ParentDashboard extends ConsumerStatefulWidget {
@@ -22,6 +24,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
   Map<String, dynamic>? _grades;
   Map<String, dynamic>? _attendance;
   Map<String, dynamic>? _finance;
+  List<dynamic> _alerts = [];
   bool _loading = true;
   String _trimestre = 'T1';
 
@@ -53,6 +56,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
               .catchError((_) => <String, dynamic>{}),
           ParentApiService.getChildFinance(studentId)
               .catchError((_) => <String, dynamic>{}),
+          ParentApiService.getMyAlerts().catchError((_) => <dynamic>[]),
         ]);
         if (!mounted) {
           return;
@@ -61,6 +65,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
           _grades = results[0] as Map<String, dynamic>?;
           _attendance = results[1] as Map<String, dynamic>?;
           _finance = results[2] as Map<String, dynamic>?;
+          _alerts = results[3] as List<dynamic>;
         });
       }
     } catch (e) {
@@ -260,9 +265,61 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
 
               const SizedBox(height: 16),
 
-              // Bouton payer
+              // Finance
+              const Text('Scolarité',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: textDark)),
+              const SizedBox(height: 10),
+              _FinanceResumeCard(
+                finance: _finance,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => ParentPaymentScreen(
+                              studentId: _child!['id'] as String,
+                              studentName:
+                                  '${_child!['firstName']} ${_child!['lastName']}',
+                            ))).then((_) => _loadData()),
+              ),
+
+              if (_alerts.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ParentAlertsScreen())),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: warningYellow.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: warningYellow.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(children: [
+                      const Icon(Icons.notifications_active_outlined,
+                          color: warningYellow),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '${_alerts.length} alerte(s) de paiement',
+                          style: const TextStyle(
+                              fontSize: 13, color: Color(0xFF92400E)),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right,
+                          color: warningYellow.withValues(alpha: 0.7)),
+                    ]),
+                  ),
+                ),
+              ],
+
               if ((_finance?['resume']?['solde'] ?? 0) > 0) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -306,6 +363,43 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                       context,
                       MaterialPageRoute(
                           builder: (_) => const ParentGradesScreen()))),
+              const SizedBox(height: 10),
+              _NavTile(
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'Finance & paiements',
+                  subtitle: 'Solde, frais et Mobile Money',
+                  color: successGreen,
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => ParentPaymentScreen(
+                                studentId: _child!['id'] as String,
+                                studentName:
+                                    '${_child!['firstName']} ${_child!['lastName']}',
+                              ))).then((_) => _loadData())),
+              const SizedBox(height: 10),
+              _NavTile(
+                  icon: Icons.notifications_outlined,
+                  title: 'Alertes de paiement',
+                  subtitle: _alerts.isEmpty
+                      ? 'Aucune alerte en cours'
+                      : '${_alerts.length} alerte(s)',
+                  color: warningYellow,
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ParentAlertsScreen()))),
+              const SizedBox(height: 10),
+              _NavTile(
+                  icon: Icons.calendar_view_week,
+                  title: 'Emploi du temps',
+                  subtitle: 'Planning de la classe de votre enfant',
+                  color: const Color(0xFF7C3AED),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              const StudentTimetableScreen.forParent()))),
               const SizedBox(height: 10),
               _NavTile(
                   icon: Icons.event_busy_outlined,
@@ -405,6 +499,71 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
 }
 
 // ── Widgets ────────────────────────────────────────────────────────────────
+
+class _FinanceResumeCard extends StatelessWidget {
+  final Map<String, dynamic>? finance;
+  final VoidCallback onTap;
+  const _FinanceResumeCard({required this.finance, required this.onTap});
+
+  String _fmt(dynamic n) {
+    final val = ((n ?? 0) as num).toInt();
+    return '${val.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]} ')} FCFA';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final resume = finance?['resume'] as Map<String, dynamic>?;
+    final solde = (resume?['solde'] as num?)?.toDouble() ?? 0;
+    final aJour = resume?['estAJour'] == true || solde <= 0;
+    final color = aJour ? successGreen : dangerRed;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              aJour ? Icons.check_circle_outline : Icons.warning_amber_rounded,
+              color: color,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    aJour ? 'Situation à jour' : 'Solde restant dû',
+                    style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14),
+                  ),
+                  Text(
+                    finance == null
+                        ? 'Données indisponibles — toucher pour réessayer'
+                        : aJour
+                            ? 'Aucun arriéré pour le moment'
+                            : _fmt(solde),
+                    style: const TextStyle(color: textGrey, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: color.withValues(alpha: 0.6)),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _KpiTile extends StatelessWidget {
   final String label, value;

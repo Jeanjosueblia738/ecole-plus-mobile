@@ -8,6 +8,7 @@ import '../../../core/services/student_api_service.dart';
 import '../../settings/ui/settings_screen.dart';
 import 'grades_screen.dart';
 import 'attendance_history_screen.dart';
+import 'student_timetable_screen.dart';
 
 Color _subjectColor(String s) => switch (s) {
       'Mathématiques' => const Color(0xFF1E3A8A),
@@ -390,7 +391,10 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
                   icon: Icons.calendar_view_week,
                   label: 'Mon EDT',
                   color: const Color(0xFF7C3AED),
-                  onTap: () {}),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const StudentTimetableScreen()))),
             ]),
 
             const SizedBox(height: 20),

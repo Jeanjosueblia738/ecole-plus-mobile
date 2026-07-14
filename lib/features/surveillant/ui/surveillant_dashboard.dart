@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/student_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/students_api_service.dart';
 import '../../../core/services/attendance_api_service.dart';
+import '../../admin/ui/admin_validation_screen.dart';
 import '../../settings/ui/settings_screen.dart';
+import '../../student/ui/student_list_screen.dart';
+import '../../teacher/ui/attendance_input_screen.dart';
 
 class SurveillantDashboard extends ConsumerStatefulWidget {
   const SurveillantDashboard({super.key});
@@ -48,6 +52,48 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
         setState(() => _loading = false);
       }
     }
+  }
+
+  Future<void> _openAppel() async {
+    final classes = ref
+        .read(classNamesProvider)
+        .where((c) => c != 'Toutes')
+        .toList();
+    String className = '';
+    if (classes.isNotEmpty) {
+      final selected = await showDialog<String>(
+        context: context,
+        builder: (ctx) => SimpleDialog(
+          title: const Text('Choisir une classe'),
+          children: classes
+              .map((c) => SimpleDialogOption(
+                    onPressed: () => Navigator.pop(ctx, c),
+                    child: Text(c),
+                  ))
+              .toList(),
+        ),
+      );
+      if (selected == null) return;
+      className = selected;
+    }
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AttendanceInputScreen(
+          className: className,
+          subject: 'Appel',
+          duration: '55',
+        ),
+      ),
+    );
+  }
+
+  void _openJustifications() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AdminValidationScreen()),
+    );
   }
 
   @override
@@ -135,24 +181,30 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
             ]),
             if (_pendingJustifications > 0) ...[
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: warningYellow.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: warningYellow.withValues(alpha: 0.3)),
+              InkWell(
+                onTap: _openJustifications,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: warningYellow.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border:
+                        Border.all(color: warningYellow.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.warning_amber_outlined,
+                        color: warningYellow),
+                    const SizedBox(width: 10),
+                    Expanded(
+                        child: Text(
+                            '$_pendingJustifications justification(s) en attente de validation',
+                            style: const TextStyle(
+                                fontSize: 13, color: Color(0xFF92400E)))),
+                    Icon(Icons.chevron_right,
+                        color: warningYellow.withValues(alpha: 0.7)),
+                  ]),
                 ),
-                child: Row(children: [
-                  const Icon(Icons.warning_amber_outlined,
-                      color: warningYellow),
-                  const SizedBox(width: 10),
-                  Expanded(
-                      child: Text(
-                          '$_pendingJustifications justification(s) en attente de validation',
-                          style: const TextStyle(
-                              fontSize: 13, color: Color(0xFF92400E)))),
-                ]),
               ),
             ],
             const SizedBox(height: 20),
@@ -167,21 +219,24 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
                 title: 'Faire l\'appel',
                 subtitle: 'Enregistrer les présences',
                 color: color,
-                onTap: () {}),
+                onTap: _openAppel),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.check_circle_outlined,
                 title: 'Valider justifications',
                 subtitle: 'Traiter les absences justifiées',
                 color: successGreen,
-                onTap: () {}),
+                onTap: _openJustifications),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.people_alt_outlined,
                 title: 'Liste des élèves',
                 subtitle: 'Consulter les dossiers',
                 color: primaryBlue,
-                onTap: () {}),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const StudentListScreen()))),
           ]),
         ),
       ),
