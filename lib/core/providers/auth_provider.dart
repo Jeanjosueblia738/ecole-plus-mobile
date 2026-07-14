@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../security/user_role.dart';
 import '../session/user_session.dart';
@@ -204,8 +205,35 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> loginAs(UserRole role) async {
+    if (!kDebugMode) {
+      throw StateError('Mode demo désactivé hors debug');
+    }
     UserSession.setRole(role);
     state = AuthState(role: role, tenantCode: 'DEMO', tenantName: 'Mode Demo');
+  }
+
+  /// Applique une session réelle déjà persistée (ex. après join).
+  Future<void> applyJoinedSession({
+    required UserRole role,
+    required String tenantCode,
+    required String tenantName,
+    String? userId,
+    String? email,
+    String? firstName,
+    String? lastName,
+    String? className,
+  }) async {
+    UserSession.setRole(role);
+    state = AuthState(
+      role: role,
+      tenantCode: tenantCode,
+      tenantName: tenantName,
+      userId: userId,
+      email: email,
+      firstName: firstName,
+      lastName: lastName,
+      className: className,
+    );
   }
 
   Future<void> logout() async {

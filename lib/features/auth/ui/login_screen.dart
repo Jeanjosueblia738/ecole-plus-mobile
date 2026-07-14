@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -208,7 +209,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Toggle mode demo / réel
+                          // Toggle mode demo / réel (debug uniquement)
                           Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -217,20 +218,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                         color: textDark)),
-                                Row(children: [
-                                  const Text('Mode demo',
-                                      style: TextStyle(
-                                          fontSize: 12, color: textGrey)),
-                                  Switch(
-                                      value: _useDemoMode,
-                                      onChanged: (v) =>
-                                          setState(() => _useDemoMode = v),
-                                      activeThumbColor: primaryBlue),
-                                ]),
+                                if (kDebugMode)
+                                  Row(children: [
+                                    const Text('Mode demo',
+                                        style: TextStyle(
+                                            fontSize: 12, color: textGrey)),
+                                    Switch(
+                                        value: _useDemoMode,
+                                        onChanged: (v) =>
+                                            setState(() => _useDemoMode = v),
+                                        activeThumbColor: primaryBlue),
+                                  ]),
                               ]),
                           const SizedBox(height: 20),
 
-                          if (_useDemoMode) ...[
+                          if (kDebugMode && _useDemoMode) ...[
                             const Text('Choisir un profil demo :',
                                 style:
                                     TextStyle(color: textGrey, fontSize: 13)),

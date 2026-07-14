@@ -115,13 +115,20 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
             'class_name', user['className'] as String);
       }
 
-      // Mettre à jour le state auth
+      // Mettre à jour le state auth (session réelle, pas DEMO)
       final role = user['role'] as String;
       if (!mounted) {
         return;
       }
-      ref.read(authProvider.notifier).loginAs(
-            role == 'STUDENT' ? UserRole.student : UserRole.parent,
+      ref.read(authProvider.notifier).applyJoinedSession(
+            role: role == 'STUDENT' ? UserRole.student : UserRole.parent,
+            tenantCode: tenant['code'] as String,
+            tenantName: tenant['name'] as String,
+            userId: user['id'] as String?,
+            email: user['email'] as String?,
+            firstName: user['firstName'] as String?,
+            lastName: user['lastName'] as String?,
+            className: user['className'] as String?,
           );
 
       setState(() => _step = 4);
