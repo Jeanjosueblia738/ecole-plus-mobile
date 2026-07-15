@@ -1,18 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/providers/teacher_provider.dart';
-import '../../../core/providers/student_provider.dart';
+import '../../../core/services/teacher_api_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../grades/ui/grade_input_screen.dart';
+import 'attendance_input_screen.dart';
 import 'teacher_class_detail_screen.dart';
 
-class TeacherMyClassesScreen extends ConsumerWidget {
+class TeacherMyClassesScreen extends ConsumerStatefulWidget {
   const TeacherMyClassesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final classStats = ref.watch(teacherClassStatsProvider);
-    final allStudents = ref.watch(studentProvider);
+  ConsumerState<TeacherMyClassesScreen> createState() =>
+      _TeacherMyClassesScreenState();
+}
 
+class _TeacherMyClassesScreenState
+    extends ConsumerState<TeacherMyClassesScreen> {
+  List<dynamic> _classes = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final data = await TeacherApiService.getMyClasses();
+      if (mounted) {
+        setState(() {
+          _classes = data;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Impossible de charger les classes';
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
@@ -20,152 +58,89 @@ class TeacherMyClassesScreen extends ConsumerWidget {
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         centerTitle: true,
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
+        ],
       ),
-      body: classStats.isEmpty
-          ? const Center(
-              child: Text('Aucune classe assignée',
-                  style: TextStyle(color: textGrey)))
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: classStats.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final cs = classStats[index];
-                final students = allStudents
-                    .where((s) => s.className == cs.className)
-                    .toList();
-                return _ClassDetailCard(
-                  stats: cs,
-                  studentCount: students.length,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => TeacherClassDetailScreen(
-                        className: cs.className,
-                      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_error!, style: const TextStyle(color: dangerRed)),
+                      TextButton(onPressed: _load, child: const Text('Réessayer')),
+                    ],
+                  ),
+                )
+              : _classes.isEmpty
+                  ? const Center(
+                      child: Text('Aucune classe assignée',
+                          style: TextStyle(color: textGrey)))
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _classes.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final c = _classes[index];
+                        final id = c['id']?.toString() ?? '';
+                        final name = c['name']?.toString() ?? 'Classe';
+                        final level = c['level']?.toString() ?? '';
+                        return Card(
+                          child: ListTile(
+                            title: Text(name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
+                            subtitle: Text(level),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  tooltip: 'Appel',
+                                  icon: const Icon(Icons.how_to_reg_outlined),
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => AttendanceInputScreen(
+                                        classId: id,
+                                        className: name,
+                                        subject: '',
+                                        duration: '55',
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Notes',
+                                  icon: const Icon(Icons.grade_outlined),
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => GradeInputScreen(
+                                        classId: id,
+                                        className: name,
+                                        trimestre: 'T1',
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const Icon(Icons.chevron_right),
+                              ],
+                            ),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TeacherClassDetailScreen(
+                                  className: name,
+                                  classId: id,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                );
-              },
-            ),
-    );
-  }
-}
-
-class _ClassDetailCard extends StatelessWidget {
-  final ClassStats stats;
-  final int studentCount;
-  final VoidCallback onTap;
-
-  const _ClassDetailCard({
-    required this.stats,
-    required this.studentCount,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final avg = stats.moyenneClasse;
-    final avgColor = avg == null
-        ? textGrey
-        : avg >= 10
-            ? successGreen
-            : dangerRed;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── En-tête ──────────────────────────────────────────
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: primaryBlue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.class_, color: primaryBlue, size: 22),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    stats.className,
-                    style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const Icon(Icons.chevron_right, color: textGrey),
-              ],
-            ),
-            const SizedBox(height: 14),
-            const Divider(height: 1),
-            const SizedBox(height: 14),
-
-            // ── Stats 3 colonnes ──────────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _MiniStat(
-                  label: 'Élèves',
-                  value: '$studentCount',
-                  icon: Icons.people_outline,
-                  color: primaryBlue,
-                ),
-                _MiniStat(
-                  label: 'Absences',
-                  value: '${stats.absenceCount}',
-                  icon: Icons.event_busy_outlined,
-                  color: dangerRed,
-                ),
-                _MiniStat(
-                  label: 'Moyenne',
-                  value: avg != null ? avg.toStringAsFixed(1) : '—',
-                  icon: Icons.grade_outlined,
-                  color: avgColor,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _MiniStat({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(height: 4),
-        Text(value,
-            style: TextStyle(
-                fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-        Text(label, style: const TextStyle(fontSize: 11, color: textGrey)),
-      ],
     );
   }
 }
