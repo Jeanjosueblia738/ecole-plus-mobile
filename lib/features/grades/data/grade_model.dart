@@ -30,6 +30,47 @@ const kSubjects = [
   Subject(name: 'Arts', coefficient: 1),
 ];
 
+/// Normalise '1er' / 'T1' → 'T1' pour l'API Prisma.
+String apiTrimestre(String raw) {
+  final t = raw.trim().toUpperCase();
+  if (t.startsWith('T')) return t;
+  if (t.contains('1')) return 'T1';
+  if (t.contains('2')) return 'T2';
+  if (t.contains('3')) return 'T3';
+  return 'T1';
+}
+
+/// Affichage UI : T1 → 1er
+String displayTrimestre(String raw) {
+  switch (apiTrimestre(raw)) {
+    case 'T2':
+      return '2ème';
+    case 'T3':
+      return '3ème';
+    default:
+      return '1er';
+  }
+}
+
+EvalType _evalFromApi(dynamic raw) {
+  final s = (raw?.toString() ?? 'CONTROLE').toUpperCase();
+  return switch (s) {
+    'DEVOIR' => EvalType.devoir,
+    'EXAMEN' => EvalType.examen,
+    'TP' => EvalType.controle,
+    _ => EvalType.controle,
+  };
+}
+
+String _formatGradeDate(dynamic raw) {
+  if (raw == null) return '';
+  final dt = DateTime.tryParse(raw.toString());
+  if (dt == null) return raw.toString();
+  final d = dt.day.toString().padLeft(2, '0');
+  final m = dt.month.toString().padLeft(2, '0');
+  return '$d/$m/${dt.year}';
+}
+
 // ─── Note individuelle ────────────────────────────────────────────────────
 class Grade {
   final String id;
@@ -40,7 +81,7 @@ class Grade {
   final int coefficient;
   final double value; // note sur 20
   final EvalType evalType;
-  final String trimestre; // '1er', '2ème', '3ème'
+  final String trimestre; // '1er', '2ème', '3ème' (affichage)
   final String date; // dd/MM/yyyy
   final String? comment;
 
@@ -81,10 +122,30 @@ class Grade {
         coefficient: json['coefficient'],
         value: (json['value'] as num).toDouble(),
         evalType: EvalType.values.byName(json['evalType']),
-        trimestre: json['trimestre'],
+        trimestre: displayTrimestre(json['trimestre']?.toString() ?? 'T1'),
         date: json['date'],
         comment: json['comment'],
       );
+
+  factory Grade.fromApi(
+    Map<String, dynamic> json, {
+    String studentName = '',
+    String className = '',
+  }) {
+    return Grade(
+      id: json['id']?.toString() ?? '',
+      studentId: json['studentId']?.toString() ?? '',
+      studentName: studentName,
+      className: className,
+      subject: json['subject']?.toString() ?? '',
+      coefficient: (json['coefficient'] as num?)?.toInt() ?? 1,
+      value: (json['value'] as num?)?.toDouble() ?? 0,
+      evalType: _evalFromApi(json['evalType']),
+      trimestre: displayTrimestre(json['trimestre']?.toString() ?? 'T1'),
+      date: _formatGradeDate(json['date']),
+      comment: json['comment'] as String?,
+    );
+  }
 }
 
 // ─── Résultat par matière (pour bulletin) ─────────────────────────────────

@@ -1,17 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/parent_provider.dart';
+import '../../../core/providers/grade_provider.dart';
+import '../../../core/providers/attendance_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import 'parent_grades_screen.dart';
 import '../../student/ui/attendance_history_screen.dart';
 
-class ParentChildScreen extends ConsumerWidget {
+class ParentChildScreen extends ConsumerStatefulWidget {
   const ParentChildScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final child = ref.watch(parentChildProvider);
+  ConsumerState<ParentChildScreen> createState() => _ParentChildScreenState();
+}
+
+class _ParentChildScreenState extends ConsumerState<ParentChildScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_prime);
+  }
+
+  Future<void> _prime() async {
+    final child = await ref.read(parentChildAsyncProvider.future);
+    if (child == null) return;
+    await Future.wait([
+      ref.read(gradeProvider.notifier).loadForStudent(
+            child.id,
+            trimestre: '1er',
+            studentName: child.fullName,
+            className: child.className,
+          ),
+      ref.read(attendanceProvider.notifier).loadForStudent(
+            child.id,
+            studentName: child.fullName,
+            className: child.className,
+          ),
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final childAsync = ref.watch(parentChildAsyncProvider);
+    final child = childAsync.valueOrNull;
     final stats = ref.watch(childStatsProvider('1er'));
+
+    if (childAsync.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     if (child == null) {
       return const Scaffold(

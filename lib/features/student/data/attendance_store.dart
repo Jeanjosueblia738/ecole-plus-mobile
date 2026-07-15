@@ -70,6 +70,46 @@ class AttendanceRecord {
       smsSent: json['smsSent'] ?? false,
     );
   }
+
+  factory AttendanceRecord.fromApi(
+    Map<String, dynamic> json, {
+    String studentName = '',
+    String className = '',
+  }) {
+    final statusRaw = (json['status']?.toString() ?? '').toUpperCase();
+    final isJustified = json['isJustified'] == true;
+    final isLate = json['isLate'] == true || statusRaw == 'LATE';
+    String status;
+    if (isJustified) {
+      status = 'Justifiée';
+    } else if (statusRaw == 'ABSENT' || statusRaw == 'LATE') {
+      status = 'Absent';
+    } else {
+      status = statusRaw.isEmpty ? 'Absent' : statusRaw;
+    }
+
+    final dt = DateTime.tryParse(json['date']?.toString() ?? '');
+    final dateStr = dt == null
+        ? (json['date']?.toString() ?? '')
+        : '${dt.day.toString().padLeft(2, '0')}/'
+            '${dt.month.toString().padLeft(2, '0')}/'
+            '${dt.year}';
+
+    return AttendanceRecord(
+      id: json['id']?.toString() ?? '',
+      studentId: json['studentId']?.toString() ?? '',
+      studentName: studentName,
+      className: className,
+      subject: json['subject']?.toString() ?? '',
+      date: dateStr,
+      duration: isLate
+          ? '${json['lateMinutes'] ?? 0} min'
+          : '1 séance',
+      isLate: isLate,
+      status: status,
+      justificationMotif: json['justification'] as String?,
+    );
+  }
 }
 
 // ─── Store (compatibilité legacy — le provider Riverpod est la source principale) ──

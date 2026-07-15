@@ -23,6 +23,16 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   bool _isProcessing = false;
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      if (ref.read(studentProvider).isEmpty) {
+        await ref.read(studentProvider.notifier).load();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _chequeCtrl.dispose();
     super.dispose();

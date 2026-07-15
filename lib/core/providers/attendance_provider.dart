@@ -1,31 +1,50 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/notification_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/student/data/attendance_store.dart';
+import '../services/attendance_api_service.dart';
+import '../../services/notification_service.dart';
 
-// ─── Notifier ─────────────────────────────────────────────────────────────
+// ─── Notifier (source = API) ───────────────────────────────────────────────
 class AttendanceNotifier extends StateNotifier<List<AttendanceRecord>> {
-  static const _storageKey = 'attendance_records';
-
   AttendanceNotifier() : super([]);
 
-  // Chargement initial
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_storageKey);
-    if (data != null) {
-      final List decoded = jsonDecode(data);
-      state = decoded.map((e) => AttendanceRecord.fromJson(e)).toList();
+  bool loading = false;
+  String? error;
+
+  Future<void> loadForStudent(
+    String studentId, {
+    String studentName = '',
+    String className = '',
+  }) async {
+    loading = true;
+    error = null;
+    try {
+      final data = await AttendanceApiService.getByStudent(studentId);
+      final raw = (data['attendances'] as List?) ?? [];
+      final incoming = raw
+          .where((e) {
+            final s = (e is Map ? e['status']?.toString() : null)?.toUpperCase();
+            return s == 'ABSENT' || s == 'LATE' || e is Map && e['isLate'] == true;
+          })
+          .map((e) => AttendanceRecord.fromApi(
+                Map<String, dynamic>.from(e as Map),
+                studentName: studentName,
+                className: className,
+              ))
+          .toList();
+
+      state = [
+        ...state.where((r) => r.studentId != studentId),
+        ...incoming,
+      ];
+    } catch (e) {
+      error = 'Impossible de charger les absences';
+    } finally {
+      loading = false;
     }
   }
 
-  // Ajouter une ou plusieurs absences (après appel enseignant)
   Future<void> addRecords(List<AttendanceRecord> records) async {
     state = [...state, ...records];
-    await _save();
-
-    // Déclencher notification push pour chaque absence
     for (final record in records) {
       if (!record.isLate) {
         await NotificationService.instance.notifyAbsence(
@@ -38,12 +57,12 @@ class AttendanceNotifier extends StateNotifier<List<AttendanceRecord>> {
     }
   }
 
-  // Parent soumet une justification
   Future<void> justifyAbsence({
     required String recordId,
     required String motif,
     String? justificatifPath,
   }) async {
+    await AttendanceApiService.justify(recordId, motif);
     state = [
       for (final r in state)
         if (r.id == recordId)
@@ -56,7 +75,7 @@ class AttendanceNotifier extends StateNotifier<List<AttendanceRecord>> {
             date: r.date,
             duration: r.duration,
             isLate: r.isLate,
-            status: 'En attente',
+            status: 'Justifiée',
             justificationMotif: motif,
             justificatifPath: justificatifPath,
             smsId: r.smsId,
@@ -65,10 +84,8 @@ class AttendanceNotifier extends StateNotifier<List<AttendanceRecord>> {
         else
           r,
     ];
-    await _save();
   }
 
-  // Admin valide une justification
   Future<void> validateJustification(String recordId) async {
     state = [
       for (final r in state)
@@ -91,25 +108,14 @@ class AttendanceNotifier extends StateNotifier<List<AttendanceRecord>> {
         else
           r,
     ];
-    await _save();
-  }
-
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    final encoded = jsonEncode(state.map((e) => e.toJson()).toList());
-    await prefs.setString(_storageKey, encoded);
   }
 }
 
-// ─── Provider global ──────────────────────────────────────────────────────
 final attendanceProvider =
     StateNotifierProvider<AttendanceNotifier, List<AttendanceRecord>>(
   (ref) => AttendanceNotifier(),
 );
 
-// ─── Providers dérivés ────────────────────────────────────────────────────
-
-// Absences d'un élève spécifique
 final absencesByStudentProvider =
     Provider.family<List<AttendanceRecord>, String>((ref, studentId) {
   return ref
@@ -118,7 +124,6 @@ final absencesByStudentProvider =
       .toList();
 });
 
-// Absences en attente de validation (pour admin)
 final pendingJustificationsProvider = Provider<List<AttendanceRecord>>((ref) {
   return ref
       .watch(attendanceProvider)
@@ -126,7 +131,6 @@ final pendingJustificationsProvider = Provider<List<AttendanceRecord>>((ref) {
       .toList();
 });
 
-// Stats rapides pour dashboard
 final attendanceStatsProvider = Provider<Map<String, int>>((ref) {
   final records = ref.watch(attendanceProvider);
   return {

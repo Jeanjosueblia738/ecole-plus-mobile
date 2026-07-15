@@ -47,8 +47,12 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
   }
 
   Future<void> _openDocuments() async {
+    if (ref.read(studentProvider).isEmpty) {
+      await ref.read(studentProvider.notifier).load();
+    }
     final students = ref.read(studentProvider);
     if (students.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Aucun élève disponible')),
       );

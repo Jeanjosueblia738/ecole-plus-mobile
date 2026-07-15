@@ -24,6 +24,49 @@ class GradesScreen extends ConsumerStatefulWidget {
 class _GradesScreenState extends ConsumerState<GradesScreen> {
   String _trimestre = '1er';
   static const _trimestres = ['1er', '2ème', '3ème'];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_load);
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final all = ref.read(studentProvider);
+    Student? me;
+    for (final s in all) {
+      if (s.id == widget.studentId) {
+        me = s;
+        break;
+      }
+    }
+    final classmates = me == null
+        ? <Student>[]
+        : all.where((s) => s.className == me!.className).toList();
+
+    if (me?.classId != null && me!.classId!.isNotEmpty && classmates.isNotEmpty) {
+      await ref.read(gradeProvider.notifier).loadForClass(
+            me.classId!,
+            _trimestre,
+            classmates: classmates,
+          );
+    } else {
+      await ref.read(gradeProvider.notifier).loadForStudent(
+            widget.studentId,
+            trimestre: _trimestre,
+            studentName: widget.studentName,
+            className: me?.className ?? '',
+          );
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _onTrimestre(String t) async {
+    setState(() => _trimestre = t);
+    await _load();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,18 +77,23 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
     final myStudent =
         allStudents.where((s) => s.id == widget.studentId).toList();
     final classmates = myStudent.isEmpty
-        ? <Student>[]
+        ? <Student>[
+            Student(
+              id: widget.studentId,
+              fullName: widget.studentName,
+              className: '',
+              parentPhone: '',
+            )
+          ]
         : allStudents
             .where((s) => s.className == myStudent.first.className)
             .toList();
 
-    final bulletin = myStudent.isEmpty
-        ? null
-        : ref.watch(bulletinProvider((
-            studentId: widget.studentId,
-            trimestre: _trimestre,
-            classmates: classmates,
-          )));
+    final bulletin = ref.watch(bulletinProvider((
+      studentId: widget.studentId,
+      trimestre: _trimestre,
+      classmates: classmates,
+    )));
 
     return Scaffold(
       backgroundColor: background,
@@ -54,107 +102,109 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          // ── Sélecteur trimestre ────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: _trimestres.map((t) {
-                final selected = _trimestre == t;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: ChoiceChip(
-                    label: Text('$t trim.'),
-                    selected: selected,
-                    selectedColor: primaryBlue.withValues(alpha: 0.15),
-                    labelStyle: TextStyle(
-                      color: selected ? primaryBlue : textGrey,
-                      fontWeight:
-                          selected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                    onSelected: (_) => setState(() => _trimestre = t),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-
-          // ── Carte moyenne générale ─────────────────────────────
-          if (bulletin != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _MoyenneCard(
-                moyenne: bulletin.moyenneGenerale,
-                rang: bulletin.rang,
-                total: bulletin.totalEleves,
-                mention: bulletin.mention,
-              ),
-            ),
-
-          // ── Boutons actions ────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.list_alt),
-                    label: const Text('Notes détaillées'),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => GradeListScreen(
-                          studentId: widget.studentId,
-                          studentName: widget.studentName,
-                          trimestre: _trimestre,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
-                    label: const Text('Bulletin PDF',
-                        style: TextStyle(color: Colors.white)),
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: primaryBlue),
-                    onPressed: bulletin == null
-                        ? null
-                        : () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => BulletinScreen(
-                                  studentId: widget.studentId,
-                                  trimestre: _trimestre,
-                                ),
-                              ),
-                            ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Résumé rapide par matière ──────────────────────────
-          Expanded(
-            child: grades.isEmpty
-                ? const Center(
-                    child: Text('Aucune note ce trimestre',
-                        style: TextStyle(color: textGrey)))
-                : _SubjectSummaryList(grades: grades),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loading ? null : _load,
           ),
         ],
       ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: _trimestres.map((t) {
+                      final selected = _trimestre == t;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: ChoiceChip(
+                          label: Text('$t trim.'),
+                          selected: selected,
+                          selectedColor: primaryBlue.withValues(alpha: 0.15),
+                          labelStyle: TextStyle(
+                            color: selected ? primaryBlue : textGrey,
+                            fontWeight:
+                                selected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                          onSelected: (_) => _onTrimestre(t),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                if (bulletin != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _MoyenneCard(
+                      moyenne: bulletin.moyenneGenerale,
+                      rang: bulletin.rang,
+                      total: bulletin.totalEleves,
+                      mention: bulletin.mention,
+                    ),
+                  ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.list_alt),
+                          label: const Text('Notes détaillées'),
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => GradeListScreen(
+                                studentId: widget.studentId,
+                                studentName: widget.studentName,
+                                trimestre: _trimestre,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.picture_as_pdf,
+                              color: Colors.white),
+                          label: const Text('Bulletin PDF',
+                              style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryBlue),
+                          onPressed: bulletin == null
+                              ? null
+                              : () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => BulletinScreen(
+                                        studentId: widget.studentId,
+                                        trimestre: _trimestre,
+                                      ),
+                                    ),
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: grades.isEmpty
+                      ? const Center(
+                          child: Text('Aucune note ce trimestre',
+                              style: TextStyle(color: textGrey)))
+                      : _SubjectSummaryList(grades: grades),
+                ),
+              ],
+            ),
     );
   }
 }
 
-// ── Carte moyenne ──────────────────────────────────────────────────────────
 class _MoyenneCard extends StatelessWidget {
   final double moyenne;
   final int rang;
@@ -228,7 +278,6 @@ class _MoyenneCard extends StatelessWidget {
   }
 }
 
-// ── Résumé rapide matières ─────────────────────────────────────────────────
 class _SubjectSummaryList extends StatelessWidget {
   final List grades;
   const _SubjectSummaryList({required this.grades});

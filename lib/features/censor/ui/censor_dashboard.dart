@@ -61,8 +61,12 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
   }
 
   Future<void> _openNotesBulletins() async {
+    if (ref.read(studentProvider).isEmpty) {
+      await ref.read(studentProvider.notifier).load();
+    }
     final students = ref.read(studentProvider);
     if (students.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Aucun élève disponible')),
       );
@@ -93,11 +97,15 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
   }
 
   Future<void> _openTimetable() async {
+    if (ref.read(studentProvider).isEmpty) {
+      await ref.read(studentProvider.notifier).load();
+    }
     final classes = ref
         .read(classNamesProvider)
         .where((c) => c != 'Toutes')
         .toList();
     if (classes.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Aucune classe disponible')),
       );

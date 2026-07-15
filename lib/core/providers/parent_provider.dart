@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/student/data/student.dart';
 import '../../features/grades/data/grade_model.dart';
+import '../services/parent_api_service.dart';
 import 'auth_provider.dart';
-import 'student_provider.dart';
 import 'attendance_provider.dart';
 import 'grade_provider.dart';
 
@@ -31,17 +31,19 @@ final parentProfileProvider = Provider<ParentProfile>((ref) {
   );
 });
 
-final parentChildProvider = Provider<Student?>((ref) {
-  final profile = ref.watch(parentProfileProvider);
-  final students = ref.watch(studentProvider);
-  if (students.isEmpty) return null;
-
-  if (profile.childrenIds.isNotEmpty) {
-    return students
-        .where((s) => profile.childrenIds.contains(s.id))
-        .firstOrNull;
+/// Enfant lié au parent via API `/students/my-child`.
+final parentChildAsyncProvider = FutureProvider<Student?>((ref) async {
+  ref.watch(authProvider); // invalidate on logout
+  try {
+    final data = await ParentApiService.getMyChild();
+    return Student.fromApi(Map<String, dynamic>.from(data));
+  } catch (_) {
+    return null;
   }
-  return students.firstOrNull;
+});
+
+final parentChildProvider = Provider<Student?>((ref) {
+  return ref.watch(parentChildAsyncProvider).valueOrNull;
 });
 
 final parentChildAbsencesProvider = Provider<List<dynamic>>((ref) {
@@ -57,9 +59,10 @@ final parentChildGradesProvider =
     Provider.family<List<Grade>, String>((ref, trimestre) {
   final child = ref.watch(parentChildProvider);
   if (child == null) return [];
+  final displayT = displayTrimestre(trimestre);
   return ref
       .watch(gradeProvider)
-      .where((g) => g.studentId == child.id && g.trimestre == trimestre)
+      .where((g) => g.studentId == child.id && g.trimestre == displayT)
       .toList();
 });
 
