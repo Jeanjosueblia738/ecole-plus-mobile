@@ -4,11 +4,28 @@ import '../../../core/providers/finance_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/finance_model.dart';
 
-class FeeManagementScreen extends ConsumerWidget {
+class FeeManagementScreen extends ConsumerStatefulWidget {
   const FeeManagementScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FeeManagementScreen> createState() =>
+      _FeeManagementScreenState();
+}
+
+class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      await ref.read(feeProvider.notifier).load();
+      if (mounted) setState(() => _loading = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final fees = ref.watch(feeProvider);
 
     return Scaffold(
@@ -18,13 +35,25 @@ class FeeManagementScreen extends ConsumerWidget {
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () async {
+              setState(() => _loading = true);
+              await ref.read(feeProvider.notifier).load();
+              if (mounted) setState(() => _loading = false);
+            },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: primaryBlue,
         onPressed: () => _showFeeForm(context, ref),
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: fees.isEmpty
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : fees.isEmpty
           ? const Center(
               child: Text('Aucun frais configuré',
                   style: TextStyle(color: textGrey)))
@@ -211,17 +240,24 @@ class _FeeFormSheetState extends State<_FeeFormSheet> {
       return;
     }
 
-    await widget.ref.read(feeProvider.notifier).add(SchoolFee(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: _type,
-          label: _labelCtrl.text.trim(),
-          montant: montant,
-          trimestre: _trimestre,
-          obligatoire: _obligatoire,
-          dateEcheance: _echeance,
-        ));
-    if (!mounted) return;
-    Navigator.pop(context);
+    try {
+      await widget.ref.read(feeProvider.notifier).add(SchoolFee(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            type: _type,
+            label: _labelCtrl.text.trim(),
+            montant: montant,
+            trimestre: _trimestre,
+            obligatoire: _obligatoire,
+            dateEcheance: _echeance,
+          ));
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: $e'), backgroundColor: dangerRed),
+      );
+    }
   }
 
   @override

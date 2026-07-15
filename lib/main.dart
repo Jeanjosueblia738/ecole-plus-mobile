@@ -11,11 +11,10 @@ void main() async {
 
   final container = ProviderContainer();
 
-  // Prefs locaux encore utilisés pour finance legacy ; élèves/notes/présences → API à la demande
+  // Classes locales encore en Prefs ; finance / élèves → API à la demande
   await Future.wait([
     container.read(classProvider.notifier).load(),
     container.read(feeProvider.notifier).load(),
-    container.read(paymentProvider.notifier).load(),
   ]);
 
   await NotificationService.instance.init();

@@ -30,4 +30,9 @@ class FinanceApiService {
     );
     return response.data as List<dynamic>;
   }
+
+  static Future<Map<String, dynamic>> createFee(Map<String, dynamic> data) async {
+    final response = await ApiClient.instance.post('/finance/fees', data: data);
+    return response.data as Map<String, dynamic>;
+  }
 }

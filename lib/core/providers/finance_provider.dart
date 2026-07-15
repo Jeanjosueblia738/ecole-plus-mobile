@@ -1,94 +1,87 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/finance/data/finance_model.dart';
 import '../../features/student/data/student.dart';
+import '../services/finance_api_service.dart';
 import 'student_provider.dart';
 
-// ─── Frais scolaires ──────────────────────────────────────────────────────
-class FeeNotifier extends StateNotifier<List<SchoolFee>> {
-  static const _key = 'school_fees';
+FeeType _mapFeeType(dynamic raw) {
+  final s = (raw?.toString() ?? '').toUpperCase();
+  if (s.contains('ANNEXE') || s.contains('TRANSPORT')) return FeeType.transport;
+  if (s.contains('INSCRIPTION')) return FeeType.inscription;
+  if (s.contains('EXAMEN')) return FeeType.examen;
+  if (s.contains('CANTINE')) return FeeType.cantine;
+  return FeeType.scolarite;
+}
 
-  FeeNotifier() : super(_defaultFees());
+SchoolFee schoolFeeFromApi(Map<String, dynamic> json) {
+  return SchoolFee(
+    id: json['id']?.toString() ?? '',
+    type: _mapFeeType(json['type']),
+    label: json['label']?.toString() ?? '',
+    montant: (json['amountXof'] as num?)?.toDouble() ??
+        (json['montant'] as num?)?.toDouble() ??
+        0,
+    trimestre: json['year']?.toString() ?? json['trimestre']?.toString() ?? '',
+    classLevel: json['level'] as String?,
+    obligatoire: true,
+    dateEcheance: DateTime.tryParse(json['dueDate']?.toString() ?? '') ??
+        DateTime.now(),
+  );
+}
 
-  static List<SchoolFee> _defaultFees() {
-    final now = DateTime.now();
-    return [
-      SchoolFee(
-        id: 'f1',
-        type: FeeType.inscription,
-        label: 'Frais d\'inscription 2024-2025',
-        montant: 25000,
-        trimestre: 'Annuel',
-        dateEcheance: DateTime(now.year, 10, 31),
-      ),
-      SchoolFee(
-        id: 'f2',
-        type: FeeType.scolarite,
-        label: 'Scolarité 1er trimestre',
-        montant: 75000,
-        trimestre: '1er',
-        dateEcheance: DateTime(now.year, 11, 30),
-      ),
-      SchoolFee(
-        id: 'f3',
-        type: FeeType.scolarite,
-        label: 'Scolarité 2ème trimestre',
-        montant: 75000,
-        trimestre: '2ème',
-        dateEcheance: DateTime(now.year + 1, 2, 28),
-      ),
-      SchoolFee(
-        id: 'f4',
-        type: FeeType.scolarite,
-        label: 'Scolarité 3ème trimestre',
-        montant: 75000,
-        trimestre: '3ème',
-        dateEcheance: DateTime(now.year + 1, 5, 31),
-      ),
-      SchoolFee(
-        id: 'f5',
-        type: FeeType.transport,
-        label: 'Transport scolaire',
-        montant: 30000,
-        trimestre: 'Annuel',
-        obligatoire: false,
-        dateEcheance: DateTime(now.year, 10, 31),
-      ),
-      SchoolFee(
-        id: 'f6',
-        type: FeeType.examen,
-        label: 'Frais examens BEPC/BAC',
-        montant: 15000,
-        trimestre: 'Annuel',
-        dateEcheance: DateTime(now.year + 1, 3, 31),
-      ),
-    ];
+PaymentMethod _mapPaymentMode(dynamic raw) {
+  final s = (raw?.toString() ?? '').toLowerCase();
+  if (s.contains('cheque') || s.contains('chèque')) return PaymentMethod.cheque;
+  if (s.contains('orange') ||
+      s.contains('wave') ||
+      s.contains('mtn') ||
+      s.contains('moov') ||
+      s.contains('mobile')) {
+    return PaymentMethod.mobileMoney;
   }
+  return PaymentMethod.especes;
+}
 
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_key);
-    if (data != null) {
-      final List decoded = jsonDecode(data);
-      state = decoded.map((e) => SchoolFee.fromJson(e)).toList();
+// ─── Frais scolaires (API) ────────────────────────────────────────────────
+class FeeNotifier extends StateNotifier<List<SchoolFee>> {
+  FeeNotifier() : super([]);
+
+  bool loading = false;
+  String? error;
+
+  Future<void> load({String? year}) async {
+    loading = true;
+    error = null;
+    try {
+      final raw = await FinanceApiService.getFees(year: year);
+      state = raw
+          .map((e) => schoolFeeFromApi(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } catch (_) {
+      error = 'Impossible de charger les frais';
+    } finally {
+      loading = false;
     }
   }
 
   Future<void> add(SchoolFee fee) async {
-    state = [...state, fee];
-    await _save();
+    await FinanceApiService.createFee({
+      'label': fee.label,
+      'amountXof': fee.montant,
+      'dueDate': fee.dateEcheance.toIso8601String().split('T').first,
+      'year': fee.trimestre.isNotEmpty
+          ? fee.trimestre
+          : DateTime.now().year.toString(),
+      'type': fee.type == FeeType.scolarite || fee.type == FeeType.inscription
+          ? 'SCOLAIRE'
+          : 'ANNEXE',
+      if (fee.classLevel != null) 'level': fee.classLevel,
+    });
+    await load();
   }
 
   Future<void> remove(String id) async {
     state = state.where((f) => f.id != id).toList();
-    await _save();
-  }
-
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        _key, jsonEncode(state.map((f) => f.toJson()).toList()));
   }
 }
 
@@ -96,20 +89,48 @@ final feeProvider = StateNotifierProvider<FeeNotifier, List<SchoolFee>>(
   (ref) => FeeNotifier(),
 );
 
-// ─── Paiements ────────────────────────────────────────────────────────────
+// ─── Paiements (API) ──────────────────────────────────────────────────────
 class PaymentNotifier extends StateNotifier<List<Payment>> {
-  static const _key = 'payments';
-  static int _receiptCounter = 1000;
-
   PaymentNotifier() : super([]);
 
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_key);
-    if (data != null) {
-      final List decoded = jsonDecode(data);
-      state = decoded.map((e) => Payment.fromJson(e)).toList();
-      if (state.isNotEmpty) _receiptCounter = state.length + 1000;
+  Future<void> loadForStudent(String studentId) async {
+    try {
+      final data = await FinanceApiService.getStudentFinance(studentId);
+      final fees = (data['fees'] as List?) ?? [];
+      final payments = <Payment>[];
+      for (final row in fees) {
+        final map = Map<String, dynamic>.from(row as Map);
+        final fee = map['fee'] is Map
+            ? Map<String, dynamic>.from(map['fee'] as Map)
+            : <String, dynamic>{};
+        final amountPaid = (map['amountPaid'] as num?)?.toDouble() ?? 0;
+        if (amountPaid <= 0) continue;
+        payments.add(Payment(
+          id: map['id']?.toString() ?? '',
+          studentId: studentId,
+          studentName: '',
+          className: '',
+          feeId: fee['id']?.toString() ?? map['feeId']?.toString() ?? '',
+          feeLabel: fee['label']?.toString() ?? '',
+          montant: amountPaid,
+          method: _mapPaymentMode(map['paymentMode']),
+          status: map['isPaid'] == true
+              ? PaymentStatus.valide
+              : PaymentStatus.enAttente,
+          date: DateTime.tryParse(map['updatedAt']?.toString() ?? '') ??
+              DateTime.now(),
+          receiptNumber: map['receiptNo']?.toString() ??
+              'REC-${map['id']?.toString().substring(0, 6) ?? '------'}',
+          transactionId: map['transactionId'] as String?,
+          phoneNumber: map['phoneNumber'] as String?,
+        ));
+      }
+      state = [
+        ...state.where((p) => p.studentId != studentId),
+        ...payments,
+      ];
+    } catch (_) {
+      // keep prior state
     }
   }
 
@@ -126,9 +147,27 @@ class PaymentNotifier extends StateNotifier<List<Payment>> {
     String? transactionId,
     String? chequeNumber,
   }) async {
-    _receiptCounter++;
+    final mode = switch (method) {
+      PaymentMethod.cheque => 'cheque',
+      PaymentMethod.mobileMoney => (operatorName ?? 'mobile_money')
+          .toLowerCase()
+          .replaceAll(' ', '_'),
+      PaymentMethod.especes => 'especes',
+    };
+
+    final res = await FinanceApiService.recordPayment({
+      'studentId': studentId,
+      'feeId': feeId,
+      'amountPaid': montant,
+      'paymentMode': mode,
+      if (transactionId != null) 'transactionId': transactionId,
+      if (phoneNumber != null) 'phoneNumber': phoneNumber,
+      if (chequeNumber != null) 'receiptNo': chequeNumber,
+    });
+
     final payment = Payment(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: res['id']?.toString() ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
       studentId: studentId,
       studentName: studentName,
       className: className,
@@ -136,18 +175,16 @@ class PaymentNotifier extends StateNotifier<List<Payment>> {
       feeLabel: feeLabel,
       montant: montant,
       method: method,
-      status: method == PaymentMethod.mobileMoney
-          ? PaymentStatus.enAttente
-          : PaymentStatus.valide,
+      status: PaymentStatus.valide,
       date: DateTime.now(),
       operatorName: operatorName,
       phoneNumber: phoneNumber,
       transactionId: transactionId,
       chequeNumber: chequeNumber,
-      receiptNumber: 'REC-${_receiptCounter.toString().padLeft(6, '0')}',
+      receiptNumber: res['receiptNo']?.toString() ??
+          'REC-${DateTime.now().millisecondsSinceEpoch % 1000000}',
     );
     state = [...state, payment];
-    await _save();
     return payment;
   }
 
@@ -175,13 +212,6 @@ class PaymentNotifier extends StateNotifier<List<Payment>> {
         else
           p,
     ];
-    await _save();
-  }
-
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        _key, jsonEncode(state.map((p) => p.toJson()).toList()));
   }
 }
 
@@ -189,9 +219,6 @@ final paymentProvider = StateNotifierProvider<PaymentNotifier, List<Payment>>(
   (ref) => PaymentNotifier(),
 );
 
-// ─── Providers dérivés ────────────────────────────────────────────────────
-
-// Paiements d'un élève
 final paymentsByStudentProvider =
     Provider.family<List<Payment>, String>((ref, studentId) {
   return ref
@@ -200,7 +227,6 @@ final paymentsByStudentProvider =
       .toList();
 });
 
-// Paiements en attente (Mobile Money à valider)
 final pendingPaymentsProvider = Provider<List<Payment>>((ref) {
   return ref
       .watch(paymentProvider)
@@ -208,7 +234,6 @@ final pendingPaymentsProvider = Provider<List<Payment>>((ref) {
       .toList();
 });
 
-// Stats financières globales
 final financeStatsProvider = Provider<Map<String, double>>((ref) {
   final payments = ref.watch(paymentProvider);
   final fees = ref.watch(feeProvider);
@@ -219,8 +244,7 @@ final financeStatsProvider = Provider<Map<String, double>>((ref) {
       .fold(0.0, (s, p) => s + p.montant);
 
   final totalDu =
-      fees.where((f) => f.obligatoire).fold(0.0, (s, f) => s + f.montant) *
-          students.length;
+      fees.fold(0.0, (s, f) => s + f.montant) * (students.isEmpty ? 1 : 1);
 
   return {
     'encaisse': totalEncaisse,
@@ -232,15 +256,12 @@ final financeStatsProvider = Provider<Map<String, double>>((ref) {
   };
 });
 
-// Résumé financier par élève
 final studentFinanceSummaryProvider =
     Provider.family<StudentFinanceSummary, Student>((ref, student) {
   final fees = ref.watch(feeProvider);
   final payments = ref.watch(paymentsByStudentProvider(student.id));
 
-  final totalDu =
-      fees.where((f) => f.obligatoire).fold(0.0, (s, f) => s + f.montant);
-
+  final totalDu = fees.fold(0.0, (s, f) => s + f.montant);
   final totalPaye = payments
       .where((p) => p.status == PaymentStatus.valide)
       .fold(0.0, (s, p) => s + p.montant);

@@ -29,6 +29,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       if (ref.read(studentProvider).isEmpty) {
         await ref.read(studentProvider.notifier).load();
       }
+      if (ref.read(feeProvider).isEmpty) {
+        await ref.read(feeProvider.notifier).load();
+      }
     });
   }
 
