@@ -21,11 +21,6 @@ class UserSession {
     _currentRole = role;
   }
 
-  // 🔹 loginAs — utilisé par LoginScreen (mode simulation sans backend)
-  static Future<void> loginAs(UserRole role) async {
-    _currentRole = role;
-  }
-
   // 🔹 Vérifications rapides
   static bool get isAdmin => _currentRole == UserRole.admin;
   static bool get isTeacher => _currentRole == UserRole.teacher;

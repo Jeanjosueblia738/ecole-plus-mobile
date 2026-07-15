@@ -1,8 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../core/security/user_role.dart';
 import '../../../core/theme/app_colors.dart';
 import 'join_screen.dart';
 
@@ -20,7 +18,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordCtrl = TextEditingController();
   String _selectedRole = 'ADMIN';
   bool _obscure = true;
-  bool _useDemoMode = false;
 
   /// Tous les profils (API) — le mapping app se fait dans auth_provider.
   static const _roles = [
@@ -118,30 +115,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
   }
 
-  Color _getRoleColor(String role) => switch (role) {
-        'ADMIN' || 'FOUNDER' || 'DIRECTOR' => primaryBlue,
-        'CENSOR' => const Color(0xFF0D9488),
-        'SURVEILLANT' || 'EDUCATOR' => const Color(0xFFEA580C),
-        'SECRETARY' => const Color(0xFF0891B2),
-        'ACCOUNTANT' || 'CASHIER' => successGreen,
-        'TEACHER' => const Color(0xFF7C3AED),
-        'PARENT' => successGreen,
-        'STUDENT' => const Color(0xFFF59E0B),
-        _ => textGrey,
-      };
-
-  UserRole _toAppRole(String apiRole) => switch (apiRole) {
-        'ADMIN' || 'FOUNDER' || 'DIRECTOR' => UserRole.admin,
-        'CENSOR' => UserRole.censor,
-        'SURVEILLANT' || 'EDUCATOR' => UserRole.surveillant,
-        'SECRETARY' => UserRole.secretary,
-        'ACCOUNTANT' || 'CASHIER' => UserRole.accountant,
-        'TEACHER' => UserRole.teacher,
-        'PARENT' => UserRole.parent,
-        'STUDENT' => UserRole.student,
-        _ => UserRole.admin,
-      };
-
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
@@ -209,212 +182,177 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Toggle mode demo / réel (debug uniquement)
-                          Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Connexion',
-                                    style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: textDark)),
-                                if (kDebugMode)
-                                  Row(children: [
-                                    const Text('Mode demo',
-                                        style: TextStyle(
-                                            fontSize: 12, color: textGrey)),
-                                    Switch(
-                                        value: _useDemoMode,
-                                        onChanged: (v) =>
-                                            setState(() => _useDemoMode = v),
-                                        activeThumbColor: primaryBlue),
-                                  ]),
-                              ]),
+                          const Text('Connexion',
+                              style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: textDark)),
                           const SizedBox(height: 20),
-
-                          if (kDebugMode && _useDemoMode) ...[
-                            const Text('Choisir un profil demo :',
-                                style:
-                                    TextStyle(color: textGrey, fontSize: 13)),
-                            const SizedBox(height: 12),
-                            ..._roles.map((r) => _DemoButton(
-                                  icon: r['icon'] as IconData,
-                                  label: r['label'] as String,
-                                  color: _getRoleColor(r['value'] as String),
-                                  onTap: () {
-                                    ref
-                                        .read(authProvider.notifier)
-                                        .loginAs(_toAppRole(
-                                            r['value'] as String));
-                                  },
-                                )),
-                          ] else ...[
-                            _Field(
-                                controller: _codeCtrl,
-                                label: 'Code établissement',
-                                hint: 'ex: LYCEE-CI-001',
-                                icon: Icons.business_outlined,
-                                validator: (v) =>
-                                    v!.isEmpty ? 'Obligatoire' : null),
-                            const SizedBox(height: 14),
-                            _Field(
-                                controller: _emailCtrl,
-                                label: 'Email',
-                                hint: 'votre@email.ci',
-                                icon: Icons.email_outlined,
-                                keyboardType: TextInputType.emailAddress,
-                                validator: (v) => !v!.contains('@')
-                                    ? 'Email invalide'
-                                    : null),
-                            const SizedBox(height: 14),
-                            TextFormField(
-                              controller: _passwordCtrl,
-                              obscureText: _obscure,
+                          _Field(
+                              controller: _codeCtrl,
+                              label: 'Code établissement',
+                              hint: 'ex: LYCEE-CI-001',
+                              icon: Icons.business_outlined,
                               validator: (v) =>
-                                  v!.length < 6 ? 'Min 6 caractères' : null,
-                              decoration: InputDecoration(
-                                labelText: 'Mot de passe',
-                                prefixIcon: const Icon(Icons.lock_outline,
-                                    color: textGrey),
-                                suffixIcon: IconButton(
-                                  icon: Icon(_obscure
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined),
-                                  onPressed: () =>
-                                      setState(() => _obscure = !_obscure),
-                                ),
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide:
-                                        const BorderSide(color: border)),
-                                isDense: true,
+                                  v!.isEmpty ? 'Obligatoire' : null),
+                          const SizedBox(height: 14),
+                          _Field(
+                              controller: _emailCtrl,
+                              label: 'Email',
+                              hint: 'votre@email.ci',
+                              icon: Icons.email_outlined,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (v) => !v!.contains('@')
+                                  ? 'Email invalide'
+                                  : null),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _passwordCtrl,
+                            obscureText: _obscure,
+                            validator: (v) =>
+                                v!.length < 6 ? 'Min 6 caractères' : null,
+                            decoration: InputDecoration(
+                              labelText: 'Mot de passe',
+                              prefixIcon: const Icon(Icons.lock_outline,
+                                  color: textGrey),
+                              suffixIcon: IconButton(
+                                icon: Icon(_obscure
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined),
+                                onPressed: () =>
+                                    setState(() => _obscure = !_obscure),
                               ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide:
+                                      const BorderSide(color: border)),
+                              isDense: true,
                             ),
-                            const SizedBox(height: 14),
+                          ),
+                          const SizedBox(height: 14),
 
-                            // Sélecteur rôle — tout le personnel + famille
-                            DropdownButtonFormField<String>(
-                              initialValue: _selectedRole,
-                              isExpanded: true,
-                              decoration: InputDecoration(
-                                labelText: 'Profil',
-                                prefixIcon: const Icon(Icons.person_outline,
-                                    color: textGrey),
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide:
-                                        const BorderSide(color: border)),
-                                isDense: true,
-                              ),
-                              items: _roles
-                                  .map((r) => DropdownMenuItem(
-                                        value: r['value'] as String,
-                                        child: Text(
-                                          r['label'] as String,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ))
-                                  .toList(),
-                              onChanged: (v) =>
-                                  setState(() => _selectedRole = v!),
+                          // Sélecteur rôle — tout le personnel + famille
+                          DropdownButtonFormField<String>(
+                            initialValue: _selectedRole,
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: 'Profil',
+                              prefixIcon: const Icon(Icons.person_outline,
+                                  color: textGrey),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide:
+                                      const BorderSide(color: border)),
+                              isDense: true,
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Choisissez le profil correspondant à votre compte. '
-                              'Personnel école : Admin, Censeur, Surveillant, Secrétaire, Comptable…',
+                            items: _roles
+                                .map((r) => DropdownMenuItem(
+                                      value: r['value'] as String,
+                                      child: Text(
+                                        r['label'] as String,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ))
+                                .toList(),
+                            onChanged: (v) =>
+                                setState(() => _selectedRole = v!),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Choisissez le profil correspondant à votre compte. '
+                            'Personnel école : Admin, Censeur, Surveillant, Secrétaire, Comptable…',
+                            style: TextStyle(
+                                fontSize: 11, color: Colors.grey.shade500),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Bouton Se connecter
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: auth.isLoading ? null : _login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryBlue,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: auth.isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2))
+                                  : const Text('Se connecter',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15)),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Divider
+                          Row(children: [
+                            Expanded(
+                                child: Divider(color: Colors.grey.shade300)),
+                            Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12),
+                                child: Text('ou',
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey.shade500))),
+                            Expanded(
+                                child: Divider(color: Colors.grey.shade300)),
+                          ]),
+
+                          const SizedBox(height: 16),
+
+                          // Bouton Rejoindre avec un code
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: OutlinedButton.icon(
+                              onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const JoinScreen())),
+                              icon: const Icon(Icons.qr_code_outlined,
+                                  color: primaryBlue),
+                              label: const Text('Rejoindre avec un code',
+                                  style: TextStyle(
+                                      color: primaryBlue,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15)),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(
+                                    color: primaryBlue, width: 1.5),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+                          Center(
+                            child: Text(
+                              'Parents et élèves : utilisez le code fourni par l\'école',
                               style: TextStyle(
                                   fontSize: 11, color: Colors.grey.shade500),
+                              textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 24),
-
-                            // Bouton Se connecter
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: auth.isLoading ? null : _login,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: primaryBlue,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                ),
-                                child: auth.isLoading
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 2))
-                                    : const Text('Se connecter',
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15)),
-                              ),
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // Divider
-                            Row(children: [
-                              Expanded(
-                                  child: Divider(color: Colors.grey.shade300)),
-                              Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  child: Text('ou',
-                                      style: TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.grey.shade500))),
-                              Expanded(
-                                  child: Divider(color: Colors.grey.shade300)),
-                            ]),
-
-                            const SizedBox(height: 16),
-
-                            // Bouton Rejoindre avec un code
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: OutlinedButton.icon(
-                                onPressed: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => const JoinScreen())),
-                                icon: const Icon(Icons.qr_code_outlined,
-                                    color: primaryBlue),
-                                label: const Text('Rejoindre avec un code',
-                                    style: TextStyle(
-                                        color: primaryBlue,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15)),
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(
-                                      color: primaryBlue, width: 1.5),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 8),
-                            Center(
-                              child: Text(
-                                'Parents et élèves : utilisez le code fourni par l\'école',
-                                style: TextStyle(
-                                    fontSize: 11, color: Colors.grey.shade500),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ],
+                          ),
 
                           const SizedBox(height: 20),
                           const Center(
@@ -467,52 +405,6 @@ class _Field extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: border)),
         isDense: true,
-      ),
-    );
-  }
-}
-
-class _DemoButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _DemoButton(
-      {required this.icon,
-      required this.label,
-      required this.color,
-      required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.2)),
-          ),
-          child: Row(children: [
-            Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8)),
-                child: Icon(icon, color: color, size: 22)),
-            const SizedBox(width: 14),
-            Text(label,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-            const Spacer(),
-            Icon(Icons.chevron_right, color: color.withValues(alpha: 0.5)),
-          ]),
-        ),
       ),
     );
   }
