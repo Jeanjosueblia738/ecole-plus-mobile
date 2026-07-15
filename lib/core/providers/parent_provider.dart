@@ -1,16 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/student/data/student.dart';
 import '../../features/grades/data/grade_model.dart';
+import 'auth_provider.dart';
 import 'student_provider.dart';
 import 'attendance_provider.dart';
 import 'grade_provider.dart';
 
-// ─── Profil parent simulé (remplacé par JWT en prod) ─────────────────────
 class ParentProfile {
   final String id;
   final String fullName;
   final String phone;
-  final List<String> childrenIds; // IDs des enfants liés
+  final List<String> childrenIds;
 
   const ParentProfile({
     required this.id,
@@ -20,33 +20,30 @@ class ParentProfile {
   });
 }
 
-const kMockParent = ParentProfile(
-  id: 'parent_01',
-  fullName: 'M. Kouassi Jean-Baptiste',
-  phone: '+225 07 00 00 00',
-  childrenIds: [], // sera résolu dynamiquement via le premier élève trouvé
-);
+/// Profil parent depuis la session auth (plus de mock).
+final parentProfileProvider = Provider<ParentProfile>((ref) {
+  final auth = ref.watch(authProvider);
+  return ParentProfile(
+    id: auth.userId ?? '',
+    fullName: auth.fullName.isNotEmpty ? auth.fullName : (auth.email ?? 'Parent'),
+    phone: auth.email ?? '',
+    childrenIds: const [],
+  );
+});
 
-// ─── Provider profil parent ───────────────────────────────────────────────
-final parentProfileProvider = Provider<ParentProfile>((ref) => kMockParent);
-
-// ─── Enfant du parent (premier élève si childrenIds vide en mode mock) ────
 final parentChildProvider = Provider<Student?>((ref) {
   final profile = ref.watch(parentProfileProvider);
   final students = ref.watch(studentProvider);
   if (students.isEmpty) return null;
 
-  // Mode prod : chercher par ID
   if (profile.childrenIds.isNotEmpty) {
     return students
         .where((s) => profile.childrenIds.contains(s.id))
         .firstOrNull;
   }
-  // Mode mock : premier élève disponible
-  return students.first;
+  return students.firstOrNull;
 });
 
-// ─── Absences de l'enfant ─────────────────────────────────────────────────
 final parentChildAbsencesProvider = Provider<List<dynamic>>((ref) {
   final child = ref.watch(parentChildProvider);
   if (child == null) return [];
@@ -56,7 +53,6 @@ final parentChildAbsencesProvider = Provider<List<dynamic>>((ref) {
       .toList();
 });
 
-// ─── Notes de l'enfant pour un trimestre ─────────────────────────────────
 final parentChildGradesProvider =
     Provider.family<List<Grade>, String>((ref, trimestre) {
   final child = ref.watch(parentChildProvider);
@@ -67,7 +63,6 @@ final parentChildGradesProvider =
       .toList();
 });
 
-// ─── Moyenne générale de l'enfant ─────────────────────────────────────────
 final parentChildAverageProvider =
     Provider.family<double?, String>((ref, trimestre) {
   final grades = ref.watch(parentChildGradesProvider(trimestre));
@@ -77,7 +72,6 @@ final parentChildAverageProvider =
   return grades.fold(0.0, (s, g) => s + g.value * g.coefficient) / coefTotal;
 });
 
-// ─── Stats résumées enfant ────────────────────────────────────────────────
 class ChildStats {
   final int totalAbsences;
   final int absencesJustifiees;

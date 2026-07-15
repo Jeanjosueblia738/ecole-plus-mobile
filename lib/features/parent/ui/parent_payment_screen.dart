@@ -374,7 +374,7 @@ class _MobileMoneyPaymentSheetState extends State<_MobileMoneyPaymentSheet> {
       if (!mounted) return;
 
       if (result.success) {
-        // 2. Enregistrer dans l'API Railway
+        // 2. Enregistrer dans l'API — obligatoire pour confirmer le succès
         try {
           await ApiClient.instance.post('/finance/payments', data: {
             'studentId': widget.studentId,
@@ -392,6 +392,13 @@ class _MobileMoneyPaymentSheetState extends State<_MobileMoneyPaymentSheet> {
           });
         } catch (e) {
           debugPrint('ECOLE+ paiement API: $e');
+          if (!mounted) return;
+          setState(() {
+            _processing = false;
+            _error =
+                'Paiement MM OK mais enregistrement école échoué. Contactez la scolarité avec la ref ${result.transactionId}.';
+          });
+          return;
         }
 
         if (!mounted) return;

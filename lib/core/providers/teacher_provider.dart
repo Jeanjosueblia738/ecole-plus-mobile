@@ -1,15 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/grades/data/grade_model.dart';
+import 'auth_provider.dart';
 import 'grade_provider.dart';
 import 'attendance_provider.dart';
 import 'student_provider.dart';
 
-// ─── Profil enseignant (simulé — sera remplacé par API) ───────────────────
 class TeacherProfile {
   final String id;
   final String fullName;
-  final List<String> assignedClasses; // classes dont il est responsable
-  final List<String> subjects; // matières qu'il enseigne
+  final List<String> assignedClasses;
+  final List<String> subjects;
 
   const TeacherProfile({
     required this.id,
@@ -19,35 +19,30 @@ class TeacherProfile {
   });
 }
 
-// Profil simulé — en prod, viendra du JWT après login réel
-const kMockTeacher = TeacherProfile(
-  id: 'teacher_01',
-  fullName: 'M. Koné Dramane',
-  assignedClasses: ['3ème A', '2nde A', '1ère A'],
-  subjects: ['Mathématiques', 'Physique-Chimie'],
-);
-
-// ─── Provider profil enseignant ───────────────────────────────────────────
+/// Profil enseignant depuis la session auth (plus de mock Koné).
 final teacherProfileProvider = Provider<TeacherProfile>((ref) {
-  return kMockTeacher;
+  final auth = ref.watch(authProvider);
+  return TeacherProfile(
+    id: auth.userId ?? '',
+    fullName: auth.fullName.isNotEmpty ? auth.fullName : (auth.email ?? 'Enseignant'),
+    assignedClasses: const [],
+    subjects: const [],
+  );
 });
 
-// ─── Classes de l'enseignant ──────────────────────────────────────────────
 final teacherClassesProvider = Provider<List<String>>((ref) {
   return ref.watch(teacherProfileProvider).assignedClasses;
 });
 
-// ─── Matières de l'enseignant ─────────────────────────────────────────────
 final teacherSubjectsProvider = Provider<List<String>>((ref) {
   return ref.watch(teacherProfileProvider).subjects;
 });
 
-// ─── Stats par classe pour l'enseignant ───────────────────────────────────
 class ClassStats {
   final String className;
   final int studentCount;
   final int absenceCount;
-  final double? moyenneClasse; // null si aucune note saisie
+  final double? moyenneClasse;
 
   const ClassStats({
     required this.className,
@@ -83,7 +78,6 @@ final teacherClassStatsProvider = Provider<List<ClassStats>>((ref) {
   }).toList();
 });
 
-// ─── Notes saisies par l'enseignant (ses matières dans ses classes) ────────
 final teacherGradesProvider = Provider<List<Grade>>((ref) {
   final profile = ref.watch(teacherProfileProvider);
   return ref

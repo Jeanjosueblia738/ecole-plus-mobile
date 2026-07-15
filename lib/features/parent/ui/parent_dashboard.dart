@@ -26,6 +26,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
   Map<String, dynamic>? _finance;
   List<dynamic> _alerts = [];
   bool _loading = true;
+  String? _error;
   String _trimestre = 'T1';
 
   @override
@@ -38,7 +39,10 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
     if (!mounted) {
       return;
     }
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final child = await ParentApiService.getMyChild()
           .timeout(const Duration(seconds: 15));
@@ -70,6 +74,9 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
       }
     } catch (e) {
       debugPrint('ECOLE+ parent: $e');
+      if (mounted) {
+        setState(() => _error = 'Impossible de charger les données. Vérifiez votre connexion.');
+      }
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -127,6 +134,31 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (_error != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: Colors.red.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(_error!,
+                          style: TextStyle(
+                              color: Colors.red.shade800, fontSize: 13)),
+                    ),
+                    TextButton(
+                        onPressed: _loadData, child: const Text('Réessayer')),
+                  ],
+                ),
+              ),
             // Carte enfant
             if (_loading)
               Container(

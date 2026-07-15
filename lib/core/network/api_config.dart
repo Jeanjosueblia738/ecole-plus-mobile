@@ -1,6 +1,5 @@
 /// API base URL via --dart-define=API_BASE_URL=...
 /// Exemple: flutter run --dart-define=API_BASE_URL=https://...
-/// En debug sans define → localhost (émulateur Android: 10.0.2.2).
 class ApiConfig {
   static const String _fromDefine = String.fromEnvironment('API_BASE_URL');
 
@@ -8,10 +7,11 @@ class ApiConfig {
     if (_fromDefine.isNotEmpty) {
       return _fromDefine;
     }
-    // Pas d'URL prod hardcodée en fallback : force la config locale / dart-define.
+    // Prod Railway par défaut ; local: --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
     return const String.fromEnvironment(
       'DEFAULT_API_BASE_URL',
-      defaultValue: 'http://10.0.2.2:3000/api/v1',
+      defaultValue:
+          'https://ecole-plus-api-production.up.railway.app/api/v1',
     );
   }
 
