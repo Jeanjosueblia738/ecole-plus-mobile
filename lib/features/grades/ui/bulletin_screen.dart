@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/grade_provider.dart';
 import '../../../core/providers/student_provider.dart';
 import '../../student/data/student.dart';
@@ -64,7 +65,40 @@ class _BulletinScreenState extends ConsumerState<BulletinScreen> {
 
   Future<void> _printOrShare(Bulletin bulletin) async {
     setState(() => _isGenerating = true);
-    final pdfBytes = await BulletinPdfService.generate(bulletin);
+    final auth = ref.read(authProvider);
+    final classmates = ref
+        .read(studentProvider)
+        .where((s) => s.className == bulletin.className)
+        .toList();
+    final averages = <double>[];
+    for (final s in classmates) {
+      final b = ref.read(bulletinProvider((
+        studentId: s.id,
+        trimestre: widget.trimestre,
+        classmates: classmates,
+      )));
+      if (b != null && b.results.isNotEmpty) {
+        averages.add(b.moyenneGenerale);
+      }
+    }
+    final pdfBytes = await BulletinPdfService.generate(
+      bulletin,
+      options: BulletinPdfOptions(
+        schoolName: auth.tenantName ?? 'ÉTABLISSEMENT',
+        schoolCode: auth.tenantCode ?? '',
+        schoolCity: '',
+        year: '2025-2026',
+        classAverage: averages.isEmpty
+            ? null
+            : averages.reduce((a, b) => a + b) / averages.length,
+        classMin: averages.isEmpty
+            ? null
+            : averages.reduce((a, b) => a < b ? a : b),
+        classMax: averages.isEmpty
+            ? null
+            : averages.reduce((a, b) => a > b ? a : b),
+      ),
+    );
     setState(() => _isGenerating = false);
     if (!mounted) return;
 
