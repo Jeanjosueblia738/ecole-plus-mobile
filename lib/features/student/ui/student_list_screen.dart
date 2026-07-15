@@ -14,16 +14,39 @@ class StudentListScreen extends ConsumerStatefulWidget {
 class _StudentListScreenState extends ConsumerState<StudentListScreen> {
   String _search = '';
   String _selectedClass = 'Toutes';
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    await ref.read(studentProvider.notifier).load(
+          search: _search.isEmpty ? null : _search,
+        );
+    final err = ref.read(studentProvider.notifier).error;
+    if (mounted) {
+      setState(() {
+        _loading = false;
+        _error = err;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Riverpod : lecture réactive — la liste se met à jour automatiquement
     final students = ref.watch(studentProvider);
     final classNames = ref.watch(classNamesProvider);
     final auth = ref.watch(authProvider);
     final canManageStudents = auth.isAdmin || auth.isSecretary;
 
-    // Sécurité : si la classe sélectionnée n'existe plus, on reset
     if (!classNames.contains(_selectedClass)) {
       _selectedClass = 'Toutes';
     }
@@ -41,20 +64,25 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
         title: const Text('Gestion des élèves'),
         backgroundColor: const Color(0xFF1E3A8A),
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh),
+        ],
       ),
       floatingActionButton: canManageStudents
           ? FloatingActionButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const StudentFormScreen()),
-              ),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const StudentFormScreen()),
+                );
+                _refresh();
+              },
               backgroundColor: const Color(0xFF1E3A8A),
               child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
       body: Column(
         children: [
-          // 🔍 Recherche
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
             child: TextField(
@@ -65,10 +93,9 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
                 isDense: true,
               ),
               onChanged: (v) => setState(() => _search = v),
+              onSubmitted: (_) => _refresh(),
             ),
           ),
-
-          // 🎯 Filtre classe — données dynamiques depuis classNamesProvider
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: DropdownButtonFormField<String>(
@@ -84,8 +111,11 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
               ),
             ),
           ),
-
-          // Compteur
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(_error!, style: const TextStyle(color: Colors.red)),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
@@ -98,45 +128,38 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
               ],
             ),
           ),
-
-          // 📋 Liste réactive
           Expanded(
-            child: filtered.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Aucun élève trouvé',
-                      style: TextStyle(color: Color(0xFF6B7280)),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final student = filtered[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: const Color(0xFF1E3A8A),
-                          child: Text(
-                            student.fullName[0].toUpperCase(),
-                            style: const TextStyle(color: Colors.white),
-                          ),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : filtered.isEmpty
+                    ? const Center(child: Text('Aucun élève'))
+                    : RefreshIndicator(
+                        onRefresh: _refresh,
+                        child: ListView.builder(
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final s = filtered[index];
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: const Color(0xFF1E3A8A)
+                                    .withValues(alpha: 0.1),
+                                child: Text(
+                                  s.fullName.isNotEmpty
+                                      ? s.fullName[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(
+                                      color: Color(0xFF1E3A8A),
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              title: Text(s.fullName),
+                              subtitle: Text(
+                                  '${s.className.isEmpty ? 'Sans classe' : s.className}'
+                                  '${s.parentPhone.isNotEmpty ? ' · ${s.parentPhone}' : ''}'),
+                            );
+                          },
                         ),
-                        title: Text(student.fullName),
-                        subtitle: Text(student.className),
-                        trailing: canManageStudents
-                            ? const Icon(Icons.edit, size: 18)
-                            : null,
-                        onTap: canManageStudents
-                            ? () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        StudentFormScreen(student: student),
-                                  ),
-                                )
-                            : null,
-                      );
-                    },
-                  ),
+                      ),
           ),
         ],
       ),

@@ -1,27 +1,34 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/student/data/student.dart';
+import '../services/students_api_service.dart';
 
-// ─── Notifier ─────────────────────────────────────────────────────────────
 class StudentNotifier extends StateNotifier<List<Student>> {
-  static const _storageKey = 'students';
-
   StudentNotifier() : super([]);
 
-  // Chargement initial depuis SharedPreferences
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_storageKey);
-    if (data != null) {
-      final List decoded = jsonDecode(data);
-      state = decoded.map((e) => Student.fromJson(e)).toList();
+  bool loading = false;
+  String? error;
+
+  Future<void> load({String? classId, String? search}) async {
+    loading = true;
+    error = null;
+    try {
+      final raw = await StudentsApiService.getAll(
+        classId: classId,
+        search: search,
+      );
+      state = raw
+          .map((e) => Student.fromApi(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } catch (e) {
+      error = 'Impossible de charger les élèves';
+      // Ne pas vider state si refresh échoue
+    } finally {
+      loading = false;
     }
   }
 
   Future<void> add(Student student) async {
     state = [...state, student];
-    await _save();
   }
 
   Future<void> update(Student student) async {
@@ -29,31 +36,25 @@ class StudentNotifier extends StateNotifier<List<Student>> {
       for (final s in state)
         if (s.id == student.id) student else s,
     ];
-    await _save();
   }
 
   Future<void> remove(String id) async {
     state = state.where((s) => s.id != id).toList();
-    await _save();
   }
 
-  // Filtre par classe — méthode utilitaire
-  List<Student> byClass(String className) =>
-      state.where((s) => s.className == className).toList();
-
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    final encoded = jsonEncode(state.map((e) => e.toJson()).toList());
-    await prefs.setString(_storageKey, encoded);
+  List<Student> byClass(String className) {
+    if (className.isEmpty || className == 'Toutes') return state;
+    return state.where((s) => s.className == className).toList();
   }
+
+  List<Student> byClassId(String classId) =>
+      state.where((s) => s.classId == classId).toList();
 }
 
-// ─── Provider global ──────────────────────────────────────────────────────
 final studentProvider = StateNotifierProvider<StudentNotifier, List<Student>>(
   (ref) => StudentNotifier(),
 );
 
-// ─── Provider dérivé : liste filtrée par classe ───────────────────────────
 final studentsByClassProvider = Provider.family<List<Student>, String>(
   (ref, className) {
     final students = ref.watch(studentProvider);
@@ -62,9 +63,13 @@ final studentsByClassProvider = Provider.family<List<Student>, String>(
   },
 );
 
-// ─── Provider dérivé : classes distinctes ────────────────────────────────
 final classNamesProvider = Provider<List<String>>((ref) {
   final students = ref.watch(studentProvider);
-  final classes = students.map((s) => s.className).toSet().toList()..sort();
+  final classes = students
+      .map((s) => s.className)
+      .where((n) => n.isNotEmpty)
+      .toSet()
+      .toList()
+    ..sort();
   return ['Toutes', ...classes];
 });

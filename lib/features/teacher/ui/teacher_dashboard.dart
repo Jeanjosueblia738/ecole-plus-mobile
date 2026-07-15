@@ -56,6 +56,60 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
     }
   }
 
+  Future<Map<String, String>?> _pickClass() async {
+    if (_classes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Aucune classe assignée'),
+      ));
+      return null;
+    }
+    return showDialog<Map<String, String>>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Choisir une classe'),
+        children: _classes.map((c) {
+          final id = c['id']?.toString() ?? '';
+          final name = c['name']?.toString() ?? 'Classe';
+          return SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, {'id': id, 'name': name}),
+            child: Text(name),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Future<void> _openAttendance() async {
+    final picked = await _pickClass();
+    if (picked == null || !mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AttendanceInputScreen(
+          classId: picked['id'],
+          className: picked['name'] ?? '',
+          subject: '',
+          duration: '55',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openGrades() async {
+    final picked = await _pickClass();
+    if (picked == null || !mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GradeInputScreen(
+          classId: picked['id'],
+          className: picked['name'] ?? '',
+          trimestre: 'T1',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
@@ -211,21 +265,13 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                   icon: Icons.how_to_reg_outlined,
                   label: 'Faire\nl\'appel',
                   color: primaryBlue,
-                  onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const AttendanceInputScreen(
-                              className: '', subject: '', duration: '55')))),
+                  onTap: _openAttendance),
               const SizedBox(width: 12),
               _ActionBtn(
                   icon: Icons.grade_outlined,
                   label: 'Saisir\nles notes',
                   color: const Color(0xFF7C3AED),
-                  onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const GradeInputScreen(
-                              className: '', trimestre: 'T1')))),
+                  onTap: _openGrades),
               const SizedBox(width: 12),
               _ActionBtn(
                   icon: Icons.bar_chart_outlined,
@@ -314,22 +360,14 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                 title: 'Appel & Présences',
                 subtitle: 'Enregistrer les présences quotidiennes',
                 color: successGreen,
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const AttendanceInputScreen(
-                            className: '', subject: '', duration: '55')))),
+                onTap: _openAttendance),
             const SizedBox(height: 10),
             _ModuleTile(
                 icon: Icons.grade_outlined,
                 title: 'Saisie des notes',
                 subtitle: 'Devoirs, compositions, examens',
                 color: const Color(0xFF7C3AED),
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const GradeInputScreen(
-                            className: '', trimestre: 'T1')))),
+                onTap: _openGrades),
             const SizedBox(height: 10),
             _ModuleTile(
                 icon: Icons.bar_chart_outlined,

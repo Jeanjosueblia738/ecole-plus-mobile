@@ -11,12 +11,19 @@ import 'attendance_input_screen.dart';
 
 class TeacherClassDetailScreen extends ConsumerWidget {
   final String className;
+  final String? classId;
 
-  const TeacherClassDetailScreen({super.key, required this.className});
+  const TeacherClassDetailScreen({
+    super.key,
+    required this.className,
+    this.classId,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final students = ref.watch(studentProvider.notifier).byClass(className);
+    final students = classId != null && classId!.isNotEmpty
+        ? ref.watch(studentProvider.notifier).byClassId(classId!)
+        : ref.watch(studentProvider.notifier).byClass(className);
     final absences = ref
         .watch(attendanceProvider)
         .where((a) => a.className == className)
@@ -61,6 +68,7 @@ class TeacherClassDetailScreen extends ConsumerWidget {
                 MaterialPageRoute(
                   builder: (_) => AttendanceInputScreen(
                     className: className,
+                    classId: classId,
                     subject: subjects.isNotEmpty ? subjects.first : 'Cours',
                     duration: '1h',
                   ),
@@ -83,7 +91,8 @@ class TeacherClassDetailScreen extends ConsumerWidget {
                 MaterialPageRoute(
                   builder: (_) => GradeInputScreen(
                     className: className,
-                    trimestre: '1er',
+                    classId: classId,
+                    trimestre: 'T1',
                   ),
                 ),
               ),
