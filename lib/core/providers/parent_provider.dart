@@ -27,18 +27,42 @@ final parentProfileProvider = Provider<ParentProfile>((ref) {
     id: auth.userId ?? '',
     fullName: auth.fullName.isNotEmpty ? auth.fullName : (auth.email ?? 'Parent'),
     phone: auth.email ?? '',
-    childrenIds: const [],
+    childrenIds: ref.watch(parentChildrenAsyncProvider).valueOrNull
+            ?.map((c) => c.id)
+            .toList() ??
+        const [],
   );
 });
 
-/// Enfant lié au parent via API `/students/my-child`.
-final parentChildAsyncProvider = FutureProvider<Student?>((ref) async {
-  ref.watch(authProvider); // invalidate on logout
+/// Enfants liés au parent via API `/students/my-children`.
+final parentChildrenAsyncProvider =
+    FutureProvider<List<Student>>((ref) async {
+  ref.watch(authProvider);
   try {
-    final data = await ParentApiService.getMyChild();
+    final list = await ParentApiService.getMyChildren();
+    return list.map((e) => Student.fromApi(e)).toList();
+  } catch (_) {
+    return [];
+  }
+});
+
+/// Enfant sélectionné (premier par défaut).
+final selectedChildIdProvider = StateProvider<String?>((ref) => null);
+
+final parentChildAsyncProvider = FutureProvider<Student?>((ref) async {
+  ref.watch(authProvider);
+  final children = await ref.watch(parentChildrenAsyncProvider.future);
+  if (children.isEmpty) return null;
+  final selectedId = ref.watch(selectedChildIdProvider);
+  final match = selectedId == null
+      ? null
+      : children.where((c) => c.id == selectedId).toList();
+  final child = (match != null && match.isNotEmpty) ? match.first : children.first;
+  try {
+    final data = await ParentApiService.getMyChild(studentId: child.id);
     return Student.fromApi(Map<String, dynamic>.from(data));
   } catch (_) {
-    return null;
+    return child;
   }
 });
 

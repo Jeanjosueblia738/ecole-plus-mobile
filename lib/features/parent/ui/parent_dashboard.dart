@@ -20,6 +20,8 @@ class ParentDashboard extends ConsumerStatefulWidget {
 }
 
 class _ParentDashboardState extends ConsumerState<ParentDashboard> {
+  List<Map<String, dynamic>> _children = [];
+  String? _selectedChildId;
   Map<String, dynamic>? _child;
   Map<String, dynamic>? _grades;
   Map<String, dynamic>? _attendance;
@@ -44,14 +46,32 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
       _error = null;
     });
     try {
-      final child = await ParentApiService.getMyChild()
+      final children = await ParentApiService.getMyChildren()
           .timeout(const Duration(seconds: 15));
       if (!mounted) {
         return;
       }
-      setState(() => _child = child);
+      final selectedId = _selectedChildId != null &&
+              children.any((c) => c['id'] == _selectedChildId)
+          ? _selectedChildId
+          : (children.isNotEmpty ? children.first['id'] as String? : null);
 
-      if (child['id'] != null) {
+      Map<String, dynamic>? child;
+      if (selectedId != null) {
+        child = await ParentApiService.getMyChild(studentId: selectedId)
+            .timeout(const Duration(seconds: 15));
+      }
+
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _children = children;
+        _selectedChildId = selectedId;
+        _child = child;
+      });
+
+      if (child != null && child['id'] != null) {
         final studentId = child['id'] as String;
         final results = await Future.wait([
           ParentApiService.getChildGrades(studentId, trimestre: _trimestre)
@@ -75,13 +95,20 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
     } catch (e) {
       debugPrint('ECOLE+ parent: $e');
       if (mounted) {
-        setState(() => _error = 'Impossible de charger les données. Vérifiez votre connexion.');
+        setState(() => _error =
+            'Impossible de charger les données. Vérifiez votre connexion.');
       }
     } finally {
       if (mounted) {
         setState(() => _loading = false);
       }
     }
+  }
+
+  Future<void> _selectChild(String id) async {
+    if (id == _selectedChildId) return;
+    setState(() => _selectedChildId = id);
+    await _loadData();
   }
 
   @override
@@ -159,6 +186,44 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                   ],
                 ),
               ),
+
+            if (_children.length > 1) ...[
+              Text('Mes enfants',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700)),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 40,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _children.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) {
+                    final c = _children[i];
+                    final id = c['id'] as String? ?? '';
+                    final selected = id == _selectedChildId;
+                    final name =
+                        '${c['firstName'] ?? ''} ${c['lastName'] ?? ''}'.trim();
+                    return ChoiceChip(
+                      label: Text(name.isEmpty ? 'Enfant' : name),
+                      selected: selected,
+                      onSelected: (_) => _selectChild(id),
+                      selectedColor: primaryBlue.withValues(alpha: 0.15),
+                      labelStyle: TextStyle(
+                        color: selected ? primaryBlue : Colors.black87,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
             // Carte enfant
             if (_loading)
               Container(

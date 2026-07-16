@@ -196,15 +196,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               validator: (v) =>
                                   v!.isEmpty ? 'Obligatoire' : null),
                           const SizedBox(height: 14),
-                          _Field(
-                              controller: _emailCtrl,
-                              label: 'Email',
-                              hint: 'votre@email.ci',
-                              icon: Icons.email_outlined,
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (v) => !v!.contains('@')
-                                  ? 'Email invalide'
-                                  : null),
+                          if (_selectedRole == 'STUDENT')
+                            _Field(
+                                controller: _emailCtrl,
+                                label: 'Matricule',
+                                hint: 'ex: 20556405H',
+                                icon: Icons.badge_outlined,
+                                validator: (v) =>
+                                    v!.trim().isEmpty ? 'Matricule obligatoire' : null)
+                          else
+                            _Field(
+                                controller: _emailCtrl,
+                                label: 'Email',
+                                hint: 'votre@email.ci',
+                                icon: Icons.email_outlined,
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (v) => !v!.contains('@')
+                                    ? 'Email invalide'
+                                    : null),
                           const SizedBox(height: 14),
                           TextFormField(
                             controller: _passwordCtrl,

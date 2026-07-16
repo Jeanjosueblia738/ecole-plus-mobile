@@ -236,7 +236,7 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
               icon: Icons.family_restroom_outlined,
               title: 'Parent d\'élève',
               subtitle:
-                  'Suivez les résultats, absences et paiements de votre enfant',
+                  'Suivez les résultats, absences et paiements de vos enfants',
               color: primaryBlue,
               selected: _type == 'parent',
               onTap: () => setState(() => _type = 'parent'),
@@ -480,8 +480,11 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center),
             const SizedBox(height: 8),
-            const Text('Vous êtes maintenant connecté à votre espace ECOLE+',
-                style: TextStyle(fontSize: 14, color: textGrey),
+            Text(
+                _type == 'student'
+                    ? 'Prochaine connexion : code établissement + matricule + mot de passe'
+                    : 'Prochaine connexion : code établissement + email parent + mot de passe. Pour un autre enfant, utilisez son code parent avec le même mot de passe.',
+                style: const TextStyle(fontSize: 14, color: textGrey),
                 textAlign: TextAlign.center),
             const SizedBox(height: 40),
             SizedBox(
