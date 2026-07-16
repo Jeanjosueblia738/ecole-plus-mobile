@@ -8,6 +8,13 @@ class AttendanceApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  static Future<Map<String, dynamic>> notifyAbsents(
+      Map<String, dynamic> data) async {
+    final response = await ApiClient.instance
+        .post('/attendance/notify-absents', data: data);
+    return response.data as Map<String, dynamic>;
+  }
+
   static Future<Map<String, dynamic>> getByStudent(
     String studentId, {
     String? from,

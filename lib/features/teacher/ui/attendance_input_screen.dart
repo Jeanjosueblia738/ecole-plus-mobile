@@ -27,8 +27,13 @@ class AttendanceInputScreen extends ConsumerStatefulWidget {
 class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
   final Map<String, String> _status = {};
   bool _isSubmitting = false;
+  bool _smsSending = false;
   bool _loadingStudents = true;
+  bool _appelSaved = false;
   late final TextEditingController _subjectCtrl;
+  TimeOfDay _start = const TimeOfDay(hour: 8, minute: 0);
+  TimeOfDay _end = const TimeOfDay(hour: 9, minute: 0);
+  String? _resolvedClassId;
 
   @override
   void initState() {
@@ -45,6 +50,23 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
     super.dispose();
   }
 
+  String _fmt(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  Future<void> _pickTime({required bool start}) async {
+    final initial = start ? _start : _end;
+    final picked = await showTimePicker(context: context, initialTime: initial);
+    if (picked == null) return;
+    setState(() {
+      if (start) {
+        _start = picked;
+      } else {
+        _end = picked;
+      }
+      _appelSaved = false;
+    });
+  }
+
   Future<void> _loadStudents() async {
     setState(() => _loadingStudents = true);
     await ref.read(studentProvider.notifier).load(classId: widget.classId);
@@ -56,6 +78,11 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
     }
     if (mounted) setState(() => _loadingStudents = false);
   }
+
+  List<String> get _absentIds => _status.entries
+      .where((e) => e.value == 'absent')
+      .map((e) => e.key)
+      .toList();
 
   Future<void> _submit() async {
     final subject = _subjectCtrl.text.trim();
@@ -105,12 +132,18 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
         'classId': classId,
         'subject': subject,
         'date': today,
+        'startTime': _fmt(_start),
+        'endTime': _fmt(_end),
         'records': records,
       });
       if (!mounted) return;
       final absents = result['absents'] ??
           records.where((r) => r['status'] == 'ABSENT').length;
-      _showConfirmDialog(absents as int, students.length);
+      setState(() {
+        _appelSaved = true;
+        _resolvedClassId = classId;
+      });
+      _showConfirmDialog(absents as int, students.length, classId, subject);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -122,7 +155,51 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
     }
   }
 
-  void _showConfirmDialog(int absents, int total) {
+  Future<void> _sendSms(String classId, String subject) async {
+    if (_absentIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Aucun absent à notifier'),
+      ));
+      return;
+    }
+    setState(() => _smsSending = true);
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    try {
+      final data = await AttendanceApiService.notifyAbsents({
+        'classId': classId,
+        'subject': subject,
+        'date': today,
+        'startTime': _fmt(_start),
+        'endTime': _fmt(_end),
+        'studentIds': _absentIds,
+      });
+      if (!mounted) return;
+      final msg = data['message']?.toString() ?? 'SMS traités';
+      final sim = data['simulated'] == true
+          ? '\n(Mode simulation — configurez SMS_WEBHOOK_URL)'
+          : '';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('$msg$sim'),
+        backgroundColor: const Color(0xFF16A34A),
+        duration: const Duration(seconds: 4),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Erreur SMS: $e'),
+        backgroundColor: dangerRed,
+      ));
+    } finally {
+      if (mounted) setState(() => _smsSending = false);
+    }
+  }
+
+  void _showConfirmDialog(
+    int absents,
+    int total,
+    String classId,
+    String subject,
+  ) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -137,7 +214,8 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
         content: Text(
           '$total élèves traités\n'
           '$absents absence${absents > 1 ? 's' : ''} enregistrée${absents > 1 ? 's' : ''}\n'
-          'Données synchronisées avec l\'école.',
+          'Créneau : ${_fmt(_start)} – ${_fmt(_end)}\n\n'
+          'Envoyer un SMS aux parents des absents ?',
         ),
         actions: [
           TextButton(
@@ -145,8 +223,24 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text('OK'),
+            child: const Text('Plus tard'),
           ),
+          if (absents > 0)
+            ElevatedButton.icon(
+              onPressed: _smsSending
+                  ? null
+                  : () async {
+                      Navigator.pop(context);
+                      await _sendSms(classId, subject);
+                      if (mounted) Navigator.pop(context);
+                    },
+              icon: const Icon(Icons.sms_outlined, size: 18),
+              label: Text('SMS parents ($absents)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEA580C),
+                foregroundColor: Colors.white,
+              ),
+            ),
         ],
       ),
     );
@@ -188,10 +282,32 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
                     isDense: true,
                   ),
                   controller: _subjectCtrl,
+                  onChanged: (_) => setState(() => _appelSaved = false),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _pickTime(start: true),
+                        icon: const Icon(Icons.schedule, size: 16),
+                        label: Text('Début ${_fmt(_start)}'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _pickTime(start: false),
+                        icon: const Icon(Icons.schedule, size: 16),
+                        label: Text('Fin ${_fmt(_end)}'),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Absents: $absentCount · Retards: $lateCount',
+                  'Absents: $absentCount · Retards: $lateCount'
+                  '${_appelSaved ? ' · Appel enregistré' : ''}',
                   style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13),
                 ),
               ],
@@ -208,6 +324,9 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
                           final s = students[index];
                           final st = _status[s.id] ?? 'present';
                           return ListTile(
+                            tileColor: st == 'absent'
+                                ? const Color(0xFFFEF2F2)
+                                : null,
                             title: Text(s.fullName),
                             subtitle: Text(st == 'present'
                                 ? 'Présent'
@@ -227,6 +346,7 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
                                       : i == 1
                                           ? 'late'
                                           : 'absent';
+                                  _appelSaved = false;
                                 });
                               },
                               children: const [
@@ -242,23 +362,59 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting || _loadingStudents ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed:
+                          _isSubmitting || _loadingStudents ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2))
+                          : const Text('Valider l\'appel'),
+                    ),
                   ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2))
-                      : const Text('Valider l\'appel'),
-                ),
+                  if (_appelSaved &&
+                      _absentIds.isNotEmpty &&
+                      _resolvedClassId != null) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _smsSending
+                            ? null
+                            : () => _sendSms(
+                                  _resolvedClassId!,
+                                  _subjectCtrl.text.trim(),
+                                ),
+                        icon: _smsSending
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.sms_outlined),
+                        label: Text(
+                            'SMS parents (${_absentIds.length} absent${_absentIds.length > 1 ? 's' : ''})'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEA580C),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
