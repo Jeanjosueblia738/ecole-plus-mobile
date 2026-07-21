@@ -35,15 +35,13 @@ final parentProfileProvider = Provider<ParentProfile>((ref) {
 });
 
 /// Enfants liés au parent via API `/students/my-children`.
+/// Les erreurs API se propagent en [AsyncError] (pas de liste vide silencieuse).
 final parentChildrenAsyncProvider =
     FutureProvider<List<Student>>((ref) async {
   ref.watch(authProvider);
-  try {
-    final list = await ParentApiService.getMyChildren();
-    return list.map((e) => Student.fromApi(e)).toList();
-  } catch (_) {
-    return [];
-  }
+  ref.watch(logoutEpochProvider);
+  final list = await ParentApiService.getMyChildren();
+  return list.map((e) => Student.fromApi(e)).toList();
 });
 
 /// Enfant sélectionné (premier par défaut).
@@ -51,6 +49,7 @@ final selectedChildIdProvider = StateProvider<String?>((ref) => null);
 
 final parentChildAsyncProvider = FutureProvider<Student?>((ref) async {
   ref.watch(authProvider);
+  ref.watch(logoutEpochProvider);
   final children = await ref.watch(parentChildrenAsyncProvider.future);
   if (children.isEmpty) return null;
   final selectedId = ref.watch(selectedChildIdProvider);
@@ -58,12 +57,8 @@ final parentChildAsyncProvider = FutureProvider<Student?>((ref) async {
       ? null
       : children.where((c) => c.id == selectedId).toList();
   final child = (match != null && match.isNotEmpty) ? match.first : children.first;
-  try {
-    final data = await ParentApiService.getMyChild(studentId: child.id);
-    return Student.fromApi(Map<String, dynamic>.from(data));
-  } catch (_) {
-    return child;
-  }
+  final data = await ParentApiService.getMyChild(studentId: child.id);
+  return Student.fromApi(Map<String, dynamic>.from(data));
 });
 
 final parentChildProvider = Provider<Student?>((ref) {

@@ -63,6 +63,8 @@ class _AttendanceHistoryScreenState
             studentName: studentName,
             className: className,
           );
+      final attErr = ref.read(attendanceProvider.notifier).error;
+      if (attErr != null) _error = attErr;
     } catch (_) {
       _error = 'Impossible de charger les absences';
     }
@@ -103,15 +105,33 @@ class _AttendanceHistoryScreenState
                   ),
                 )
               : records.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.check_circle_outline,
-                              size: 64, color: Color(0xFF16A34A)),
-                          SizedBox(height: 12),
-                          Text('Aucune absence enregistrée',
-                              style: TextStyle(color: Color(0xFF6B7280))),
+                          Icon(
+                            ref.read(attendanceProvider.notifier).error != null
+                                ? Icons.error_outline
+                                : Icons.check_circle_outline,
+                            size: 64,
+                            color:
+                                ref.read(attendanceProvider.notifier).error !=
+                                        null
+                                    ? const Color(0xFFDC2626)
+                                    : const Color(0xFF16A34A),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            ref.read(attendanceProvider.notifier).error ??
+                                'Aucune absence enregistrée',
+                            style: const TextStyle(color: Color(0xFF6B7280)),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (ref.read(attendanceProvider.notifier).error !=
+                              null)
+                            TextButton(
+                                onPressed: _load,
+                                child: const Text('Réessayer')),
                         ],
                       ),
                     )
@@ -137,6 +157,7 @@ class _AbsenceCard extends ConsumerWidget {
     return switch (status) {
       'Justifiée' => const Color(0xFF16A34A),
       'En attente' => const Color(0xFFD97706),
+      'Retard' => const Color(0xFFD97706),
       _ => const Color(0xFFDC2626),
     };
   }

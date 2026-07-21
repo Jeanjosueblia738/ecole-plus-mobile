@@ -4,6 +4,7 @@ class Student {
   String className;
   String? classId;
   String parentPhone;
+  String? gender;
 
   Student({
     required this.id,
@@ -11,6 +12,7 @@ class Student {
     required this.className,
     required this.parentPhone,
     this.classId,
+    this.gender,
   });
 
   Map<String, dynamic> toJson() => {
@@ -19,6 +21,7 @@ class Student {
         'className': className,
         'classId': classId,
         'parentPhone': parentPhone,
+        'gender': gender,
       };
 
   factory Student.fromJson(Map<String, dynamic> json) {
@@ -28,6 +31,7 @@ class Student {
       className: json['className'] as String? ?? '',
       classId: json['classId'] as String?,
       parentPhone: json['parentPhone'] as String? ?? '',
+      gender: json['gender'] as String?,
     );
   }
 
@@ -46,6 +50,7 @@ class Student {
       className: className,
       classId: classId,
       parentPhone: json['parentPhone'] as String? ?? '',
+      gender: json['gender'] as String?,
     );
   }
 }

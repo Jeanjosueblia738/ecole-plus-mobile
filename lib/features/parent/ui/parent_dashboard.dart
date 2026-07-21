@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/parent_provider.dart';
 import '../../../core/security/user_role.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/parent_api_service.dart';
@@ -29,6 +30,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
   List<dynamic> _alerts = [];
   bool _loading = true;
   String? _error;
+  String? _warning;
   String _trimestre = 'T1';
 
   @override
@@ -44,6 +46,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
     setState(() {
       _loading = true;
       _error = null;
+      _warning = null;
     });
     try {
       final children = await ParentApiService.getMyChildren()
@@ -70,17 +73,31 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
         _selectedChildId = selectedId;
         _child = child;
       });
+      if (selectedId != null) {
+        ref.read(selectedChildIdProvider.notifier).state = selectedId;
+      }
 
       if (child != null && child['id'] != null) {
         final studentId = child['id'] as String;
+        var partialFailure = false;
         final results = await Future.wait([
           ParentApiService.getChildGrades(studentId, trimestre: _trimestre)
-              .catchError((_) => <String, dynamic>{}),
-          ParentApiService.getChildAttendance(studentId)
-              .catchError((_) => <String, dynamic>{}),
-          ParentApiService.getChildFinance(studentId)
-              .catchError((_) => <String, dynamic>{}),
-          ParentApiService.getMyAlerts().catchError((_) => <dynamic>[]),
+              .catchError((_) {
+            partialFailure = true;
+            return <String, dynamic>{};
+          }),
+          ParentApiService.getChildAttendance(studentId).catchError((_) {
+            partialFailure = true;
+            return <String, dynamic>{};
+          }),
+          ParentApiService.getChildFinance(studentId).catchError((_) {
+            partialFailure = true;
+            return <String, dynamic>{};
+          }),
+          ParentApiService.getMyAlerts().catchError((_) {
+            partialFailure = true;
+            return <dynamic>[];
+          }),
         ]);
         if (!mounted) {
           return;
@@ -90,6 +107,10 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
           _attendance = results[1] as Map<String, dynamic>?;
           _finance = results[2] as Map<String, dynamic>?;
           _alerts = results[3] as List<dynamic>;
+          if (partialFailure) {
+            _warning =
+                'Certaines données n\'ont pas pu être chargées. Tirez pour actualiser.';
+          }
         });
       }
     } catch (e) {
@@ -108,6 +129,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
   Future<void> _selectChild(String id) async {
     if (id == _selectedChildId) return;
     setState(() => _selectedChildId = id);
+    ref.read(selectedChildIdProvider.notifier).state = id;
     await _loadData();
   }
 
@@ -183,6 +205,30 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                     ),
                     TextButton(
                         onPressed: _loadData, child: const Text('Réessayer')),
+                  ],
+                ),
+              ),
+
+            if (_warning != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_outlined,
+                        color: Colors.orange.shade800, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(_warning!,
+                          style: TextStyle(
+                              color: Colors.orange.shade900, fontSize: 13)),
+                    ),
                   ],
                 ),
               ),
@@ -495,8 +541,9 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) =>
-                              const StudentTimetableScreen.forParent()))),
+                          builder: (_) => StudentTimetableScreen.forParent(
+                                studentId: _selectedChildId,
+                              )))),
               const SizedBox(height: 10),
               _NavTile(
                   icon: Icons.event_busy_outlined,
@@ -506,8 +553,15 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) =>
-                              const AttendanceHistoryScreen(history: [])))),
+                          builder: (_) => AttendanceHistoryScreen(
+                                studentId: _selectedChildId ??
+                                    _child?['id'] as String?,
+                                studentName: _child == null
+                                    ? null
+                                    : '${_child!['firstName'] ?? ''} ${_child!['lastName'] ?? ''}'
+                                        .trim(),
+                                className: _child?['class']?['name'] as String?,
+                              )))),
               const SizedBox(height: 10),
               _NavTile(
                   icon: Icons.chat_outlined,

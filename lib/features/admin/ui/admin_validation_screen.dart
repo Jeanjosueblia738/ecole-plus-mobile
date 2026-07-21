@@ -163,8 +163,9 @@ class _JustificationCard extends ConsumerWidget {
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Justification validée ✓'),
-                        backgroundColor: Color(0xFF16A34A),
+                        content: Text(
+                            'Validée localement — sync serveur non disponible'),
+                        backgroundColor: Color(0xFFD97706),
                       ),
                     );
                   },

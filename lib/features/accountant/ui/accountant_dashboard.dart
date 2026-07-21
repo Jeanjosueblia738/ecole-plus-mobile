@@ -20,6 +20,7 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
   int _unpaidCount = 0;
   double _totalDu = 0, _totalPaye = 0;
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -28,10 +29,12 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
   }
 
   Future<void> _loadStats() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final s = await StudentsApiService.getStats()
-          .catchError((_) async => <String, dynamic>{});
+      final s = await StudentsApiService.getStats();
       if (!mounted) {
         return;
       }
@@ -43,7 +46,11 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
       });
     } catch (e) {
       if (mounted) {
-        setState(() => _loading = false);
+        setState(() {
+          _loading = false;
+          _error =
+              'Impossible de charger les statistiques. Vérifiez votre connexion.';
+        });
       }
     }
   }
@@ -102,6 +109,31 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (_error != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: Colors.red.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(_error!,
+                          style: TextStyle(
+                              color: Colors.red.shade800, fontSize: 13)),
+                    ),
+                    TextButton(
+                        onPressed: _loadStats, child: const Text('Réessayer')),
+                  ],
+                ),
+              ),
             _ProfileCard(
                 name: auth.fullName,
                 role: 'Comptable / Caissier',

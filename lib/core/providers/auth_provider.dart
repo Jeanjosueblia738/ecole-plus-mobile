@@ -79,10 +79,15 @@ class AuthState {
       );
 }
 
+/// Incrémenté à chaque logout / 401 pour que les providers async se rafraîchissent.
+final logoutEpochProvider = StateProvider<int>((ref) => 0);
+
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(const AuthState()) {
+  AuthNotifier(this._ref) : super(const AuthState()) {
     _checkStoredAuth();
   }
+
+  final Ref _ref;
 
   Future<void> _checkStoredAuth() async {
     final isLogged = await AuthStorageService.isLoggedIn();
@@ -227,10 +232,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
   }
 
+  /// Déconnexion explicite. Invalide la session et bump [logoutEpochProvider]
+  /// pour que les callers / providers qui le watchent se réinitialisent.
   Future<void> logout() async {
     await AuthApiService.logout();
     await UserSession.clear();
     state = const AuthState();
+    _ref.read(logoutEpochProvider.notifier).state++;
+  }
+
+  /// Appelé après un 401 (token expiré) — storage déjà vidé par l'intercepteur.
+  void onUnauthorized() {
+    // clear() est sync en pratique (rôle null) ; fire-and-forget ok ici.
+    UserSession.clear();
+    state = const AuthState();
+    _ref.read(logoutEpochProvider.notifier).state++;
   }
 
   void clearError() => state = state.copyWith(error: null);
@@ -253,5 +269,5 @@ class AuthNotifier extends StateNotifier<AuthState> {
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
-  (ref) => AuthNotifier(),
+  (ref) => AuthNotifier(ref),
 );

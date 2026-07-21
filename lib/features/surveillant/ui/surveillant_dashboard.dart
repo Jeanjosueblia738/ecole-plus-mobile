@@ -21,6 +21,7 @@ class SurveillantDashboard extends ConsumerStatefulWidget {
 class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
   int _totalStudents = 0, _totalAbsences = 0, _pendingJustifications = 0;
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -29,13 +30,21 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
   }
 
   Future<void> _loadStats() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
+      var partialFailure = false;
       final results = await Future.wait([
-        StudentsApiService.getStats()
-            .catchError((_) async => <String, dynamic>{}),
-        AttendanceApiService.getStats()
-            .catchError((_) async => <String, dynamic>{}),
+        StudentsApiService.getStats().catchError((_) async {
+          partialFailure = true;
+          return <String, dynamic>{};
+        }),
+        AttendanceApiService.getStats().catchError((_) async {
+          partialFailure = true;
+          return <String, dynamic>{};
+        }),
       ]);
       if (!mounted) {
         return;
@@ -47,10 +56,18 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
         _totalAbsences = (a['totalAbsences'] as num?)?.toInt() ?? 0;
         _pendingJustifications = (a['unJustified'] as num?)?.toInt() ?? 0;
         _loading = false;
+        if (partialFailure) {
+          _error =
+              'Impossible de charger toutes les statistiques. Tirez pour actualiser.';
+        }
       });
     } catch (e) {
       if (mounted) {
-        setState(() => _loading = false);
+        setState(() {
+          _loading = false;
+          _error =
+              'Impossible de charger les statistiques. Vérifiez votre connexion.';
+        });
       }
     }
   }
@@ -145,6 +162,31 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (_error != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: Colors.red.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(_error!,
+                          style: TextStyle(
+                              color: Colors.red.shade800, fontSize: 13)),
+                    ),
+                    TextButton(
+                        onPressed: _loadStats, child: const Text('Réessayer')),
+                  ],
+                ),
+              ),
             _ProfileCard(
                 name: auth.fullName, role: 'Surveillant Général', color: color),
             const SizedBox(height: 20),

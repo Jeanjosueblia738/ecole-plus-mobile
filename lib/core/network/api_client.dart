@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'api_config.dart';
+import 'auth_session_bridge.dart';
 import '../services/auth_storage_service.dart';
 
 class ApiClient {
@@ -57,8 +58,9 @@ class _AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
-      // Token expiré — déconnecter
+      // Token expiré — déconnecter + notifier l'app (logout UI / invalidate)
       await AuthStorageService.clearAll();
+      AuthSessionBridge.notifyUnauthorized();
     }
     handler.next(err);
   }

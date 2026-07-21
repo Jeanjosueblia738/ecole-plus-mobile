@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/finance_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/school_year.dart';
 import '../data/finance_model.dart';
 
 class FeeManagementScreen extends ConsumerStatefulWidget {
@@ -14,19 +15,31 @@ class FeeManagementScreen extends ConsumerStatefulWidget {
 
 class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
   bool _loading = true;
+  String? _feeError;
+
+  Future<void> _reload() async {
+    setState(() {
+      _loading = true;
+      _feeError = null;
+    });
+    await ref.read(feeProvider.notifier).load(year: currentSchoolYear());
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _feeError = ref.read(feeProvider.notifier).error;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() async {
-      await ref.read(feeProvider.notifier).load();
-      if (mounted) setState(() => _loading = false);
-    });
+    Future.microtask(_reload);
   }
 
   @override
   Widget build(BuildContext context) {
     final fees = ref.watch(feeProvider);
+    final feeError = _feeError;
 
     return Scaffold(
       backgroundColor: background,
@@ -38,11 +51,7 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () async {
-              setState(() => _loading = true);
-              await ref.read(feeProvider.notifier).load();
-              if (mounted) setState(() => _loading = false);
-            },
+            onPressed: _reload,
           ),
         ],
       ),
@@ -53,24 +62,49 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : fees.isEmpty
-          ? const Center(
-              child: Text('Aucun frais configuré',
-                  style: TextStyle(color: textGrey)))
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: fees.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final fee = fees[index];
-                return _FeeCard(
-                  fee: fee,
-                  onDelete: () async {
-                    await ref.read(feeProvider.notifier).remove(fee.id);
-                  },
-                );
-              },
-            ),
+          : feeError != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline,
+                            size: 48, color: dangerRed),
+                        const SizedBox(height: 12),
+                        Text(feeError,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: textGrey, fontSize: 15)),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _reload,
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : fees.isEmpty
+                  ? const Center(
+                      child: Text('Aucun frais configuré',
+                          style: TextStyle(color: textGrey)))
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: fees.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final fee = fees[index];
+                        return _FeeCard(
+                          fee: fee,
+                          onDelete: () async {
+                            await ref
+                                .read(feeProvider.notifier)
+                                .remove(fee.id);
+                            if (mounted) setState(() {});
+                          },
+                        );
+                      },
+                    ),
     );
   }
 
@@ -219,7 +253,8 @@ class _FeeFormSheetState extends State<_FeeFormSheet> {
   final _labelCtrl = TextEditingController();
   final _montantCtrl = TextEditingController();
   FeeType _type = FeeType.scolarite;
-  String _trimestre = '1er';
+  String _trimestre = 'T1';
+  final String _schoolYear = currentSchoolYear();
   bool _obligatoire = true;
   final DateTime _echeance = DateTime.now().add(const Duration(days: 30));
 
@@ -274,6 +309,9 @@ class _FeeFormSheetState extends State<_FeeFormSheet> {
         children: [
           const Text('Ajouter un frais',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text('Année scolaire : $_schoolYear',
+              style: const TextStyle(fontSize: 13, color: textGrey)),
           const SizedBox(height: 14),
           TextField(
             controller: _labelCtrl,
@@ -330,7 +368,7 @@ class _FeeFormSheetState extends State<_FeeFormSheet> {
                       borderRadius: BorderRadius.circular(10)),
                   isDense: true,
                 ),
-                items: ['1er', '2ème', '3ème', 'Annuel']
+                items: ['T1', 'T2', 'T3', 'Annuel']
                     .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                     .toList(),
                 onChanged: (v) => setState(() => _trimestre = v!),

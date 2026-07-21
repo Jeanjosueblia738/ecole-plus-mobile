@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/student_provider.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/services/students_api_service.dart';
 import '../../../core/services/attendance_api_service.dart';
+import '../../../core/services/classes_api_service.dart';
+import '../../../core/services/students_api_service.dart';
+import '../../../core/utils/school_year.dart';
 import '../../admin/ui/admin_validation_screen.dart';
 import '../../analytics/ui/dropout_risk_screen.dart';
 import '../../cahier/ui/cahier_directeur_screen.dart';
@@ -24,6 +26,7 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
   int _totalStudents = 0, _totalTeachers = 0, _totalClasses = 0;
   int _totalAbsences = 0, _pendingJustifications = 0;
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -32,13 +35,21 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
   }
 
   Future<void> _loadStats() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
+      var partialFailure = false;
       final results = await Future.wait([
-        StudentsApiService.getStats()
-            .catchError((_) async => <String, dynamic>{}),
-        AttendanceApiService.getStats()
-            .catchError((_) async => <String, dynamic>{}),
+        StudentsApiService.getStats().catchError((_) async {
+          partialFailure = true;
+          return <String, dynamic>{};
+        }),
+        AttendanceApiService.getStats().catchError((_) async {
+          partialFailure = true;
+          return <String, dynamic>{};
+        }),
       ]);
       if (!mounted) {
         return;
@@ -52,10 +63,18 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
         _totalAbsences = (a['totalAbsences'] as num?)?.toInt() ?? 0;
         _pendingJustifications = (a['unJustified'] as num?)?.toInt() ?? 0;
         _loading = false;
+        if (partialFailure) {
+          _error =
+              'Impossible de charger toutes les statistiques. Tirez pour actualiser.';
+        }
       });
     } catch (e) {
       if (mounted) {
-        setState(() => _loading = false);
+        setState(() {
+          _loading = false;
+          _error =
+              'Impossible de charger les statistiques. Vérifiez votre connexion.';
+        });
       }
     }
   }
@@ -97,13 +116,30 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
   }
 
   Future<void> _openTimetable() async {
-    if (ref.read(studentProvider).isEmpty) {
-      await ref.read(studentProvider.notifier).load();
+    List<Map<String, String>> classes = [];
+    try {
+      final raw = await ClassesApiService.getAll(year: currentSchoolYear());
+      classes = raw
+          .map((e) {
+            final m = Map<String, dynamic>.from(e as Map);
+            return {
+              'id': m['id']?.toString() ?? '',
+              'name': m['name']?.toString() ?? '',
+            };
+          })
+          .where((c) => c['id']!.isNotEmpty && c['name']!.isNotEmpty)
+          .toList();
+    } catch (_) {
+      // Fallback : noms issus des élèves chargés
+      if (ref.read(studentProvider).isEmpty) {
+        await ref.read(studentProvider.notifier).load();
+      }
+      classes = ref
+          .read(classNamesProvider)
+          .where((c) => c != 'Toutes')
+          .map((name) => {'id': '', 'name': name})
+          .toList();
     }
-    final classes = ref
-        .read(classNamesProvider)
-        .where((c) => c != 'Toutes')
-        .toList();
     if (classes.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -111,14 +147,15 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
       );
       return;
     }
-    final selected = await showDialog<String>(
+    if (!mounted) return;
+    final selected = await showDialog<Map<String, String>>(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: const Text('Emploi du temps — classe'),
         children: classes
             .map((c) => SimpleDialogOption(
                   onPressed: () => Navigator.pop(ctx, c),
-                  child: Text(c),
+                  child: Text(c['name']!),
                 ))
             .toList(),
       ),
@@ -128,7 +165,8 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
       context,
       MaterialPageRoute(
         builder: (_) => TimetableScreen(
-          className: selected,
+          className: selected['name']!,
+          classId: selected['id']!.isEmpty ? null : selected['id'],
           canEdit: true,
         ),
       ),
@@ -188,6 +226,31 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (_error != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: Colors.red.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(_error!,
+                          style: TextStyle(
+                              color: Colors.red.shade800, fontSize: 13)),
+                    ),
+                    TextButton(
+                        onPressed: _loadStats, child: const Text('Réessayer')),
+                  ],
+                ),
+              ),
             _buildProfileCard(
                 auth.fullName, 'Censeur', const Color(0xFF4338CA)),
             const SizedBox(height: 20),

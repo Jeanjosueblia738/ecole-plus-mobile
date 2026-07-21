@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/timetable_provider.dart';
-import '../../../core/providers/teacher_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/timetable_model.dart';
 
@@ -31,6 +31,29 @@ class _TeacherTimetableScreenState extends ConsumerState<TeacherTimetableScreen>
       vsync: this,
       initialIndex: _todayIndex(),
     );
+    Future.microtask(_reload);
+  }
+
+  Future<void> _reload() async {
+    final auth = ref.read(authProvider);
+    final teacherId = auth.userId;
+    if (teacherId == null || teacherId.isEmpty) {
+      if (mounted) {
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Session enseignant introuvable'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    await ref.read(timetableProvider.notifier).loadForTeacher(
+          teacherId,
+          teacherName: auth.fullName,
+        );
+    if (mounted) setState(() {});
   }
 
   @override
@@ -41,8 +64,9 @@ class _TeacherTimetableScreenState extends ConsumerState<TeacherTimetableScreen>
 
   @override
   Widget build(BuildContext context) {
-    final profile = ref.watch(teacherProfileProvider);
-    final entries = ref.watch(timetableByTeacherProvider(profile.fullName));
+    // Créneaux déjà filtrés côté API pour cet enseignant
+    final entries = ref.watch(timetableProvider);
+    final loadError = ref.read(timetableProvider.notifier).error;
 
     // Stats rapides
     final totalHours = entries.length; // 1 créneau ≈ 55min
@@ -66,6 +90,27 @@ class _TeacherTimetableScreenState extends ConsumerState<TeacherTimetableScreen>
       ),
       body: Column(
         children: [
+          if (loadError != null)
+            Container(
+              width: double.infinity,
+              color: Colors.red.shade50,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(loadError,
+                        style: TextStyle(
+                            color: Colors.red.shade800, fontSize: 13)),
+                  ),
+                  TextButton(
+                    onPressed: _reload,
+                    child: const Text('Réessayer'),
+                  ),
+                ],
+              ),
+            ),
           // ── Résumé semaine ─────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(14),

@@ -72,6 +72,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
   Widget build(BuildContext context) {
     final grades = ref.watch(gradesByStudentProvider(
         (studentId: widget.studentId, trimestre: _trimestre)));
+    final gradeErr = ref.read(gradeProvider.notifier).error;
 
     final allStudents = ref.watch(studentProvider);
     final myStudent =
@@ -194,9 +195,24 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
                 ),
                 Expanded(
                   child: grades.isEmpty
-                      ? const Center(
-                          child: Text('Aucune note ce trimestre',
-                              style: TextStyle(color: textGrey)))
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                gradeErr ?? 'Aucune note ce trimestre',
+                                style: const TextStyle(color: textGrey),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (gradeErr != null) ...[
+                                const SizedBox(height: 12),
+                                TextButton(
+                                    onPressed: _load,
+                                    child: const Text('Réessayer')),
+                              ],
+                            ],
+                          ),
+                        )
                       : _SubjectSummaryList(grades: grades),
                 ),
               ],

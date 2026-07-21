@@ -7,11 +7,13 @@ import 'timetable_slot_form.dart';
 
 class TimetableScreen extends ConsumerStatefulWidget {
   final String className;
+  final String? classId;
   final bool canEdit; // true pour admin
 
   const TimetableScreen({
     super.key,
     required this.className,
+    this.classId,
     this.canEdit = false,
   });
 
@@ -42,6 +44,18 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
         setState(() => _selectedDay = _tabCtrl.index);
       }
     });
+    Future.microtask(_reload);
+  }
+
+  Future<void> _reload() async {
+    final notifier = ref.read(timetableProvider.notifier);
+    final classId = widget.classId;
+    if (classId != null && classId.isNotEmpty) {
+      await notifier.loadForClass(classId, className: widget.className);
+    } else {
+      await notifier.load();
+    }
+    if (mounted) setState(() {});
   }
 
   @override
@@ -52,7 +66,11 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
 
   @override
   Widget build(BuildContext context) {
-    final entries = ref.watch(timetableByClassProvider(widget.className));
+    // Si chargé via classId API, tous les créneaux du state concernent cette classe
+    final entries = widget.classId != null && widget.classId!.isNotEmpty
+        ? ref.watch(timetableProvider)
+        : ref.watch(timetableByClassProvider(widget.className));
+    final loadError = ref.read(timetableProvider.notifier).error;
     final today = WeekDay.values[_selectedDay];
     final dayEntries = entries.where((e) => e.day == today).toList()
       ..sort((a, b) => a.startTime.compareTo(b.startTime));
@@ -83,26 +101,53 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
               child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
-      body: dayEntries.isEmpty
-          ? _EmptyDay(day: today)
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: dayEntries.length,
-              itemBuilder: (context, index) {
-                final entry = dayEntries[index];
-                final isNow = _isCurrentSlot(entry);
-                return _EntryCard(
-                  entry: entry,
-                  isNow: isNow,
-                  canEdit: widget.canEdit,
-                  onDelete: widget.canEdit
-                      ? () => ref
-                          .read(timetableProvider.notifier)
-                          .removeEntry(entry.id)
-                      : null,
-                );
-              },
+      body: Column(
+        children: [
+          if (loadError != null)
+            Container(
+              width: double.infinity,
+              color: Colors.red.shade50,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(loadError,
+                        style: TextStyle(
+                            color: Colors.red.shade800, fontSize: 13)),
+                  ),
+                  TextButton(
+                    onPressed: _reload,
+                    child: const Text('Réessayer'),
+                  ),
+                ],
+              ),
             ),
+          Expanded(
+            child: dayEntries.isEmpty
+                ? _EmptyDay(day: today)
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: dayEntries.length,
+                    itemBuilder: (context, index) {
+                      final entry = dayEntries[index];
+                      final isNow = _isCurrentSlot(entry);
+                      return _EntryCard(
+                        entry: entry,
+                        isNow: isNow,
+                        canEdit: widget.canEdit,
+                        onDelete: widget.canEdit
+                            ? () => ref
+                                .read(timetableProvider.notifier)
+                                .removeEntry(entry.id)
+                            : null,
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 

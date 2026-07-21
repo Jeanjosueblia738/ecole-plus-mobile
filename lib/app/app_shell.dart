@@ -21,7 +21,13 @@ class AppShell extends ConsumerWidget {
     final authState = ref.watch(authProvider);
 
     if (authState.role != null) {
-      ref.read(profileProvider.notifier).loadForRole(authState.role!);
+      ref.read(profileProvider.notifier).loadForRole(
+            authState.role!,
+            fullName: authState.fullName,
+            email: authState.email,
+            userId: authState.userId,
+            etablissement: authState.tenantName,
+          );
     }
 
     return switch (authState.role) {

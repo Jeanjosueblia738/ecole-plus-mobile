@@ -2,164 +2,131 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/timetable/data/timetable_model.dart';
+import '../services/timetable_api_service.dart';
+import '../utils/school_year.dart';
+
+WeekDay _dayFromApi(dynamic raw) {
+  final s = (raw?.toString() ?? 'LUNDI').toUpperCase();
+  return switch (s) {
+    'MARDI' => WeekDay.mardi,
+    'MERCREDI' => WeekDay.mercredi,
+    'JEUDI' => WeekDay.jeudi,
+    'VENDREDI' => WeekDay.vendredi,
+    'SAMEDI' => WeekDay.samedi,
+    _ => WeekDay.lundi,
+  };
+}
+
+TimetableEntry timetableEntryFromApi(
+  Map<String, dynamic> json, {
+  String? fallbackClassName,
+  String? fallbackTeacherName,
+}) {
+  final teacher = json['teacher'] is Map
+      ? Map<String, dynamic>.from(json['teacher'] as Map)
+      : <String, dynamic>{};
+  final clazz = json['class'] is Map
+      ? Map<String, dynamic>.from(json['class'] as Map)
+      : <String, dynamic>{};
+  final teacherName = [
+    teacher['firstName']?.toString() ?? '',
+    teacher['lastName']?.toString() ?? '',
+  ].where((p) => p.isNotEmpty).join(' ');
+
+  return TimetableEntry(
+    id: json['id']?.toString() ??
+        DateTime.now().millisecondsSinceEpoch.toString(),
+    className: clazz['name']?.toString() ??
+        json['className']?.toString() ??
+        fallbackClassName ??
+        '',
+    day: _dayFromApi(json['day']),
+    startTime: json['startTime']?.toString() ?? '',
+    endTime: json['endTime']?.toString() ?? '',
+    subject: json['subject']?.toString() ?? '',
+    teacherName: teacherName.isNotEmpty
+        ? teacherName
+        : (json['teacherName']?.toString() ?? fallbackTeacherName ?? ''),
+    room: json['room']?.toString(),
+  );
+}
 
 // ─── Notifier ─────────────────────────────────────────────────────────────
 class TimetableNotifier extends StateNotifier<List<TimetableEntry>> {
   static const _key = 'timetable_entries';
 
-  TimetableNotifier() : super(_defaultEntries());
+  TimetableNotifier() : super(const []);
 
-  // EDT de démonstration — réaliste pour un lycée CI
-  static List<TimetableEntry> _defaultEntries() => [
-        // ── 3ème A ─────────────────────────────────────────────────────────
-        const TimetableEntry(
-            id: 't1',
-            className: '3ème A',
-            day: WeekDay.lundi,
-            startTime: '07:30',
-            endTime: '08:25',
-            subject: 'Mathématiques',
-            teacherName: 'M. Koné',
-            room: 'S.12'),
-        const TimetableEntry(
-            id: 't2',
-            className: '3ème A',
-            day: WeekDay.lundi,
-            startTime: '08:25',
-            endTime: '09:20',
-            subject: 'Français',
-            teacherName: 'Mme Bamba',
-            room: 'S.12'),
-        const TimetableEntry(
-            id: 't3',
-            className: '3ème A',
-            day: WeekDay.lundi,
-            startTime: '10:30',
-            endTime: '11:25',
-            subject: 'SVT',
-            teacherName: 'M. Touré',
-            room: 'S.12'),
-        const TimetableEntry(
-            id: 't4',
-            className: '3ème A',
-            day: WeekDay.lundi,
-            startTime: '11:25',
-            endTime: '12:20',
-            subject: 'Histoire-Géographie',
-            teacherName: 'Mme Coulibaly',
-            room: 'S.12'),
-        const TimetableEntry(
-            id: 't5',
-            className: '3ème A',
-            day: WeekDay.mardi,
-            startTime: '07:30',
-            endTime: '08:25',
-            subject: 'Physique-Chimie',
-            teacherName: 'M. Koné',
-            room: 'Lab.1'),
-        const TimetableEntry(
-            id: 't6',
-            className: '3ème A',
-            day: WeekDay.mardi,
-            startTime: '08:25',
-            endTime: '09:20',
-            subject: 'Anglais',
-            teacherName: 'M. Diallo',
-            room: 'S.12'),
-        const TimetableEntry(
-            id: 't7',
-            className: '3ème A',
-            day: WeekDay.mardi,
-            startTime: '13:15',
-            endTime: '14:10',
-            subject: 'Mathématiques',
-            teacherName: 'M. Koné',
-            room: 'S.12'),
-        const TimetableEntry(
-            id: 't8',
-            className: '3ème A',
-            day: WeekDay.mercredi,
-            startTime: '07:30',
-            endTime: '08:25',
-            subject: 'Français',
-            teacherName: 'Mme Bamba',
-            room: 'S.12'),
-        const TimetableEntry(
-            id: 't9',
-            className: '3ème A',
-            day: WeekDay.mercredi,
-            startTime: '08:25',
-            endTime: '09:20',
-            subject: 'EPS',
-            teacherName: 'M. Soro',
-            room: 'Stade'),
-        const TimetableEntry(
-            id: 't10',
-            className: '3ème A',
-            day: WeekDay.jeudi,
-            startTime: '07:30',
-            endTime: '08:25',
-            subject: 'Mathématiques',
-            teacherName: 'M. Koné',
-            room: 'S.12'),
-        const TimetableEntry(
-            id: 't11',
-            className: '3ème A',
-            day: WeekDay.jeudi,
-            startTime: '08:25',
-            endTime: '09:20',
-            subject: 'SVT',
-            teacherName: 'M. Touré',
-            room: 'S.12'),
-        const TimetableEntry(
-            id: 't12',
-            className: '3ème A',
-            day: WeekDay.vendredi,
-            startTime: '07:30',
-            endTime: '08:25',
-            subject: 'Anglais',
-            teacherName: 'M. Diallo',
-            room: 'S.12'),
-        const TimetableEntry(
-            id: 't13',
-            className: '3ème A',
-            day: WeekDay.vendredi,
-            startTime: '08:25',
-            endTime: '09:20',
-            subject: 'Français',
-            teacherName: 'Mme Bamba',
-            room: 'S.12'),
-        const TimetableEntry(
-            id: 't14',
-            className: '3ème A',
-            day: WeekDay.samedi,
-            startTime: '07:30',
-            endTime: '08:25',
-            subject: 'Histoire-Géographie',
-            teacherName: 'Mme Coulibaly',
-            room: 'S.12'),
-        const TimetableEntry(
-            id: 't15',
-            className: '3ème A',
-            day: WeekDay.samedi,
-            startTime: '08:25',
-            endTime: '09:20',
-            subject: 'Physique-Chimie',
-            teacherName: 'M. Koné',
-            room: 'Lab.1'),
-      ];
+  bool loading = false;
+  String? error;
 
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_key);
-    if (data != null) {
-      final List decoded = jsonDecode(data);
-      if (decoded.isNotEmpty) {
-        state = decoded.map((e) => TimetableEntry.fromJson(e)).toList();
-        return;
-      }
+  /// Charge depuis l'API (classe). Pas de données mock.
+  Future<void> loadForClass(String classId, {String? className}) async {
+    loading = true;
+    error = null;
+    try {
+      final data = await TimetableApiService.getByClass(
+        classId,
+        year: currentSchoolYear(),
+      );
+      final slots = (data['slots'] as List?) ?? const [];
+      state = slots
+          .map((e) => timetableEntryFromApi(
+                Map<String, dynamic>.from(e as Map),
+                fallbackClassName: className,
+              ))
+          .toList();
+    } catch (_) {
+      error = 'Impossible de charger l\'emploi du temps';
+      state = <TimetableEntry>[];
+    } finally {
+      loading = false;
     }
-    // Garder les données par défaut si rien en storage
+  }
+
+  /// Charge depuis l'API (enseignant).
+  Future<void> loadForTeacher(String teacherId,
+      {String? teacherName}) async {
+    loading = true;
+    error = null;
+    try {
+      final slots = await TimetableApiService.getByTeacher(
+        teacherId,
+        year: currentSchoolYear(),
+      );
+      state = slots
+          .map((e) => timetableEntryFromApi(
+                Map<String, dynamic>.from(e as Map),
+                fallbackTeacherName: teacherName,
+              ))
+          .toList();
+    } catch (_) {
+      error = 'Impossible de charger l\'emploi du temps';
+      state = <TimetableEntry>[];
+    } finally {
+      loading = false;
+    }
+  }
+
+  /// Fallback local (édition offline / legacy). Liste vide si rien en cache.
+  Future<void> load() async {
+    loading = true;
+    error = null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString(_key);
+      if (data != null) {
+        final List decoded = jsonDecode(data);
+        state = decoded.map((e) => TimetableEntry.fromJson(e)).toList();
+      } else {
+        state = <TimetableEntry>[];
+      }
+    } catch (_) {
+      error = 'Impossible de charger l\'emploi du temps';
+      state = <TimetableEntry>[];
+    } finally {
+      loading = false;
+    }
   }
 
   Future<void> addEntry(TimetableEntry entry) async {

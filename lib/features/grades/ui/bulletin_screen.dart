@@ -4,9 +4,10 @@ import 'package:printing/printing.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/grade_provider.dart';
 import '../../../core/providers/student_provider.dart';
-import '../../student/data/student.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/school_year.dart';
 import '../../../services/bulletin_pdf_service.dart';
+import '../../student/data/student.dart';
 import '../data/grade_model.dart';
 
 class BulletinScreen extends ConsumerStatefulWidget {
@@ -87,7 +88,7 @@ class _BulletinScreenState extends ConsumerState<BulletinScreen> {
         schoolName: auth.tenantName ?? 'ÉTABLISSEMENT',
         schoolCode: auth.tenantCode ?? '',
         schoolCity: '',
-        year: '2025-2026',
+        year: currentSchoolYear(),
         classAverage: averages.isEmpty
             ? null
             : averages.reduce((a, b) => a + b) / averages.length,

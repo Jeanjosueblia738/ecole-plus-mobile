@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/finance/data/finance_model.dart';
 import '../../features/student/data/student.dart';
 import '../services/finance_api_service.dart';
+import '../utils/school_year.dart';
 import 'student_provider.dart';
 
 FeeType _mapFeeType(dynamic raw) {
@@ -59,6 +60,7 @@ class FeeNotifier extends StateNotifier<List<SchoolFee>> {
           .toList();
     } catch (_) {
       error = 'Impossible de charger les frais';
+      state = [];
     } finally {
       loading = false;
     }
@@ -69,15 +71,13 @@ class FeeNotifier extends StateNotifier<List<SchoolFee>> {
       'label': fee.label,
       'amountXof': fee.montant,
       'dueDate': fee.dateEcheance.toIso8601String().split('T').first,
-      'year': fee.trimestre.isNotEmpty
-          ? fee.trimestre
-          : DateTime.now().year.toString(),
+      'year': currentSchoolYear(),
       'type': fee.type == FeeType.scolarite || fee.type == FeeType.inscription
           ? 'SCOLAIRE'
           : 'ANNEXE',
       if (fee.classLevel != null) 'level': fee.classLevel,
     });
-    await load();
+    await load(year: currentSchoolYear());
   }
 
   Future<void> remove(String id) async {

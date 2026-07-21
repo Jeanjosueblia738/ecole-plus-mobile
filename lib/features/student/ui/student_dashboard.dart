@@ -34,6 +34,7 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
   List<dynamic> _grades = [];
   Map<String, dynamic>? _attendance;
   bool _loading = true;
+  String? _error;
   String _trimestre = 'T1';
 
   @override
@@ -44,23 +45,41 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
 
   Future<void> _loadData() async {
     if (!mounted) return;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
+      var partialFailure = false;
       final results = await Future.wait([
-        StudentApiService.getMyGrades(trimestre: _trimestre)
-            .catchError((_) => <dynamic>[]),
-        StudentApiService.getMyAttendance()
-            .catchError((_) => <String, dynamic>{}),
+        StudentApiService.getMyGrades(trimestre: _trimestre).catchError((_) {
+          partialFailure = true;
+          return <dynamic>[];
+        }),
+        StudentApiService.getMyAttendance().catchError((_) {
+          partialFailure = true;
+          return <String, dynamic>{};
+        }),
       ]);
       if (!mounted) return;
       setState(() {
         _grades = results[0] as List<dynamic>;
         _attendance = results[1] as Map<String, dynamic>?;
         _loading = false;
+        if (partialFailure) {
+          _error =
+              'Impossible de charger toutes les données. Tirez pour actualiser.';
+        }
       });
     } catch (e) {
       debugPrint('ECOLE+ student: $e');
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error =
+              'Impossible de charger les données. Vérifiez votre connexion.';
+        });
+      }
     }
   }
 
@@ -136,6 +155,31 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (_error != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: Colors.red.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(_error!,
+                          style: TextStyle(
+                              color: Colors.red.shade800, fontSize: 13)),
+                    ),
+                    TextButton(
+                        onPressed: _loadData, child: const Text('Réessayer')),
+                  ],
+                ),
+              ),
             // Carte profil
             Container(
               width: double.infinity,

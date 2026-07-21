@@ -364,7 +364,7 @@ class _GradesTab extends StatelessWidget {
                             studentId:
                                 students.isNotEmpty ? students.first.id : '',
                             studentName: className,
-                            trimestre: '1er',
+                            trimestre: 'T1',
                           ),
                         ),
                       ),

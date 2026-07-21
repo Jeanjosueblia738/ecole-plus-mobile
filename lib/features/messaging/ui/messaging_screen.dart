@@ -13,6 +13,7 @@ class MessagingScreen extends ConsumerStatefulWidget {
 class _MessagingScreenState extends ConsumerState<MessagingScreen> {
   List<dynamic> _conversations = [];
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -21,13 +22,25 @@ class _MessagingScreenState extends ConsumerState<MessagingScreen> {
   }
 
   Future<void> _loadConversations() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final data = await MessagingApiService.getConversations();
       if (mounted) {
         setState(() => _conversations = data);
       }
     } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Impossible de charger les conversations');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible de charger les conversations'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -75,7 +88,9 @@ class _MessagingScreenState extends ConsumerState<MessagingScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _conversations.isEmpty
+          : _error != null && _conversations.isEmpty
+              ? _buildError()
+              : _conversations.isEmpty
               ? _buildEmpty()
               : RefreshIndicator(
                   onRefresh: _loadConversations,
@@ -107,6 +122,26 @@ class _MessagingScreenState extends ConsumerState<MessagingScreen> {
         Text('Appuyez sur + pour démarrer',
             style: TextStyle(color: textGrey, fontSize: 13)),
       ]),
+    );
+  }
+
+  Widget _buildError() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.error_outline, size: 56, color: Colors.red),
+          const SizedBox(height: 16),
+          Text(_error ?? 'Erreur',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: textGrey, fontSize: 15)),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadConversations,
+            child: const Text('Réessayer'),
+          ),
+        ]),
+      ),
     );
   }
 
@@ -202,6 +237,7 @@ class _ConversationScreenState extends ConsumerState<_ConversationScreen> {
   List<dynamic> _messages = [];
   bool _loading = true;
   bool _sending = false;
+  String? _error;
   final _ctrl = TextEditingController();
   final _scrollCtrl = ScrollController();
 
@@ -219,6 +255,10 @@ class _ConversationScreenState extends ConsumerState<_ConversationScreen> {
   }
 
   Future<void> _loadMessages() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final data =
           await MessagingApiService.getMessages(widget.conv['id'] as String);
@@ -231,7 +271,16 @@ class _ConversationScreenState extends ConsumerState<_ConversationScreen> {
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _loading = false);
+        setState(() {
+          _loading = false;
+          _error = 'Impossible de charger les messages';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible de charger les messages'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -260,6 +309,14 @@ class _ConversationScreenState extends ConsumerState<_ConversationScreen> {
         _scrollToBottom();
       }
     } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Impossible d'envoyer le message"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _sending = false);
@@ -309,7 +366,29 @@ class _ConversationScreenState extends ConsumerState<_ConversationScreen> {
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : _messages.isEmpty
+              : _error != null && _messages.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline,
+                                size: 48, color: Colors.red),
+                            const SizedBox(height: 12),
+                            Text(_error!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: textGrey)),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: _loadMessages,
+                              child: const Text('Réessayer'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : _messages.isEmpty
                   ? const Center(
                       child: Text('Aucun message',
                           style: TextStyle(color: textGrey)))
@@ -493,6 +572,12 @@ class _NewConversationScreenState
     } catch (_) {
       if (mounted) {
         setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible de charger les destinataires'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }

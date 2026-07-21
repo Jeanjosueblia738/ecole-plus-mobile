@@ -44,21 +44,31 @@ class _JustifyAbsenceScreenState extends ConsumerState<JustifyAbsenceScreen> {
 
     setState(() => _isSubmitting = true);
 
-    await ref.read(attendanceProvider.notifier).justifyAbsence(
-          recordId: widget.record.id,
-          motif: _motifCtrl.text.trim(),
-        );
+    try {
+      await ref.read(attendanceProvider.notifier).justifyAbsence(
+            recordId: widget.record.id,
+            motif: _motifCtrl.text.trim(),
+          );
 
-    setState(() => _isSubmitting = false);
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Justification envoyée — en attente de validation'),
-        backgroundColor: Color(0xFF16A34A),
-      ),
-    );
-    Navigator.pop(context);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Justification envoyée — en attente de validation'),
+          backgroundColor: Color(0xFF16A34A),
+        ),
+      );
+      Navigator.pop(context);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Échec de l\'envoi de la justification'),
+          backgroundColor: Color(0xFFDC2626),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override

@@ -16,9 +16,9 @@ class StudentTimetableScreen extends StatefulWidget {
     this.titlePrefix = 'EDT',
   });
 
-  /// EDT de l'enfant (compte parent)
-  const StudentTimetableScreen.forParent({super.key})
-      : loader = ParentApiService.getChildTimetable,
+  /// EDT de l'enfant (compte parent) — passe [studentId] à l'API.
+  StudentTimetableScreen.forParent({super.key, String? studentId})
+      : loader = () => ParentApiService.getChildTimetable(studentId: studentId),
         titlePrefix = 'EDT enfant';
 
   @override

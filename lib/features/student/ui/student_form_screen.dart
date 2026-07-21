@@ -20,6 +20,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
   final regCtrl = TextEditingController();
   List<dynamic> _classes = [];
   String? _classId;
+  String _gender = 'MALE';
   bool _saving = false;
   String? _error;
 
@@ -32,6 +33,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
       lastCtrl.text = parts.length > 1 ? parts.sublist(1).join(' ') : '';
       phoneCtrl.text = widget.student!.parentPhone;
       _classId = widget.student!.classId;
+      _gender = widget.student!.gender ?? 'MALE';
     }
     _loadClasses();
   }
@@ -69,7 +71,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
           'registrationNo': regCtrl.text.trim().isEmpty
               ? 'ELV-${DateTime.now().millisecondsSinceEpoch % 100000}'
               : regCtrl.text.trim(),
-          'gender': 'MALE',
+          'gender': _gender,
           'statut': _classId != null ? 'AFFECTE' : 'NON_AFFECTE',
           if (_classId != null) 'classId': _classId,
           'parentPhone': phoneCtrl.text.trim().isEmpty
@@ -80,6 +82,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
         await StudentsApiService.update(widget.student!.id, {
           'firstName': firstCtrl.text.trim(),
           'lastName': lastCtrl.text.trim(),
+          'gender': _gender,
           if (_classId != null) 'classId': _classId,
           'parentPhone': phoneCtrl.text.trim().isEmpty
               ? null
@@ -131,6 +134,18 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
                     labelText: 'Matricule (auto si vide)'),
               ),
             if (widget.student == null) const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _gender,
+              decoration: const InputDecoration(labelText: 'Genre'),
+              items: const [
+                DropdownMenuItem(value: 'MALE', child: Text('Masculin')),
+                DropdownMenuItem(value: 'FEMALE', child: Text('Féminin')),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _gender = v);
+              },
+            ),
+            const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: _classId,
               decoration: const InputDecoration(labelText: 'Classe'),

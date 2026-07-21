@@ -137,13 +137,42 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
   static const _key = 'user_profile';
   ProfileNotifier() : super(null);
 
-  Future<void> loadForRole(UserRole role) async {
+  Future<void> loadForRole(
+    UserRole role, {
+    String? fullName,
+    String? email,
+    String? userId,
+    String? etablissement,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString('${_key}_${role.name}');
     if (data != null) {
-      state = UserProfile.fromJson(jsonDecode(data));
+      final saved = UserProfile.fromJson(jsonDecode(data));
+      // Préférer nom/email auth réels sur les mocks / prefs figés.
+      state = saved.copyWith(
+        fullName: (fullName != null && fullName.trim().isNotEmpty)
+            ? fullName.trim()
+            : saved.fullName,
+        email: (email != null && email.trim().isNotEmpty)
+            ? email.trim()
+            : saved.email,
+        etablissement: etablissement ?? saved.etablissement,
+      );
     } else {
-      state = UserProfile.defaultForRole(role);
+      final defaults = UserProfile.defaultForRole(role);
+      state = UserProfile(
+        id: userId ?? defaults.id,
+        fullName: (fullName != null && fullName.trim().isNotEmpty)
+            ? fullName.trim()
+            : defaults.fullName,
+        email: (email != null && email.trim().isNotEmpty)
+            ? email.trim()
+            : defaults.email,
+        phone: defaults.phone,
+        role: role,
+        etablissement: etablissement ?? defaults.etablissement,
+        poste: defaults.poste,
+      );
     }
   }
 

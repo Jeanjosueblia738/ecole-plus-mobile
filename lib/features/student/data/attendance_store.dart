@@ -82,7 +82,13 @@ class AttendanceRecord {
     String status;
     if (isJustified) {
       status = 'Justifiée';
-    } else if (statusRaw == 'ABSENT' || statusRaw == 'LATE') {
+    } else if (json['justification'] != null &&
+        (json['justification'] as String).trim().isNotEmpty &&
+        !isJustified) {
+      status = 'En attente';
+    } else if (isLate || statusRaw == 'LATE') {
+      status = 'Retard';
+    } else if (statusRaw == 'ABSENT') {
       status = 'Absent';
     } else {
       status = statusRaw.isEmpty ? 'Absent' : statusRaw;

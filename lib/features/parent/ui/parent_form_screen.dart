@@ -63,8 +63,9 @@ class _ParentFormScreenState extends State<ParentFormScreen> {
     // ✅ Vérification mounted APRÈS l'await avant tout usage de context
     if (!mounted) return;
 
-    final message =
-        widget.parent == null ? 'Parent ajouté' : 'Parent mis à jour';
+    final message = widget.parent == null
+        ? 'Parent enregistré en local (hors ligne uniquement)'
+        : 'Parent mis à jour en local (hors ligne uniquement)';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
@@ -84,6 +85,20 @@ class _ParentFormScreenState extends State<ParentFormScreen> {
         padding: const EdgeInsets.all(24),
         child: ListView(
           children: [
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: const Text(
+                'Enregistrement local uniquement — non synchronisé avec le serveur.',
+                style: TextStyle(fontSize: 13),
+              ),
+            ),
             TextField(
               controller: nameCtrl,
               decoration: const InputDecoration(labelText: 'Nom complet'),
