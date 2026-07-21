@@ -231,22 +231,19 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                     color: dangerRed,
                     loading: _loading),
                 const SizedBox(width: 12),
-              ],
-              _KpiCard(
-                  label: 'Impayés',
-                  value: _unpaidCount.toString(),
-                  icon: Icons.people_alt_outlined,
-                  color: warningYellow,
-                  loading: _loading),
-              if (isCashier) ...[
-                const SizedBox(width: 12),
                 _KpiCard(
-                    label: 'À recouvrir',
-                    value: _fmt(solde < 0 ? 0 : solde),
-                    icon: Icons.money_off_outlined,
-                    color: dangerRed,
+                    label: 'Impayés',
+                    value: _unpaidCount.toString(),
+                    icon: Icons.people_alt_outlined,
+                    color: warningYellow,
                     loading: _loading),
-              ],
+              ] else
+                _KpiCard(
+                    label: 'Impayés',
+                    value: _unpaidCount.toString(),
+                    icon: Icons.people_alt_outlined,
+                    color: warningYellow,
+                    loading: _loading),
             ]),
 
             const SizedBox(height: 20),

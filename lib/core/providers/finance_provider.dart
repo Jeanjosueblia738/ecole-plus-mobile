@@ -15,9 +15,11 @@ SchoolFee schoolFeeFromApi(Map<String, dynamic> json) {
     montant: (json['amountXof'] as num?)?.toDouble() ??
         (json['montant'] as num?)?.toDouble() ??
         0,
-    trimestre: json['year']?.toString() ?? json['trimestre']?.toString() ?? '',
+    trimestre: json['trimestre']?.toString() ??
+        json['year']?.toString() ??
+        '',
     classLevel: json['level'] as String?,
-    obligatoire: true,
+    obligatoire: json['obligatoire'] != false,
     dateEcheance: DateTime.tryParse(json['dueDate']?.toString() ?? '') ??
         DateTime.now(),
   );
@@ -87,6 +89,46 @@ class PaymentNotifier extends StateNotifier<List<Payment>> {
   PaymentNotifier() : super([]);
 
   String? error;
+  bool loading = false;
+
+  Future<void> loadAll({String? year}) async {
+    loading = true;
+    error = null;
+    try {
+      final raw = await FinanceApiService.listPayments(
+        year: year ?? currentSchoolYear(),
+      );
+      state = raw.map((e) {
+        final map = Map<String, dynamic>.from(e as Map);
+        final statusRaw = (map['status']?.toString() ?? '').toLowerCase();
+        return Payment(
+          id: map['id']?.toString() ?? '',
+          studentId: map['studentId']?.toString() ?? '',
+          studentName: map['studentName']?.toString() ?? '',
+          className: map['className']?.toString() ?? '',
+          feeId: map['feeId']?.toString() ?? '',
+          feeLabel: map['feeLabel']?.toString() ?? '',
+          montant: (map['montant'] as num?)?.toDouble() ?? 0,
+          method: _mapPaymentMode(map['paymentMode']),
+          status: statusRaw.contains('attente')
+              ? PaymentStatus.enAttente
+              : map['isPaid'] == false
+                  ? PaymentStatus.enAttente
+                  : PaymentStatus.valide,
+          date: DateTime.tryParse(
+                  map['paidAt']?.toString() ?? map['date']?.toString() ?? '') ??
+              DateTime.now(),
+          receiptNumber: map['receiptNo']?.toString() ??
+              'REC-${map['id']?.toString().substring(0, 6) ?? '------'}',
+        );
+      }).toList();
+    } catch (_) {
+      error = 'Impossible de charger l\'historique';
+      state = [];
+    } finally {
+      loading = false;
+    }
+  }
 
   Future<void> loadForStudent(String studentId) async {
     error = null;

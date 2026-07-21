@@ -31,6 +31,14 @@ class FinanceApiService {
     return response.data as List<dynamic>;
   }
 
+  static Future<List<dynamic>> listPayments({String? year}) async {
+    final response = await ApiClient.instance.get(
+      '/finance/payments',
+      params: {if (year != null) 'year': year},
+    );
+    return response.data as List<dynamic>;
+  }
+
   static Future<Map<String, dynamic>> createFee(Map<String, dynamic> data) async {
     final response = await ApiClient.instance.post('/finance/fees', data: data);
     return response.data as Map<String, dynamic>;
@@ -101,6 +109,15 @@ class FinanceApiService {
       Map<String, dynamic> data) async {
     final response =
         await ApiClient.instance.post('/finance/payroll', data: data);
+    return response.data as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> payrollStatus(
+      String id, String status) async {
+    final response = await ApiClient.instance.patch(
+      '/finance/payroll/$id/status',
+      data: {'status': status},
+    );
     return response.data as Map<String, dynamic>;
   }
 

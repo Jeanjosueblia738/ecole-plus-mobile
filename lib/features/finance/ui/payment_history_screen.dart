@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
 import '../../../core/providers/finance_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/school_year.dart';
 import '../../../services/receipt_pdf_service.dart';
 import '../data/finance_model.dart';
 
@@ -16,6 +17,29 @@ class PaymentHistoryScreen extends ConsumerStatefulWidget {
 
 class _PaymentHistoryScreenState extends ConsumerState<PaymentHistoryScreen> {
   String _filter = 'Tous';
+  bool _loading = true;
+  String? _error;
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    await ref
+        .read(paymentProvider.notifier)
+        .loadAll(year: currentSchoolYear());
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _error = ref.read(paymentProvider.notifier).error;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_load);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +49,6 @@ class _PaymentHistoryScreenState extends ConsumerState<PaymentHistoryScreen> {
         ? all
         : all.where((p) => p.status.label == _filter).toList();
 
-    // Du plus récent au plus ancien
     final sorted = [...filtered]..sort((a, b) => b.date.compareTo(a.date));
 
     return Scaffold(
@@ -35,10 +58,12 @@ class _PaymentHistoryScreenState extends ConsumerState<PaymentHistoryScreen> {
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         centerTitle: true,
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
+        ],
       ),
       body: Column(
         children: [
-          // ── Filtres statut ─────────────────────────────────────
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(12),
@@ -62,8 +87,12 @@ class _PaymentHistoryScreenState extends ConsumerState<PaymentHistoryScreen> {
               }).toList(),
             ),
           ),
-
-          // Compteur
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(_error!,
+                  style: TextStyle(color: Colors.red.shade700, fontSize: 13)),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -73,22 +102,24 @@ class _PaymentHistoryScreenState extends ConsumerState<PaymentHistoryScreen> {
               ],
             ),
           ),
-
           const SizedBox(height: 8),
-
-          // ── Liste ──────────────────────────────────────────────
           Expanded(
-            child: sorted.isEmpty
-                ? const Center(
-                    child: Text('Aucun paiement',
-                        style: TextStyle(color: textGrey)))
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: sorted.length,
-                    itemBuilder: (context, index) {
-                      return _PaymentCard(payment: sorted[index]);
-                    },
-                  ),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : sorted.isEmpty
+                    ? const Center(
+                        child: Text('Aucun paiement',
+                            style: TextStyle(color: textGrey)))
+                    : RefreshIndicator(
+                        onRefresh: _load,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: sorted.length,
+                          itemBuilder: (context, index) {
+                            return _PaymentCard(payment: sorted[index]);
+                          },
+                        ),
+                      ),
           ),
         ],
       ),
@@ -126,7 +157,6 @@ class _PaymentCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Ligne 1 ──────────────────────────────────────────
           Row(
             children: [
               Icon(methodIcon, color: primaryBlue, size: 18),
@@ -152,8 +182,6 @@ class _PaymentCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 6),
-
-          // ── Ligne 2 ──────────────────────────────────────────
           Row(
             children: [
               Expanded(
@@ -170,8 +198,6 @@ class _PaymentCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 4),
-
-          // ── Ligne 3 ──────────────────────────────────────────
           Row(
             children: [
               Text(
@@ -182,7 +208,6 @@ class _PaymentCard extends ConsumerWidget {
               Text('• ${payment.receiptNumber}',
                   style: const TextStyle(color: textGrey, fontSize: 11)),
               const Spacer(),
-              // Bouton reçu PDF
               GestureDetector(
                 onTap: () async {
                   final bytes = await ReceiptPdfService.generate(payment);

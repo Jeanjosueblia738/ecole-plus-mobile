@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/security/user_role.dart';
 import '../../../core/services/finance_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -13,12 +15,15 @@ class CashSessionScreen extends ConsumerStatefulWidget {
 class _CashSessionScreenState extends ConsumerState<CashSessionScreen> {
   Map<String, dynamic>? _current;
   List<dynamic> _sessions = [];
+  List<dynamic> _accounts = [];
   bool _loading = true;
   bool _busy = false;
   String? _error;
+  String? _bankAccountId;
   final _floatCtrl = TextEditingController(text: '0');
   final _countedCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
+  final _depositCtrl = TextEditingController();
 
   String _fmt(num n) {
     final v = n.toInt();
@@ -33,10 +38,19 @@ class _CashSessionScreenState extends ConsumerState<CashSessionScreen> {
     try {
       final cur = await FinanceApiService.cashCurrent();
       final list = await FinanceApiService.cashSessions();
+      List<dynamic> accounts = [];
+      final role = ref.read(authProvider).role;
+      if (role != UserRole.cashier) {
+        accounts = await FinanceApiService.listBankAccounts().catchError((_) => []);
+      }
       if (!mounted) return;
       setState(() {
         _current = cur;
         _sessions = list;
+        _accounts = accounts;
+        if (_bankAccountId == null && accounts.isNotEmpty) {
+          _bankAccountId = (accounts.first as Map)['id']?.toString();
+        }
         _loading = false;
       });
     } catch (_) {
@@ -60,6 +74,7 @@ class _CashSessionScreenState extends ConsumerState<CashSessionScreen> {
     _floatCtrl.dispose();
     _countedCtrl.dispose();
     _noteCtrl.dispose();
+    _depositCtrl.dispose();
     super.dispose();
   }
 
@@ -91,13 +106,18 @@ class _CashSessionScreenState extends ConsumerState<CashSessionScreen> {
     }
     setState(() => _busy = true);
     try {
+      final deposit = int.tryParse(_depositCtrl.text);
       await FinanceApiService.cashClose({
         'closingCountedXof': counted,
         if (_noteCtrl.text.trim().isNotEmpty)
           'varianceNote': _noteCtrl.text.trim(),
+        if (deposit != null && deposit > 0) 'bankDepositXof': deposit,
+        if (_bankAccountId != null && deposit != null && deposit > 0)
+          'bankAccountId': _bankAccountId,
       });
       _countedCtrl.clear();
       _noteCtrl.clear();
+      _depositCtrl.clear();
       await _load();
     } catch (e) {
       if (mounted) {
@@ -180,6 +200,34 @@ class _CashSessionScreenState extends ConsumerState<CashSessionScreen> {
                               border: OutlineInputBorder(),
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _depositCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Versement banque (optionnel)',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          if (_accounts.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              value: _bankAccountId,
+                              items: _accounts.map((a) {
+                                final m = Map<String, dynamic>.from(a as Map);
+                                return DropdownMenuItem(
+                                  value: m['id']?.toString(),
+                                  child: Text(m['name']?.toString() ?? ''),
+                                );
+                              }).toList(),
+                              onChanged: (v) =>
+                                  setState(() => _bankAccountId = v),
+                              decoration: const InputDecoration(
+                                labelText: 'Compte bancaire',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 12),
                           SizedBox(
                             width: double.infinity,
@@ -240,7 +288,8 @@ class _CashSessionScreenState extends ConsumerState<CashSessionScreen> {
                     final s = Map<String, dynamic>.from(raw as Map);
                     return Card(
                       child: ListTile(
-                        title: Text('${s['status']} · ${_fmt(s['openingFloatXof'] ?? 0)}'),
+                        title: Text(
+                            '${s['status']} · ${_fmt(s['openingFloatXof'] ?? 0)}'),
                         subtitle: Text(
                           s['openedAt']?.toString().substring(0, 16) ?? '',
                           style: const TextStyle(fontSize: 12),

@@ -1,15 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/security/user_role.dart';
 import '../../../core/services/finance_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/school_year.dart';
 
-/// Hub comptable : dépenses, fournisseurs, paie, budget, banque (listes + création simple)
-class FinanceOpsHubScreen extends ConsumerWidget {
+/// Hub comptable : dépenses, fournisseurs, paie, budget, banque
+class FinanceOpsHubScreen extends ConsumerStatefulWidget {
   const FinanceOpsHubScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FinanceOpsHubScreen> createState() =>
+      _FinanceOpsHubScreenState();
+}
+
+class _FinanceOpsHubScreenState extends ConsumerState<FinanceOpsHubScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      final role = ref.read(authProvider).role;
+      if (role == UserRole.cashier) {
+        if (mounted) Navigator.of(context).maybePop();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final role = ref.watch(authProvider).role;
+    if (role == UserRole.cashier) {
+      return const Scaffold(
+        body: Center(child: Text('Accès réservé au comptable')),
+      );
+    }
+
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
@@ -20,57 +46,22 @@ class FinanceOpsHubScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _tile(
-            context,
-            Icons.receipt_long,
-            'Dépenses',
-            'Enregistrer et consulter',
-            () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const _ExpensesScreen())),
-          ),
-          _tile(
-            context,
-            Icons.storefront_outlined,
-            'Fournisseurs',
-            'Annuaire partenaires',
-            () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const _SuppliersScreen())),
-          ),
-          _tile(
-            context,
-            Icons.payments_outlined,
-            'Paie',
-            'Bulletins et statut',
-            () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const _PayrollScreen())),
-          ),
-          _tile(
-            context,
-            Icons.pie_chart_outline,
-            'Budget',
-            'Prévisionnel vs réel',
-            () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const _BudgetScreen())),
-          ),
-          _tile(
-            context,
-            Icons.account_balance_outlined,
-            'Banque',
-            'Comptes et mouvements',
-            () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const _BankScreen())),
-          ),
+          _tile(context, Icons.receipt_long, 'Dépenses', 'Enregistrer et consulter',
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _ExpensesScreen()))),
+          _tile(context, Icons.storefront_outlined, 'Fournisseurs', 'Annuaire partenaires',
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _SuppliersScreen()))),
+          _tile(context, Icons.payments_outlined, 'Paie', 'Bulletins et statut',
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _PayrollScreen()))),
+          _tile(context, Icons.pie_chart_outline, 'Budget', 'Prévisionnel vs réel',
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _BudgetScreen()))),
+          _tile(context, Icons.account_balance_outlined, 'Banque', 'Comptes, mouvements, rapprochement',
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _BankScreen()))),
         ],
       ),
     );
   }
 
-  Widget _tile(BuildContext context, IconData icon, String title,
-      String subtitle, VoidCallback onTap) {
+  Widget _tile(BuildContext context, IconData icon, String title, String subtitle, VoidCallback onTap) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
@@ -130,10 +121,7 @@ class _ExpensesScreenState extends State<_ExpensesScreen> {
           children: [
             TextField(controller: cat, decoration: const InputDecoration(labelText: 'Catégorie')),
             TextField(controller: label, decoration: const InputDecoration(labelText: 'Libellé')),
-            TextField(
-                controller: amount,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Montant')),
+            TextField(controller: amount, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Montant')),
           ],
         ),
         actions: [
@@ -167,8 +155,7 @@ class _ExpensesScreenState extends State<_ExpensesScreen> {
                 return ListTile(
                   title: Text(r['label']?.toString() ?? ''),
                   subtitle: Text('${r['category']} · ${r['paymentMode']}'),
-                  trailing: Text(_fmt(r['amountXof'] ?? 0),
-                      style: const TextStyle(color: dangerRed, fontWeight: FontWeight.bold)),
+                  trailing: Text(_fmt(r['amountXof'] ?? 0), style: const TextStyle(color: dangerRed, fontWeight: FontWeight.bold)),
                 );
               },
             ),
@@ -286,10 +273,7 @@ class _PayrollScreenState extends State<_PayrollScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(controller: name, decoration: const InputDecoration(labelText: 'Employé')),
-            TextField(
-                controller: base,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Salaire de base')),
+            TextField(controller: base, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Salaire de base')),
           ],
         ),
         actions: [
@@ -306,10 +290,7 @@ class _PayrollScreenState extends State<_PayrollScreen> {
       'year': year,
       'month': month,
       'slips': [
-        {
-          'employeeName': name.text,
-          'baseSalaryXof': int.tryParse(base.text) ?? 0,
-        }
+        {'employeeName': name.text, 'baseSalaryXof': int.tryParse(base.text) ?? 0}
       ],
     });
     await _load();
@@ -327,13 +308,48 @@ class _PayrollScreenState extends State<_PayrollScreen> {
               itemBuilder: (_, i) {
                 final r = Map<String, dynamic>.from(_rows[i] as Map);
                 final slips = (r['slips'] as List?) ?? [];
-                final total = slips.fold<num>(
-                    0, (s, x) => s + ((x as Map)['netXof'] as num? ?? 0));
-                return ListTile(
-                  title: Text(r['label']?.toString() ?? ''),
-                  subtitle: Text('${r['status']} · ${slips.length} bulletin(s)'),
-                  trailing: Text(_fmt(total),
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                final total = slips.fold<num>(0, (s, x) => s + ((x as Map)['netXof'] as num? ?? 0));
+                final id = r['id']?.toString() ?? '';
+                final status = r['status']?.toString() ?? '';
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(child: Text(r['label']?.toString() ?? '', style: const TextStyle(fontWeight: FontWeight.bold))),
+                            Text(_fmt(total)),
+                          ],
+                        ),
+                        Text('$status · ${slips.length} bulletin(s)', style: const TextStyle(fontSize: 12, color: textGrey)),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            if (status == 'DRAFT')
+                              TextButton(
+                                onPressed: () async {
+                                  await FinanceApiService.payrollStatus(id, 'VALIDATED');
+                                  await _load();
+                                },
+                                child: const Text('Valider'),
+                              ),
+                            if (status != 'PAID')
+                              TextButton(
+                                onPressed: () async {
+                                  await FinanceApiService.payrollStatus(id, 'PAID');
+                                  await _load();
+                                },
+                                child: const Text('Marquer payé'),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 );
               },
             ),
@@ -385,10 +401,7 @@ class _BudgetScreenState extends State<_BudgetScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(controller: cat, decoration: const InputDecoration(labelText: 'Catégorie')),
-            TextField(
-                controller: amount,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Montant prévu')),
+            TextField(controller: amount, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Montant prévu')),
           ],
         ),
         actions: [
@@ -403,11 +416,7 @@ class _BudgetScreenState extends State<_BudgetScreen> {
       'year': year,
       'label': 'Budget $year',
       'lines': [
-        {
-          'category': cat.text,
-          'label': cat.text,
-          'plannedXof': int.tryParse(amount.text) ?? 0,
-        }
+        {'category': cat.text, 'label': cat.text, 'plannedXof': int.tryParse(amount.text) ?? 0}
       ],
     });
     await _load();
@@ -427,10 +436,8 @@ class _BudgetScreenState extends State<_BudgetScreen> {
                   padding: const EdgeInsets.all(16),
                   children: [
                     Text('Prévu: ${_fmt(summary['plannedTotal'] ?? 0)}'),
-                    Text('Réel: ${_fmt(summary['actualTotal'] ?? 0)}',
-                        style: const TextStyle(color: dangerRed)),
-                    Text('Écart: ${_fmt(summary['varianceTotal'] ?? 0)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text('Réel: ${_fmt(summary['actualTotal'] ?? 0)}', style: const TextStyle(color: dangerRed)),
+                    Text('Écart: ${_fmt(summary['varianceTotal'] ?? 0)}', style: const TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
     );
@@ -453,9 +460,7 @@ class _BankScreenState extends State<_BankScreen> {
     setState(() => _loading = true);
     try {
       _accounts = await FinanceApiService.listBankAccounts();
-      _selected ??= _accounts.isNotEmpty
-          ? (_accounts.first as Map)['id']?.toString()
-          : null;
+      _selected ??= _accounts.isNotEmpty ? (_accounts.first as Map)['id']?.toString() : null;
       if (_selected != null) {
         _txs = await FinanceApiService.listBankTransactions(_selected!);
       }
@@ -488,6 +493,92 @@ class _BankScreenState extends State<_BankScreen> {
     await _load();
   }
 
+  Future<void> _addTx() async {
+    if (_selected == null) return;
+    final label = TextEditingController();
+    final amount = TextEditingController();
+    var type = 'CREDIT';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Mouvement'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: type,
+                items: const [
+                  DropdownMenuItem(value: 'CREDIT', child: Text('Crédit')),
+                  DropdownMenuItem(value: 'DEBIT', child: Text('Débit')),
+                ],
+                onChanged: (v) => setLocal(() => type = v ?? 'CREDIT'),
+              ),
+              TextField(controller: amount, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Montant')),
+              TextField(controller: label, decoration: const InputDecoration(labelText: 'Libellé')),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('OK')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true) return;
+    await FinanceApiService.createBankTransaction({
+      'accountId': _selected,
+      'type': type,
+      'amountXof': int.tryParse(amount.text) ?? 0,
+      'label': label.text,
+    });
+    await _load();
+  }
+
+  Future<void> _reconcile() async {
+    if (_selected == null) return;
+    final start = TextEditingController();
+    final end = TextEditingController();
+    final balance = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rapprochement'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: start, decoration: const InputDecoration(labelText: 'Début (YYYY-MM-DD)')),
+            TextField(controller: end, decoration: const InputDecoration(labelText: 'Fin (YYYY-MM-DD)')),
+            TextField(controller: balance, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Solde relevé')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('OK')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final unreconciled = _txs
+        .where((t) => (t as Map)['isReconciled'] != true)
+        .map((t) => (t as Map)['id']?.toString())
+        .whereType<String>()
+        .toList();
+    await FinanceApiService.reconcileBank({
+      'accountId': _selected,
+      'periodStart': start.text,
+      'periodEnd': end.text,
+      'statementBalanceXof': int.tryParse(balance.text) ?? 0,
+      'markReconciledIds': unreconciled,
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Rapprochement enregistré')),
+      );
+    }
+    await _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -497,6 +588,8 @@ class _BankScreenState extends State<_BankScreen> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(icon: const Icon(Icons.add), onPressed: _addAccount),
+          IconButton(icon: const Icon(Icons.swap_horiz), onPressed: _addTx),
+          IconButton(icon: const Icon(Icons.fact_check_outlined), onPressed: _reconcile),
         ],
       ),
       body: _loading
@@ -508,15 +601,10 @@ class _BankScreenState extends State<_BankScreen> {
                     padding: const EdgeInsets.all(12),
                     child: DropdownButtonFormField<String>(
                       value: _selected,
-                      items: _accounts
-                          .map((a) {
-                            final m = Map<String, dynamic>.from(a as Map);
-                            return DropdownMenuItem(
-                              value: m['id']?.toString(),
-                              child: Text(m['name']?.toString() ?? ''),
-                            );
-                          })
-                          .toList(),
+                      items: _accounts.map((a) {
+                        final m = Map<String, dynamic>.from(a as Map);
+                        return DropdownMenuItem(value: m['id']?.toString(), child: Text(m['name']?.toString() ?? ''));
+                      }).toList(),
                       onChanged: (v) async {
                         setState(() => _selected = v);
                         if (v != null) {
@@ -535,13 +623,10 @@ class _BankScreenState extends State<_BankScreen> {
                       final credit = t['type'] == 'CREDIT';
                       return ListTile(
                         title: Text(t['label']?.toString() ?? ''),
-                        subtitle: Text(t['type']?.toString() ?? ''),
+                        subtitle: Text('${t['type']}${t['isReconciled'] == true ? ' · rapproché' : ''}'),
                         trailing: Text(
                           '${credit ? '+' : '-'}${_fmt(t['amountXof'] ?? 0)}',
-                          style: TextStyle(
-                            color: credit ? successGreen : dangerRed,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(color: credit ? successGreen : dangerRed, fontWeight: FontWeight.bold),
                         ),
                       );
                     },
