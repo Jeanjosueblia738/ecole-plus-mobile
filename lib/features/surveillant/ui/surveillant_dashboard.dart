@@ -10,6 +10,7 @@ import '../../analytics/ui/dropout_risk_screen.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../student/ui/student_list_screen.dart';
 import '../../teacher/ui/attendance_input_screen.dart';
+import '../../../shared/widgets/workspace_hero.dart';
 
 class SurveillantDashboard extends ConsumerStatefulWidget {
   const SurveillantDashboard({super.key});
@@ -187,43 +188,24 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
                   ],
                 ),
               ),
-            _ProfileCard(
-                name: auth.fullName, role: 'Surveillant Général', color: color),
-            const SizedBox(height: 20),
-            const Text('Discipline & Présences',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
-            const SizedBox(height: 12),
-            Row(children: [
-              _KpiCard(
-                  label: 'Élèves',
-                  value: _totalStudents.toString(),
-                  icon: Icons.people_alt_outlined,
-                  color: primaryBlue,
-                  loading: _loading),
-              const SizedBox(width: 12),
-              _KpiCard(
-                  label: 'Absences',
-                  value: _totalAbsences.toString(),
-                  icon: Icons.event_busy_outlined,
-                  color: dangerRed,
-                  loading: _loading),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              _KpiCard(
-                  label: 'À justifier',
-                  value: _pendingJustifications.toString(),
-                  icon: Icons.pending_outlined,
-                  color: warningYellow,
-                  loading: _loading),
-              const SizedBox(width: 12),
-              const Expanded(child: SizedBox()),
-            ]),
+            WorkspaceHero(
+              eyebrow: 'Vie scolaire',
+              title: 'Discipline & présences',
+              subtitle: 'Appel, justifications et suivi des élèves',
+              color: color,
+              loading: _loading,
+              metrics: [
+                WorkspaceHeroMetric(
+                    label: 'Élèves', value: _totalStudents.toString()),
+                WorkspaceHeroMetric(
+                    label: 'Absences', value: _totalAbsences.toString()),
+                WorkspaceHeroMetric(
+                    label: 'À justifier',
+                    value: _pendingJustifications.toString()),
+              ],
+            ),
             if (_pendingJustifications > 0) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               InkWell(
                 onTap: _openJustifications,
                 borderRadius: BorderRadius.circular(12),
@@ -251,12 +233,7 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
               ),
             ],
             const SizedBox(height: 20),
-            const Text('Actions rapides',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
-            const SizedBox(height: 12),
+            const WorkspaceSectionTitle('Actions principales'),
             _ActionTile(
                 icon: Icons.how_to_reg_outlined,
                 title: 'Faire l\'appel',
@@ -293,50 +270,6 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
           ]),
         ),
       ),
-    );
-  }
-}
-
-class _ProfileCard extends StatelessWidget {
-  final String name, role;
-  final Color color;
-  const _ProfileCard(
-      {required this.name, required this.role, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-            colors: [color, color.withValues(alpha: 0.8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(children: [
-        CircleAvatar(
-            radius: 28,
-            backgroundColor: Colors.white.withValues(alpha: 0.2),
-            child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold))),
-        const SizedBox(width: 14),
-        Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(name,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
-          Text(role,
-              style: const TextStyle(color: Colors.white70, fontSize: 12)),
-        ])),
-      ]),
     );
   }
 }

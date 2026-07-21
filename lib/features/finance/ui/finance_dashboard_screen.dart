@@ -7,6 +7,7 @@ import '../../../core/security/user_role.dart';
 import '../../../core/services/finance_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/school_year.dart';
+import '../../../shared/widgets/workspace_hero.dart';
 import 'payment_screen.dart';
 import 'payment_history_screen.dart';
 import 'fee_management_screen.dart';
@@ -78,7 +79,6 @@ class _FinanceDashboardScreenState
     final auth = ref.watch(authProvider);
     final canConfigureFees = auth.role != UserRole.cashier;
     final stats = ref.watch(financeStatsProvider);
-    final students = ref.watch(studentProvider);
     final payments = ref.watch(paymentProvider);
     final pending = ref.watch(pendingPaymentsProvider);
 
@@ -122,111 +122,34 @@ class _FinanceDashboardScreenState
                 child: Text(_error!, style: const TextStyle(fontSize: 13)),
               ),
             ],
-            // ── Carte récapitulatif ────────────────────────────────
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [primaryBlue, Color(0xFF1D4ED8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Total encaissé',
-                      style: TextStyle(color: Colors.white70, fontSize: 13)),
-                  Text(xof(encaisse),
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  Row(children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Taux de recouvrement',
-                              style: TextStyle(
-                                  color: Colors.white60, fontSize: 11)),
-                          Text('${taux.toStringAsFixed(1)}%',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16)),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('En attente validation',
-                              style: TextStyle(
-                                  color: Colors.white60, fontSize: 11)),
-                          Text(
-                              '${pending.length} paiement${pending.length > 1 ? 's' : ''}',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16)),
-                        ],
-                      ),
-                    ),
-                  ]),
-                  const SizedBox(height: 12),
-                  // Barre taux recouvrement
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: (taux / 100).clamp(0.0, 1.0),
-                      backgroundColor: Colors.white24,
-                      valueColor:
-                          const AlwaysStoppedAnimation<Color>(Colors.white),
-                      minHeight: 6,
-                    ),
-                  ),
-                ],
+            WorkspaceHero(
+              eyebrow: canConfigureFees ? 'Comptabilité' : 'Poste de caisse',
+              title: 'Gestion financière',
+              subtitle: 'Encaissements, historique et suivi du recouvrement',
+              color: primaryBlue,
+              loading: _loading,
+              metrics: [
+                WorkspaceHeroMetric(label: 'Encaissé', value: xof(encaisse)),
+                WorkspaceHeroMetric(
+                    label: 'Taux', value: '${taux.toStringAsFixed(1)}%'),
+                WorkspaceHeroMetric(
+                    label: 'En attente', value: '${pending.length}'),
+                WorkspaceHeroMetric(
+                    label: 'Paiements', value: '${payments.length}'),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: (taux / 100).clamp(0.0, 1.0),
+                backgroundColor: primaryBlue.withValues(alpha: 0.12),
+                valueColor: const AlwaysStoppedAnimation<Color>(primaryBlue),
+                minHeight: 6,
               ),
             ),
-
-            const SizedBox(height: 16),
-
-            // ── KPIs ──────────────────────────────────────────────
-            Row(children: [
-              _KpiCard(
-                label: 'Élèves',
-                value: students.length.toString(),
-                icon: Icons.people_outline,
-                color: primaryBlue,
-              ),
-              const SizedBox(width: 10),
-              _KpiCard(
-                label: 'Paiements',
-                value: payments.length.toString(),
-                icon: Icons.receipt_outlined,
-                color: successGreen,
-              ),
-              const SizedBox(width: 10),
-              _KpiCard(
-                label: 'En attente',
-                value: pending.length.toString(),
-                icon: Icons.pending_outlined,
-                color: pending.isEmpty ? textGrey : warningYellow,
-                showAlert: pending.isNotEmpty,
-              ),
-            ]),
-
             const SizedBox(height: 20),
-            const Text('Actions',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
+            const WorkspaceSectionTitle('Actions'),
             const SizedBox(height: 12),
 
             // ── Actions ────────────────────────────────────────────
@@ -289,65 +212,6 @@ class _FinanceDashboardScreenState
               const SizedBox(height: 10),
               ...pending.map((p) => _PendingPaymentCard(payment: p)),
             ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── KPI card ───────────────────────────────────────────────────────────────
-class _KpiCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-  final bool showAlert;
-
-  const _KpiCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-    this.showAlert = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Column(
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(icon, color: color, size: 22),
-                if (showAlert)
-                  Positioned(
-                    top: -2,
-                    right: -4,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                          color: dangerRed, shape: BoxShape.circle),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(value,
-                style: TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-            Text(label,
-                style: const TextStyle(fontSize: 10, color: textGrey),
-                textAlign: TextAlign.center),
           ],
         ),
       ),

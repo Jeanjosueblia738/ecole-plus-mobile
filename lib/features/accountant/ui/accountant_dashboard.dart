@@ -13,6 +13,7 @@ import '../../finance/ui/payment_history_screen.dart';
 import '../../finance/ui/payment_screen.dart';
 import '../../finance/ui/unpaid_students_screen.dart';
 import '../../settings/ui/settings_screen.dart';
+import '../../../shared/widgets/workspace_hero.dart';
 
 class AccountantDashboard extends ConsumerStatefulWidget {
   const AccountantDashboard({super.key});
@@ -161,95 +162,42 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                   ],
                 ),
               ),
-            _ProfileCard(
-                name: auth.fullName, role: roleLabel, color: accent),
-            const SizedBox(height: 20),
-            Text(isCashier ? 'Caisse du jour' : 'Situation financière',
-                style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
-            const SizedBox(height: 12),
-
-            if (!isCashier) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: taux >= 80
-                      ? successGreen.withValues(alpha: 0.08)
-                      : warningYellow.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: taux >= 80
-                          ? successGreen.withValues(alpha: 0.3)
-                          : warningYellow.withValues(alpha: 0.3)),
-                ),
-                child: Row(children: [
-                  Icon(Icons.trending_up_outlined,
-                      color: taux >= 80 ? successGreen : warningYellow,
-                      size: 32),
-                  const SizedBox(width: 12),
-                  Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('$taux%',
-                            style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: taux >= 80
-                                    ? successGreen
-                                    : warningYellow)),
-                        const Text('Taux de recouvrement',
-                            style: TextStyle(fontSize: 12, color: textGrey)),
-                      ]),
-                ]),
-              ),
-              const SizedBox(height: 12),
-            ],
-            Row(children: [
-              _KpiCard(
-                  label: isCashier ? 'Encaissé aujourd\'hui' : 'Total dû',
-                  value: _fmt(isCashier ? _todayEncaisse : _totalDu),
-                  icon: isCashier
-                      ? Icons.today_outlined
-                      : Icons.account_balance_outlined,
-                  color: primaryBlue,
-                  loading: _loading),
-              const SizedBox(width: 12),
-              _KpiCard(
-                  label: isCashier ? 'Opérations' : 'Encaissé',
-                  value: isCashier
-                      ? _operationsToday.toString()
-                      : _fmt(_totalPaye),
-                  icon: Icons.payments_outlined,
-                  color: successGreen,
-                  loading: _loading),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              if (!isCashier) ...[
-                _KpiCard(
-                    label: 'Reste',
-                    value: _fmt(solde < 0 ? 0 : solde),
-                    icon: Icons.money_off_outlined,
-                    color: dangerRed,
-                    loading: _loading),
-                const SizedBox(width: 12),
-                _KpiCard(
-                    label: 'Impayés',
-                    value: _unpaidCount < 0 ? '—' : _unpaidCount.toString(),
-                    icon: Icons.people_alt_outlined,
-                    color: warningYellow,
-                    loading: _loading),
-              ] else
-                _KpiCard(
-                    label: 'Impayés',
-                    value: _unpaidCount < 0 ? '—' : _unpaidCount.toString(),
-                    icon: Icons.people_alt_outlined,
-                    color: warningYellow,
-                    loading: _loading),
-            ]),
-
+            WorkspaceHero(
+              eyebrow: isCashier ? 'Caissier' : 'Comptable',
+              title: isCashier ? 'Poste de caisse' : 'Pilotage financier',
+              subtitle: isCashier
+                  ? 'Encaissements du jour et session de caisse'
+                  : 'Recouvrement, trésorerie et contrôle',
+              color: accent,
+              loading: _loading,
+              metrics: isCashier
+                  ? [
+                      WorkspaceHeroMetric(
+                          label: 'Encaissé aujourd\'hui',
+                          value: _fmt(_todayEncaisse)),
+                      WorkspaceHeroMetric(
+                          label: 'Opérations',
+                          value: _operationsToday.toString()),
+                      WorkspaceHeroMetric(
+                          label: 'Impayés',
+                          value: _unpaidCount < 0
+                              ? '—'
+                              : _unpaidCount.toString()),
+                    ]
+                  : [
+                      WorkspaceHeroMetric(label: 'Taux', value: '$taux%'),
+                      WorkspaceHeroMetric(
+                          label: 'Encaissé', value: _fmt(_totalPaye)),
+                      WorkspaceHeroMetric(
+                          label: 'Reste',
+                          value: _fmt(solde < 0 ? 0 : solde)),
+                      WorkspaceHeroMetric(
+                          label: 'Impayés',
+                          value: _unpaidCount < 0
+                              ? '—'
+                              : _unpaidCount.toString()),
+                    ],
+            ),
             const SizedBox(height: 20),
             Text(isCashier ? 'Poste de caisse' : 'Opérations',
                 style: const TextStyle(
@@ -348,50 +296,6 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
           ]),
         ),
       ),
-    );
-  }
-}
-
-class _ProfileCard extends StatelessWidget {
-  final String name, role;
-  final Color color;
-  const _ProfileCard(
-      {required this.name, required this.role, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-            colors: [color, color.withValues(alpha: 0.8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(children: [
-        CircleAvatar(
-            radius: 28,
-            backgroundColor: Colors.white.withValues(alpha: 0.2),
-            child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold))),
-        const SizedBox(width: 14),
-        Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(name,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
-          Text(role,
-              style: const TextStyle(color: Colors.white70, fontSize: 12)),
-        ])),
-      ]),
     );
   }
 }

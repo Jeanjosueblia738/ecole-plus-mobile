@@ -9,6 +9,7 @@ import '../../settings/ui/settings_screen.dart';
 import '../../student/ui/student_form_screen.dart';
 import '../../enrollment/ui/enrollments_list_screen.dart';
 import '../../student/ui/student_list_screen.dart';
+import '../../../shared/widgets/workspace_hero.dart';
 
 class SecretaryDashboard extends ConsumerStatefulWidget {
   const SecretaryDashboard({super.key});
@@ -161,50 +162,23 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
                   ],
                 ),
               ),
-            _ProfileCard(
-                name: auth.fullName,
-                role: 'Secrétaire de scolarité',
-                color: color),
+            WorkspaceHero(
+              eyebrow: 'Secrétariat',
+              title: 'Administration scolaire',
+              subtitle: 'Inscriptions, dossiers et documents',
+              color: color,
+              loading: _loading,
+              metrics: [
+                WorkspaceHeroMetric(
+                    label: 'Élèves', value: _totalStudents.toString()),
+                WorkspaceHeroMetric(
+                    label: 'Classes', value: _totalClasses.toString()),
+                WorkspaceHeroMetric(
+                    label: 'Enseignants', value: _totalTeachers.toString()),
+              ],
+            ),
             const SizedBox(height: 20),
-            const Text('Administration',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
-            const SizedBox(height: 12),
-            Row(children: [
-              _KpiCard(
-                  label: 'Élèves',
-                  value: _totalStudents.toString(),
-                  icon: Icons.people_alt_outlined,
-                  color: primaryBlue,
-                  loading: _loading),
-              const SizedBox(width: 12),
-              _KpiCard(
-                  label: 'Classes',
-                  value: _totalClasses.toString(),
-                  icon: Icons.class_outlined,
-                  color: color,
-                  loading: _loading),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              _KpiCard(
-                  label: 'Enseignants',
-                  value: _totalTeachers.toString(),
-                  icon: Icons.school_outlined,
-                  color: const Color(0xFF7C3AED),
-                  loading: _loading),
-              const SizedBox(width: 12),
-              const Expanded(child: SizedBox()),
-            ]),
-            const SizedBox(height: 20),
-            const Text('Actions rapides',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
-            const SizedBox(height: 12),
+            const WorkspaceSectionTitle('Actions principales'),
             _ActionTile(
                 icon: Icons.person_add_outlined,
                 title: 'Inscrire un élève',
@@ -244,50 +218,6 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
           ]),
         ),
       ),
-    );
-  }
-}
-
-class _ProfileCard extends StatelessWidget {
-  final String name, role;
-  final Color color;
-  const _ProfileCard(
-      {required this.name, required this.role, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-            colors: [color, color.withValues(alpha: 0.8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(children: [
-        CircleAvatar(
-            radius: 28,
-            backgroundColor: Colors.white.withValues(alpha: 0.2),
-            child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold))),
-        const SizedBox(width: 14),
-        Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(name,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
-          Text(role,
-              style: const TextStyle(color: Colors.white70, fontSize: 12)),
-        ])),
-      ]),
     );
   }
 }

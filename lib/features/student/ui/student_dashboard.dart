@@ -6,6 +6,7 @@ import '../../../core/security/user_role.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/student_api_service.dart';
 import '../../settings/ui/settings_screen.dart';
+import '../../../shared/widgets/workspace_hero.dart';
 import 'grades_screen.dart';
 import 'attendance_history_screen.dart';
 import 'student_timetable_screen.dart';
@@ -183,65 +184,26 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
                   ],
                 ),
               ),
-            // Carte profil
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [primaryBlue, Color(0xFF2563EB)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            WorkspaceHero(
+              eyebrow: 'Élève',
+              title: fullName.isNotEmpty ? fullName : 'Mon espace',
+              subtitle: className.isNotEmpty
+                  ? '$className · $today'
+                  : today,
+              color: primaryBlue,
+              loading: _loading,
+              metrics: [
+                WorkspaceHeroMetric(
+                  label: 'Moyenne',
+                  value: moyenne != null
+                      ? '${moyenne.toStringAsFixed(1)}/20'
+                      : '—',
                 ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  child: Text(
-                    fullName.isNotEmpty ? fullName[0].toUpperCase() : 'E',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      Text(fullName.isNotEmpty ? fullName : 'Élève',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold)),
-                      if (className.isNotEmpty)
-                        Text(className,
-                            style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.8),
-                                fontSize: 13)),
-                      const SizedBox(height: 4),
-                      Text(today,
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
-                              fontSize: 12)),
-                    ])),
-                if (moyenne != null)
-                  Column(children: [
-                    Text(moyenne.toStringAsFixed(1),
-                        style: TextStyle(
-                          color: moyenne >= 10
-                              ? const Color(0xFF86EFAC)
-                              : const Color(0xFFFCA5A5),
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        )),
-                    const Text('/20',
-                        style: TextStyle(color: Colors.white60, fontSize: 11)),
-                  ]),
-              ]),
+                WorkspaceHeroMetric(
+                    label: 'Absences', value: totalAbsences.toString()),
+                WorkspaceHeroMetric(
+                    label: 'Non justifiées', value: nonJustified.toString()),
+              ],
             ),
 
             const SizedBox(height: 16),

@@ -6,6 +6,7 @@ import '../../../core/services/attendance_api_service.dart';
 import '../../../core/security/user_role.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/dashboard_tile.dart';
+import '../../../shared/widgets/workspace_hero.dart';
 import 'admin_stats_screen.dart';
 import 'admin_validation_screen.dart';
 import 'class_management_screen.dart';
@@ -163,44 +164,26 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                   ],
                 ),
               ),
-            // ── KPIs ──────────────────────────────────────────────────
-            Row(children: [
-              _KpiCard(
-                  title: 'Élèves inscrits',
-                  value: _totalStudents.toString(),
-                  sub: 'Total cette année',
-                  icon: Icons.people_alt_outlined,
-                  color: primaryBlue,
-                  isLoading: _isLoadingStats),
-              const SizedBox(width: 12),
-              _KpiCard(
-                  title: 'Enseignants',
-                  value: _totalTeachers.toString(),
-                  sub: 'Personnel actif',
-                  icon: Icons.school_outlined,
-                  color: const Color(0xFF7C3AED),
-                  isLoading: _isLoadingStats),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              _KpiCard(
-                  title: 'Classes',
-                  value: _totalClasses.toString(),
-                  sub: 'Cette année',
-                  icon: Icons.class_outlined,
-                  color: const Color(0xFF0D9488),
-                  isLoading: _isLoadingStats),
-              const SizedBox(width: 12),
-              _KpiCard(
-                  title: 'Absences',
-                  value: _totalAbsences.toString(),
-                  sub: 'Toutes classes',
-                  icon: Icons.event_busy_outlined,
-                  color: dangerRed,
-                  isLoading: _isLoadingStats),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
+            // ── Vue d'ensemble ────────────────────────────────────────
+            WorkspaceHero(
+              eyebrow: 'Direction',
+              title: 'Vue d\'ensemble',
+              subtitle: 'Effectifs, scolarité et pilotage de l\'établissement',
+              color: primaryBlue,
+              loading: _isLoadingStats,
+              metrics: [
+                WorkspaceHeroMetric(
+                    label: 'Élèves', value: _totalStudents.toString()),
+                WorkspaceHeroMetric(
+                    label: 'Enseignants', value: _totalTeachers.toString()),
+                WorkspaceHeroMetric(
+                    label: 'Classes', value: _totalClasses.toString()),
+                WorkspaceHeroMetric(
+                    label: 'Absences', value: _totalAbsences.toString()),
+              ],
+            ),
+            if (_pendingJustifications > 0) ...[
+              const SizedBox(height: 12),
               _KpiCard(
                   title: 'Justifications',
                   value: _pendingJustifications.toString(),
@@ -208,20 +191,13 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                   icon: Icons.access_time_outlined,
                   color: warningYellow,
                   isLoading: _isLoadingStats,
-                  showBadge: _pendingJustifications > 0),
-              const SizedBox(width: 12),
-              const Expanded(child: SizedBox()),
-            ]),
+                  showBadge: true),
+            ],
 
             const SizedBox(height: 24),
 
-            // ── Actions rapides (selon rôle Admin) ────────────────────
-            const Text('Actions rapides',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
-            const SizedBox(height: 12),
+            // ── Actions ───────────────────────────────────────────────
+            const WorkspaceSectionTitle('Actions principales'),
 
             Row(children: [
               _ActionBtn(

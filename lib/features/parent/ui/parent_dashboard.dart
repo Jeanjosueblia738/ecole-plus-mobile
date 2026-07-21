@@ -6,6 +6,7 @@ import '../../../core/security/user_role.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/parent_api_service.dart';
 import '../../settings/ui/settings_screen.dart';
+import '../../../shared/widgets/workspace_hero.dart';
 import 'parent_payment_screen.dart';
 import 'parent_grades_screen.dart';
 import 'parent_alerts_screen.dart';
@@ -235,6 +236,21 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                   ],
                 ),
               ),
+
+            WorkspaceHero(
+              eyebrow: 'Parent',
+              title: 'Espace famille',
+              subtitle: 'Notes, présences et situation financière de vos enfants',
+              color: primaryBlue,
+              loading: _loading,
+              metrics: [
+                WorkspaceHeroMetric(
+                    label: 'Enfants', value: _children.length.toString()),
+                WorkspaceHeroMetric(
+                    label: 'Alertes', value: _alerts.length.toString()),
+              ],
+            ),
+            const SizedBox(height: 16),
 
             if (_children.length > 1) ...[
               Text('Mes enfants',

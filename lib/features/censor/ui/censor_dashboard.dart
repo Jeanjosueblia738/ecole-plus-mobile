@@ -15,6 +15,7 @@ import '../../settings/ui/settings_screen.dart';
 import '../../student/ui/grades_screen.dart';
 import '../../student/ui/student_list_screen.dart';
 import '../../timetable/ui/timetable_screen.dart';
+import '../../../shared/widgets/workspace_hero.dart';
 
 class CensorDashboard extends ConsumerStatefulWidget {
   const CensorDashboard({super.key});
@@ -251,39 +252,35 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
                   ],
                 ),
               ),
-            _buildProfileCard(
-                auth.fullName, 'Censeur', const Color(0xFF4338CA)),
-            const SizedBox(height: 20),
-            const Text('Suivi pédagogique',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
-            const SizedBox(height: 12),
-            Row(children: [
-              _buildKpi('Élèves', _totalStudents.toString(),
-                  Icons.people_alt_outlined, primaryBlue),
-              const SizedBox(width: 12),
-              _buildKpi('Enseignants', _totalTeachers.toString(),
-                  Icons.school_outlined, const Color(0xFF7C3AED)),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              _buildKpi('Classes', _totalClasses.toString(),
-                  Icons.class_outlined, const Color(0xFF0D9488)),
-              const SizedBox(width: 12),
-              _buildKpi('Absences', _totalAbsences.toString(),
-                  Icons.event_busy_outlined, dangerRed),
-            ]),
-            const SizedBox(height: 12),
+            WorkspaceHero(
+              eyebrow: 'Censeur',
+              title: 'Suivi pédagogique',
+              subtitle: 'Classes, cahier, bulletins et discipline',
+              color: const Color(0xFF4338CA),
+              loading: _loading,
+              metrics: [
+                WorkspaceHeroMetric(
+                    label: 'Élèves', value: _totalStudents.toString()),
+                WorkspaceHeroMetric(
+                    label: 'Enseignants', value: _totalTeachers.toString()),
+                WorkspaceHeroMetric(
+                    label: 'Classes', value: _totalClasses.toString()),
+                WorkspaceHeroMetric(
+                    label: 'Absences', value: _totalAbsences.toString()),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const WorkspaceSectionTitle('À traiter'),
             Row(children: [
               _buildKpi('Justifications', _pendingJustifications.toString(),
                   Icons.pending_outlined, warningYellow),
               const SizedBox(width: 12),
-              const Expanded(child: SizedBox()),
+              _buildKpi('Absences', _totalAbsences.toString(),
+                  Icons.event_busy_outlined, dangerRed),
             ]),
+            const SizedBox(height: 20),
+            const WorkspaceSectionTitle('Actions pédagogiques'),
             if (_pendingJustifications > 0) ...[
-              const SizedBox(height: 12),
               InkWell(
                 onTap: _openJustifications,
                 borderRadius: BorderRadius.circular(12),
@@ -311,15 +308,8 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
                   ]),
                 ),
               ),
+              const SizedBox(height: 12),
             ],
-            const SizedBox(height: 20),
-            const Text('Actions rapides',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
-            const SizedBox(height: 12),
-
             _buildAction(
                 Icons.book_outlined,
                 'Cahier de texte',
@@ -457,37 +447,3 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
         ),
       );
 }
-
-Widget _buildProfileCard(String name, String role, Color color) => Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-            colors: [color, color.withValues(alpha: 0.8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(children: [
-        CircleAvatar(
-            radius: 28,
-            backgroundColor: Colors.white.withValues(alpha: 0.2),
-            child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold))),
-        const SizedBox(width: 14),
-        Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(name,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
-          Text(role,
-              style: const TextStyle(color: Colors.white70, fontSize: 12)),
-        ])),
-      ]),
-    );

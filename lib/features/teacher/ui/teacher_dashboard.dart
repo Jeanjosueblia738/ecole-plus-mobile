@@ -14,6 +14,7 @@ import 'teacher_stats_screen.dart';
 import '../../cahier/ui/cahier_screen.dart';
 import '../../exams/ui/exams_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
+import '../../../shared/widgets/workspace_hero.dart';
 
 class TeacherDashboard extends ConsumerStatefulWidget {
   const TeacherDashboard({super.key});
@@ -228,102 +229,31 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                   ],
                 ),
               ),
-            // ── Carte profil ───────────────────────────────────────────
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(children: [
-                CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
-                    child: Text(
-                        fullName.isNotEmpty ? fullName[0].toUpperCase() : 'P',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold))),
-                const SizedBox(width: 16),
-                Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      Text(fullName.isNotEmpty ? fullName : 'Enseignant',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold)),
-                      Text(today,
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.75),
-                              fontSize: 12)),
-                      const SizedBox(height: 4),
-                      Text('${_classes.length} classe(s) assignée(s)',
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12)),
-                    ])),
-                const Icon(Icons.school_outlined,
-                    color: Colors.white54, size: 32),
-              ]),
+            WorkspaceHero(
+              eyebrow: 'Enseignant',
+              title: fullName.isNotEmpty ? fullName : 'Espace pédagogique',
+              subtitle:
+                  '$today · ${_classes.length} classe(s) assignée(s)',
+              color: const Color(0xFF7C3AED),
+              loading: _loading,
+              metrics: [
+                WorkspaceHeroMetric(
+                    label: 'Mes classes', value: _classes.length.toString()),
+                WorkspaceHeroMetric(
+                    label: 'Élèves',
+                    value: (_stats?['totalStudents'] ?? 0).toString()),
+                WorkspaceHeroMetric(
+                    label: 'Notes',
+                    value: (_stats?['totalGrades'] ?? 0).toString()),
+                WorkspaceHeroMetric(
+                    label: 'Absences',
+                    value: (_stats?['totalAbsences'] ?? 0).toString()),
+              ],
             ),
-
-            const SizedBox(height: 16),
-
-            // ── KPIs ───────────────────────────────────────────────────
-            const Text('Statistiques',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
-            const SizedBox(height: 10),
-            Row(children: [
-              _KpiCard(
-                  label: 'Mes classes',
-                  value: _classes.length.toString(),
-                  icon: Icons.class_outlined,
-                  color: const Color(0xFF7C3AED),
-                  isLoading: _loading),
-              const SizedBox(width: 12),
-              _KpiCard(
-                  label: 'Total élèves',
-                  value: (_stats?['totalStudents'] ?? 0).toString(),
-                  icon: Icons.people_alt_outlined,
-                  color: primaryBlue,
-                  isLoading: _loading),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              _KpiCard(
-                  label: 'Notes saisies',
-                  value: (_stats?['totalGrades'] ?? 0).toString(),
-                  icon: Icons.grade_outlined,
-                  color: successGreen,
-                  isLoading: _loading),
-              const SizedBox(width: 12),
-              _KpiCard(
-                  label: 'Absences',
-                  value: (_stats?['totalAbsences'] ?? 0).toString(),
-                  icon: Icons.event_busy_outlined,
-                  color: dangerRed,
-                  isLoading: _loading),
-            ]),
 
             const SizedBox(height: 20),
 
-            // ── Actions rapides ────────────────────────────────────────
-            const Text('Actions rapides',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
-            const SizedBox(height: 12),
+            const WorkspaceSectionTitle('Actions pédagogiques'),
             Row(children: [
               _ActionBtn(
                   icon: Icons.how_to_reg_outlined,
