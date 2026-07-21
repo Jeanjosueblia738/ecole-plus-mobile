@@ -66,6 +66,8 @@ class FeeNotifier extends StateNotifier<List<SchoolFee>> {
       'dueDate': fee.dateEcheance.toIso8601String().split('T').first,
       'year': currentSchoolYear(),
       'type': fee.type.trim().isEmpty ? 'Scolarité' : fee.type.trim(),
+      'trimestre': fee.trimestre,
+      'obligatoire': fee.obligatoire,
       if (fee.classLevel != null) 'level': fee.classLevel,
     });
     await load(year: currentSchoolYear());
