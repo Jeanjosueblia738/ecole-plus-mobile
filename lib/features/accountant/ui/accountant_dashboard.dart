@@ -251,16 +251,17 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
             ]),
 
             const SizedBox(height: 20),
-            const Text('Actions rapides',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
-            const SizedBox(height: 12),
+            Text(isCashier ? 'Poste de caisse' : 'Opérations',
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.6,
+                    color: textGrey)),
+            const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.add_card_outlined,
-                title: 'Enregistrer un paiement',
-                subtitle: 'Encaisser des frais de scolarité',
+                title: 'Encaisser un paiement',
+                subtitle: 'Espèces, Mobile Money ou chèque',
                 color: successGreen,
                 onTap: () => Navigator.push(
                     context,
@@ -268,19 +269,9 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                         builder: (_) => const PaymentScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
-                icon: Icons.receipt_long_outlined,
-                title: 'Historique des paiements',
-                subtitle: 'Voir tous les paiements',
-                color: primaryBlue,
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const PaymentHistoryScreen()))),
-            const SizedBox(height: 10),
-            _ActionTile(
                 icon: Icons.point_of_sale_outlined,
-                title: 'Caisse',
-                subtitle: 'Ouverture / clôture journalière',
+                title: 'Session de caisse',
+                subtitle: 'Ouverture, clôture, versement banque',
                 color: const Color(0xFFD97706),
                 onTap: () => Navigator.push(
                     context,
@@ -288,10 +279,20 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                         builder: (_) => const CashSessionScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
+                icon: Icons.receipt_long_outlined,
+                title: 'Historique des paiements',
+                subtitle: 'Journal des encaissements',
+                color: primaryBlue,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const PaymentHistoryScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
                 icon: Icons.warning_amber_outlined,
                 title: 'Liste des impayés',
                 subtitle: _unpaidCount < 0
-                    ? 'Chargement impayés indisponible'
+                    ? 'Chargement indisponible'
                     : '$_unpaidCount élève(s) non à jour',
                 color: dangerRed,
                 onTap: () => Navigator.push(
@@ -299,11 +300,18 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                     MaterialPageRoute(
                         builder: (_) => const UnpaidStudentsScreen()))),
             if (!isCashier) ...[
+              const SizedBox(height: 22),
+              const Text('PILOTAGE & CONTRÔLE',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.6,
+                      color: textGrey)),
               const SizedBox(height: 10),
               _ActionTile(
                   icon: Icons.account_balance_wallet_outlined,
                   title: 'Espace finance',
-                  subtitle: 'Frais, Mobile Money, synthèse',
+                  subtitle: 'Frais, synthèse, Mobile Money',
                   color: const Color(0xFF0D9488),
                   onTap: () => Navigator.push(
                       context,
@@ -312,7 +320,7 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
               const SizedBox(height: 10),
               _ActionTile(
                   icon: Icons.analytics_outlined,
-                  title: 'Pilotage financier',
+                  title: 'Modules de trésorerie',
                   subtitle: 'Dépenses, fournisseurs, paie, budget, banque',
                   color: const Color(0xFF4F46E5),
                   onTap: () => Navigator.push(
