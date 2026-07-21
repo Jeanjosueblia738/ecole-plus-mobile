@@ -41,17 +41,21 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
     });
     try {
       final year = currentSchoolYear();
-      final results = await Future.wait([
-        FinanceApiService.getStats(year: year),
-        StudentsApiService.getStats().catchError((_) => <String, dynamic>{}),
-      ]);
+      final finance = await FinanceApiService.getStats(year: year);
+      Map<String, dynamic> students = {};
+      var studentsOk = false;
+      try {
+        students = await StudentsApiService.getStats();
+        studentsOk = true;
+      } catch (_) {
+        studentsOk = false;
+      }
       if (!mounted) {
         return;
       }
-      final finance = results[0];
-      final students = results[1];
       setState(() {
-        _unpaidCount = (students['unpaidCount'] as num?)?.toInt() ?? 0;
+        _unpaidCount =
+            studentsOk ? (students['unpaidCount'] as num?)?.toInt() ?? 0 : -1;
         _totalDu = (finance['totalAttenduXof'] as num?)?.toDouble() ??
             (finance['totalDu'] as num?)?.toDouble() ??
             0;
@@ -233,14 +237,14 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                 const SizedBox(width: 12),
                 _KpiCard(
                     label: 'Impayés',
-                    value: _unpaidCount.toString(),
+                    value: _unpaidCount < 0 ? '—' : _unpaidCount.toString(),
                     icon: Icons.people_alt_outlined,
                     color: warningYellow,
                     loading: _loading),
               ] else
                 _KpiCard(
                     label: 'Impayés',
-                    value: _unpaidCount.toString(),
+                    value: _unpaidCount < 0 ? '—' : _unpaidCount.toString(),
                     icon: Icons.people_alt_outlined,
                     color: warningYellow,
                     loading: _loading),
@@ -286,7 +290,9 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
             _ActionTile(
                 icon: Icons.warning_amber_outlined,
                 title: 'Liste des impayés',
-                subtitle: '$_unpaidCount élève(s) non à jour',
+                subtitle: _unpaidCount < 0
+                    ? 'Chargement impayés indisponible'
+                    : '$_unpaidCount élève(s) non à jour',
                 color: dangerRed,
                 onTap: () => Navigator.push(
                     context,

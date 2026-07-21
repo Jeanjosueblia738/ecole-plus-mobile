@@ -58,7 +58,6 @@ class _AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
-      // Token expiré — déconnecter + notifier l'app (logout UI / invalidate)
       await AuthStorageService.clearAll();
       AuthSessionBridge.notifyUnauthorized();
     }

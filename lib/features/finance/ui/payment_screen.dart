@@ -71,22 +71,30 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     }
 
     setState(() => _isProcessing = true);
+    try {
+      final payment = await ref.read(paymentProvider.notifier).addPayment(
+            studentId: student.id,
+            studentName: student.fullName,
+            className: student.className,
+            feeId: fee.id,
+            feeLabel: fee.label,
+            montant: fee.montant,
+            method: _method,
+            chequeNumber: _method == PaymentMethod.cheque
+                ? _chequeCtrl.text.trim()
+                : null,
+          );
 
-    final payment = await ref.read(paymentProvider.notifier).addPayment(
-          studentId: student.id,
-          studentName: student.fullName,
-          className: student.className,
-          feeId: fee.id,
-          feeLabel: fee.label,
-          montant: fee.montant,
-          method: _method,
-          chequeNumber:
-              _method == PaymentMethod.cheque ? _chequeCtrl.text.trim() : null,
-        );
-
-    if (!mounted) return;
-    setState(() => _isProcessing = false);
-    _showReceiptDialog(payment);
+      if (!mounted) return;
+      _showReceiptDialog(payment);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Paiement échoué : $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
   }
 
   Future<void> _printAndClose(BuildContext ctx, dynamic payment) async {

@@ -76,7 +76,8 @@ class FeeNotifier extends StateNotifier<List<SchoolFee>> {
   }
 
   Future<void> remove(String id) async {
-    state = state.where((f) => f.id != id).toList();
+    // Pas d'endpoint DELETE frais côté API — ne pas masquer comme succès local.
+    error = 'Suppression serveur non disponible';
   }
 }
 

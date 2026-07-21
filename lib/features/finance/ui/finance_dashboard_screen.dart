@@ -4,16 +4,77 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/finance_provider.dart';
 import '../../../core/providers/student_provider.dart';
 import '../../../core/security/user_role.dart';
+import '../../../core/services/finance_api_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/school_year.dart';
 import 'payment_screen.dart';
 import 'payment_history_screen.dart';
 import 'fee_management_screen.dart';
 
-class FinanceDashboardScreen extends ConsumerWidget {
+class FinanceDashboardScreen extends ConsumerStatefulWidget {
   const FinanceDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FinanceDashboardScreen> createState() =>
+      _FinanceDashboardScreenState();
+}
+
+class _FinanceDashboardScreenState
+    extends ConsumerState<FinanceDashboardScreen> {
+  bool _loading = true;
+  String? _error;
+  double? _apiEncaisse;
+  double? _apiTaux;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_load);
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final year = currentSchoolYear();
+      await Future.wait([
+        ref.read(studentProvider.notifier).load(),
+        ref.read(feeProvider.notifier).load(year: year),
+        ref.read(paymentProvider.notifier).loadAll(year: year),
+      ]);
+      try {
+        final stats = await FinanceApiService.getStats(year: year);
+        final encaisse = (stats['totalRecouvertXof'] as num?)?.toDouble() ??
+            (stats['totalPaye'] as num?)?.toDouble() ??
+            (stats['encaissementsAujourdhuiXof'] as num?)?.toDouble();
+        final tauxRaw = stats['tauxRecouvrement'];
+        double? taux;
+        if (tauxRaw is num) {
+          taux = tauxRaw <= 1 ? tauxRaw * 100 : tauxRaw.toDouble();
+        } else if (tauxRaw is String) {
+          taux = double.tryParse(tauxRaw.replaceAll('%', ''));
+        }
+        _apiEncaisse = encaisse;
+        _apiTaux = taux;
+      } catch (_) {
+        // fallback local stats below
+      }
+      final feeErr = ref.read(feeProvider.notifier).error;
+      final payErr = ref.read(paymentProvider.notifier).error;
+      if (feeErr != null || payErr != null) {
+        _error = [feeErr, payErr].whereType<String>().join(' · ');
+      }
+    } catch (e) {
+      _error = 'Impossible de charger la finance';
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
     final canConfigureFees = auth.role != UserRole.cashier;
     final stats = ref.watch(financeStatsProvider);
@@ -21,8 +82,8 @@ class FinanceDashboardScreen extends ConsumerWidget {
     final payments = ref.watch(paymentProvider);
     final pending = ref.watch(pendingPaymentsProvider);
 
-    final encaisse = stats['encaisse'] ?? 0;
-    final taux = ((stats['tauxRecouvrement'] ?? 0) * 100);
+    final encaisse = _apiEncaisse ?? stats['encaisse'] ?? 0;
+    final taux = _apiTaux ?? ((stats['tauxRecouvrement'] ?? 0) * 100);
 
     // Formatter XOF
     String xof(double v) =>
@@ -35,12 +96,32 @@ class FinanceDashboardScreen extends ConsumerWidget {
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loading ? null : _load,
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_error != null) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: warningYellow.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(_error!, style: const TextStyle(fontSize: 13)),
+              ),
+            ],
             // ── Carte récapitulatif ────────────────────────────────
             Container(
               width: double.infinity,
