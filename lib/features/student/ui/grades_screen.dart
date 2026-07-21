@@ -4,8 +4,11 @@ import '../../../core/providers/grade_provider.dart';
 import '../../../core/providers/student_provider.dart';
 import '../../student/data/student.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../grades/data/grade_model.dart';
 import '../../grades/ui/grade_list_screen.dart';
 import '../../grades/ui/bulletin_screen.dart';
+import '../../conseil/ui/conseil_summary_card.dart';
+import '../../shared/ui/student_documents_section.dart';
 
 class GradesScreen extends ConsumerStatefulWidget {
   final String studentId;
@@ -72,7 +75,6 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
   Widget build(BuildContext context) {
     final grades = ref.watch(gradesByStudentProvider(
         (studentId: widget.studentId, trimestre: _trimestre)));
-    final gradeErr = ref.read(gradeProvider.notifier).error;
 
     final allStudents = ref.watch(studentProvider);
     final myStudent =
@@ -147,6 +149,30 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
                       mention: bulletin.mention,
                     ),
                   ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: ConseilSummaryCard(isParent: false),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: StudentDocumentsSection(
+                    studentName: widget.studentName,
+                    className: myStudent.isEmpty
+                        ? ''
+                        : myStudent.first.className,
+                    registrationNo: null,
+                    trimestre: _trimestre,
+                    moyenne: bulletin?.moyenneGenerale,
+                    grades: grades
+                        .map((g) => {
+                              'subject': g.subject,
+                              'evalType': g.evalType.label,
+                              'value': g.value,
+                              'coefficient': g.coefficient,
+                            })
+                        .toList(),
+                  ),
+                ),
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -195,24 +221,9 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
                 ),
                 Expanded(
                   child: grades.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                gradeErr ?? 'Aucune note ce trimestre',
-                                style: const TextStyle(color: textGrey),
-                                textAlign: TextAlign.center,
-                              ),
-                              if (gradeErr != null) ...[
-                                const SizedBox(height: 12),
-                                TextButton(
-                                    onPressed: _load,
-                                    child: const Text('Réessayer')),
-                              ],
-                            ],
-                          ),
-                        )
+                      ? const Center(
+                          child: Text('Aucune note ce trimestre',
+                              style: TextStyle(color: textGrey)))
                       : _SubjectSummaryList(grades: grades),
                 ),
               ],

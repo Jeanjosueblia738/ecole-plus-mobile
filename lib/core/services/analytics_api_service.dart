@@ -21,4 +21,21 @@ class AnalyticsApiService {
         await ApiClient.instance.get('/analytics/dropout-risk/$studentId');
     return response.data as Map<String, dynamic>;
   }
+
+  /// Progression scolaire — élève connecté
+  static Future<Map<String, dynamic>> getMyProgress() async {
+    final response = await ApiClient.instance.get('/analytics/my-progress');
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Progression de l'enfant — parent
+  static Future<Map<String, dynamic>> getMyChildProgress({
+    String? studentId,
+  }) async {
+    final response = await ApiClient.instance.get(
+      '/analytics/my-child-progress',
+      params: {if (studentId != null) 'studentId': studentId},
+    );
+    return response.data as Map<String, dynamic>;
+  }
 }

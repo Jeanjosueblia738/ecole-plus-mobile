@@ -7,6 +7,7 @@ import '../../../core/services/students_api_service.dart';
 import '../../grades/ui/bulletin_screen.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../student/ui/student_form_screen.dart';
+import '../../enrollment/ui/enrollments_list_screen.dart';
 import '../../student/ui/student_list_screen.dart';
 
 class SecretaryDashboard extends ConsumerStatefulWidget {
@@ -213,6 +214,16 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const StudentFormScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.app_registration_outlined,
+                title: 'Pré-inscriptions',
+                subtitle: 'Demandes en attente de validation',
+                color: warningYellow,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const EnrollmentsListScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.people_alt_outlined,

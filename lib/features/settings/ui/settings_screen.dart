@@ -6,6 +6,7 @@ import '../../../core/providers/profile_provider.dart';
 import '../../../core/providers/onboarding_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import 'profile_screen.dart';
+import 'tenant_group_selector.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -26,6 +27,10 @@ class SettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: TenantGroupSelector(),
+            ),
             if (profile != null)
               InkWell(
                 onTap: () => Navigator.push(context,

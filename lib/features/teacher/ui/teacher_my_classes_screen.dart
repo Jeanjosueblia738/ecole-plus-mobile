@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/teacher_api_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/teacher_class_utils.dart';
 import '../../grades/ui/grade_input_screen.dart';
 import 'attendance_input_screen.dart';
 import 'teacher_class_detail_screen.dart';
@@ -87,12 +88,40 @@ class _TeacherMyClassesScreenState
                         final id = c['id']?.toString() ?? '';
                         final name = c['name']?.toString() ?? 'Classe';
                         final level = c['level']?.toString() ?? '';
+                        final subjects = classSubjects(c);
+                        final firstSubject = firstClassSubject(c) ?? '';
                         return Card(
                           child: ListTile(
                             title: Text(name,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w600)),
-                            subtitle: Text(level),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (level.isNotEmpty) Text(level),
+                                if (subjects.isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    children: subjects
+                                        .map((s) => Chip(
+                                              label: Text(s,
+                                                  style: const TextStyle(
+                                                      fontSize: 11)),
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              padding: EdgeInsets.zero,
+                                            ))
+                                        .toList(),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            isThreeLine: subjects.isNotEmpty,
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -105,7 +134,7 @@ class _TeacherMyClassesScreenState
                                       builder: (_) => AttendanceInputScreen(
                                         classId: id,
                                         className: name,
-                                        subject: '',
+                                        subject: firstSubject,
                                         duration: '55',
                                       ),
                                     ),
@@ -121,6 +150,9 @@ class _TeacherMyClassesScreenState
                                         classId: id,
                                         className: name,
                                         trimestre: 'T1',
+                                        initialSubject: firstSubject.isEmpty
+                                            ? null
+                                            : firstSubject,
                                       ),
                                     ),
                                   ),

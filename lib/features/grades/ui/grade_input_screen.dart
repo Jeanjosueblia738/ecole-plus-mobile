@@ -24,12 +24,14 @@ class GradeInputScreen extends ConsumerStatefulWidget {
   final String className;
   final String trimestre;
   final String? classId;
+  final String? initialSubject;
 
   const GradeInputScreen({
     super.key,
     required this.className,
     required this.trimestre,
     this.classId,
+    this.initialSubject,
   });
 
   @override
@@ -47,6 +49,15 @@ class _GradeInputScreenState extends ConsumerState<GradeInputScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialSubject != null && widget.initialSubject!.isNotEmpty) {
+      final match = kSubjects
+          .where((s) =>
+              s.name.toLowerCase() == widget.initialSubject!.toLowerCase())
+          .toList();
+      if (match.isNotEmpty) {
+        _selectedSubject = match.first;
+      }
+    }
     _loadStudents();
   }
 

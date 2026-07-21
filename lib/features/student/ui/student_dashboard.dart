@@ -9,6 +9,9 @@ import '../../settings/ui/settings_screen.dart';
 import 'grades_screen.dart';
 import 'attendance_history_screen.dart';
 import 'student_timetable_screen.dart';
+import '../../cahier/ui/homework_screen.dart';
+import '../../analytics/ui/progress_screen.dart';
+import '../../exams/ui/exams_screen.dart';
 
 Color _subjectColor(String s) => switch (s) {
       'Mathématiques' => const Color(0xFF1E3A8A),
@@ -439,6 +442,36 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
                       context,
                       MaterialPageRoute(
                           builder: (_) => const StudentTimetableScreen()))),
+            ]),
+
+            const SizedBox(height: 12),
+            Row(children: [
+              _ActionBtn(
+                  icon: Icons.home_work_outlined,
+                  label: 'Devoirs',
+                  color: const Color(0xFF2563EB),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => HomeworkScreen.forStudent()))),
+              const SizedBox(width: 12),
+              _ActionBtn(
+                  icon: Icons.trending_up_outlined,
+                  label: 'Progression',
+                  color: successGreen,
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => ProgressScreen.forStudent()))),
+              const SizedBox(width: 12),
+              _ActionBtn(
+                  icon: Icons.event_note_outlined,
+                  label: 'Examens',
+                  color: warningYellow,
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => ExamsScreen.forStudent()))),
             ]),
 
             const SizedBox(height: 20),

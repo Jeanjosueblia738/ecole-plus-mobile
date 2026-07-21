@@ -33,4 +33,21 @@ class CahierApiService {
   static Future<void> delete(String id) async {
     await ApiClient.instance.delete('/cahier/$id');
   }
+
+  /// Devoirs à faire — élève connecté
+  static Future<Map<String, dynamic>> getMyHomework() async {
+    final response = await ApiClient.instance.get('/cahier/my-homework');
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Devoirs de l'enfant — parent
+  static Future<Map<String, dynamic>> getMyChildHomework({
+    String? studentId,
+  }) async {
+    final response = await ApiClient.instance.get(
+      '/cahier/my-child-homework',
+      params: {if (studentId != null) 'studentId': studentId},
+    );
+    return response.data as Map<String, dynamic>;
+  }
 }

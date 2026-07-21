@@ -12,6 +12,9 @@ import 'parent_alerts_screen.dart';
 import '../../student/ui/attendance_history_screen.dart';
 import '../../student/ui/student_timetable_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
+import '../../cahier/ui/homework_screen.dart';
+import '../../analytics/ui/progress_screen.dart';
+import '../../exams/ui/exams_screen.dart';
 
 class ParentDashboard extends ConsumerStatefulWidget {
   const ParentDashboard({super.key});
@@ -561,6 +564,42 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                                     : '${_child!['firstName'] ?? ''} ${_child!['lastName'] ?? ''}'
                                         .trim(),
                                 className: _child?['class']?['name'] as String?,
+                              )))),
+              const SizedBox(height: 10),
+              _NavTile(
+                  icon: Icons.assignment_outlined,
+                  title: 'Devoirs',
+                  subtitle: 'Devoirs à rendre pour votre enfant',
+                  color: const Color(0xFF2563EB),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => HomeworkScreen.forParent(
+                                studentId: _selectedChildId,
+                              )))),
+              const SizedBox(height: 10),
+              _NavTile(
+                  icon: Icons.trending_up_outlined,
+                  title: 'Progression',
+                  subtitle: 'Évolution des résultats par matière',
+                  color: const Color(0xFF059669),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => ProgressScreen.forParent(
+                                studentId: _selectedChildId,
+                              )))),
+              const SizedBox(height: 10),
+              _NavTile(
+                  icon: Icons.event_note_outlined,
+                  title: 'Examens',
+                  subtitle: 'Compositions et examens planifiés',
+                  color: dangerRed,
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => ExamsScreen.forParent(
+                                studentId: _selectedChildId,
                               )))),
               const SizedBox(height: 10),
               _NavTile(

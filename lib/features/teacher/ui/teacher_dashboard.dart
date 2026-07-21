@@ -5,12 +5,14 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/security/user_role.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/teacher_api_service.dart';
+import '../../../core/utils/teacher_class_utils.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../grades/ui/grade_input_screen.dart';
 import 'attendance_input_screen.dart';
 import 'teacher_my_classes_screen.dart';
 import 'teacher_stats_screen.dart';
 import '../../cahier/ui/cahier_screen.dart';
+import '../../exams/ui/exams_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
 
 class TeacherDashboard extends ConsumerStatefulWidget {
@@ -89,9 +91,24 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
         children: _classes.map((c) {
           final id = c['id']?.toString() ?? '';
           final name = c['name']?.toString() ?? 'Classe';
+          final subject = firstClassSubject(c) ?? '';
           return SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, {'id': id, 'name': name}),
-            child: Text(name),
+            onPressed: () => Navigator.pop(ctx, {
+              'id': id,
+              'name': name,
+              'subject': subject,
+            }),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name),
+                if (classSubjects(c).isNotEmpty)
+                  Text(
+                    classSubjects(c).join(', '),
+                    style: const TextStyle(fontSize: 11, color: textGrey),
+                  ),
+              ],
+            ),
           );
         }).toList(),
       ),
@@ -107,7 +124,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
         builder: (_) => AttendanceInputScreen(
           classId: picked['id'],
           className: picked['name'] ?? '',
-          subject: '',
+          subject: picked['subject'] ?? '',
           duration: '55',
         ),
       ),
@@ -124,6 +141,9 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
           classId: picked['id'],
           className: picked['name'] ?? '',
           trimestre: 'T1',
+          initialSubject: picked['subject']?.isNotEmpty == true
+              ? picked['subject']
+              : null,
         ),
       ),
     );
@@ -422,6 +442,16 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const TeacherStatsScreen()))),
+            const SizedBox(height: 10),
+            _ModuleTile(
+                icon: Icons.event_note_outlined,
+                title: 'Examens',
+                subtitle: 'Agenda des compositions et examens',
+                color: dangerRed,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => ExamsScreen.forTeacher()))),
             const SizedBox(height: 10),
             _ModuleTile(
                 icon: Icons.chat_outlined,

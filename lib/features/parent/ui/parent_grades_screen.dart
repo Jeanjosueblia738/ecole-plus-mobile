@@ -6,6 +6,9 @@ import '../../../core/providers/grade_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/bulletin_pdf_service.dart';
 import '../../grades/data/grade_model.dart';
+import '../../grades/data/grade_model.dart';
+import '../../conseil/ui/conseil_summary_card.dart';
+import '../../shared/ui/student_documents_section.dart';
 
 class ParentGradesScreen extends ConsumerStatefulWidget {
   const ParentGradesScreen({super.key});
@@ -48,8 +51,6 @@ class _ParentGradesScreenState extends ConsumerState<ParentGradesScreen> {
             studentName: child.fullName,
             className: child.className,
           );
-      final gradeErr = ref.read(gradeProvider.notifier).error;
-      if (gradeErr != null) _error = gradeErr;
     } catch (_) {
       _error = 'Impossible de charger les notes';
     }
@@ -175,9 +176,60 @@ class _ParentGradesScreenState extends ConsumerState<ParentGradesScreen> {
                             total: bulletin?.totalEleves,
                             mention: bulletin?.mention),
                       ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ConseilSummaryCard(isParent: true),
+                    ),
+                    if (child != null)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: StudentDocumentsSection(
+                          studentName: child.fullName,
+                          className: child.className,
+                          registrationNo: null,
+                          trimestre: _trimestre,
+                          moyenne: moyenne,
+                          grades: grades
+                              .map((g) => {
+                                    'subject': g.subject,
+                                    'evalType': g.evalType.label,
+                                    'value': g.value,
+                                    'coefficient': g.coefficient,
+                                  })
+                              .toList(),
+                        ),
+                      ),
                     const SizedBox(height: 12),
                     Expanded(
-                      child: _buildGradesBody(grades, bySubject),
+                      child: grades.isEmpty
+                          ? const Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.assignment_outlined,
+                                      size: 56, color: Color(0xFF9CA3AF)),
+                                  SizedBox(height: 12),
+                                  Text('Aucune note ce trimestre',
+                                      style: TextStyle(color: textGrey)),
+                                ],
+                              ),
+                            )
+                          : ListView(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              children: bySubject.entries.map((e) {
+                                final subGrades = e.value;
+                                final avg = subGrades.fold(
+                                        0.0, (s, g) => s + g.value) /
+                                    subGrades.length;
+                                return _SubjectCard(
+                                  subject: e.key,
+                                  coef: subGrades.first.coefficient,
+                                  grades: subGrades,
+                                  moyenne: avg,
+                                );
+                              }).toList(),
+                            ),
                     ),
                     if (bulletin != null)
                       SafeArea(
@@ -214,53 +266,6 @@ class _ParentGradesScreenState extends ConsumerState<ParentGradesScreen> {
                       ),
                   ],
                 ),
-    );
-  }
-
-  Widget _buildGradesBody(
-    List<Grade> grades,
-    Map<String, List<Grade>> bySubject,
-  ) {
-    final gradeErr = ref.read(gradeProvider.notifier).error;
-    if (gradeErr != null && grades.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(gradeErr, style: const TextStyle(color: textGrey)),
-            const SizedBox(height: 12),
-            TextButton(onPressed: _load, child: const Text('Réessayer')),
-          ],
-        ),
-      );
-    }
-    if (grades.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.assignment_outlined,
-                size: 56, color: Color(0xFF9CA3AF)),
-            SizedBox(height: 12),
-            Text('Aucune note ce trimestre',
-                style: TextStyle(color: textGrey)),
-          ],
-        ),
-      );
-    }
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      children: bySubject.entries.map((e) {
-        final subGrades = e.value;
-        final avg =
-            subGrades.fold(0.0, (s, g) => s + g.value) / subGrades.length;
-        return _SubjectCard(
-          subject: e.key,
-          coef: subGrades.first.coefficient,
-          grades: subGrades,
-          moyenne: avg,
-        );
-      }).toList(),
     );
   }
 }

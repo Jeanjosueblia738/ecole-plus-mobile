@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import 'join_screen.dart';
+import '../../enrollment/ui/enrollment_form_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -353,6 +354,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
 
+                          const SizedBox(height: 8),
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => EnrollmentFormScreen(
+                                    initialTenantCode:
+                                        _codeCtrl.text.trim().isEmpty
+                                            ? null
+                                            : _codeCtrl.text.trim(),
+                                  ),
+                                ),
+                              ),
+                              icon: const Icon(Icons.app_registration_outlined,
+                                  size: 18),
+                              label: const Text('Pré-inscription en ligne'),
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           Center(
                             child: Text(
