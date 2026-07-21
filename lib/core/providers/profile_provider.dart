@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../security/user_role.dart';
+import '../services/teacher_api_service.dart';
+import '../services/users_api_service.dart';
 
 class UserProfile {
   final String id;
@@ -54,6 +57,7 @@ class UserProfile {
       };
 
   UserProfile copyWith({
+    String? id,
     String? fullName,
     String? email,
     String? phone,
@@ -65,7 +69,7 @@ class UserProfile {
     String? langue,
   }) =>
       UserProfile(
-        id: id,
+        id: id ?? this.id,
         fullName: fullName ?? this.fullName,
         email: email ?? this.email,
         phone: phone ?? this.phone,
@@ -124,6 +128,14 @@ class UserProfile {
       etablissement: etablissement,
       poste: null,
     );
+  }
+
+  /// Découpe « Nom complet » → (prénom, nom).
+  static (String firstName, String lastName) splitFullName(String fullName) {
+    final parts = fullName.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return ('', '');
+    if (parts.length == 1) return (parts.first, '');
+    return (parts.first, parts.sublist(1).join(' '));
   }
 }
 
@@ -185,6 +197,86 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
     }
     await update(state!.copyWith(
         notifAbsence: absence, notifNote: note, notifPaiement: paiement));
+  }
+
+  /// Charge le profil depuis l'API (enseignants → /teachers/me, sinon /users/me).
+  /// Les préférences de notification restent locales.
+  Future<bool> refreshFromApi() async {
+    final current = state;
+    if (current == null) return false;
+    try {
+      final Map<String, dynamic> remote;
+      if (current.role == UserRole.teacher) {
+        remote = await TeacherApiService.getMyProfile();
+      } else {
+        remote = await UsersApiService.getMyProfile();
+      }
+      final firstName = (remote['firstName'] as String?)?.trim() ?? '';
+      final lastName = (remote['lastName'] as String?)?.trim() ?? '';
+      final fullName = '$firstName $lastName'.trim();
+      final phone = (remote['phone'] as String?)?.trim() ?? current.phone;
+      final email = (remote['email'] as String?)?.trim() ?? current.email;
+      final id = (remote['id'] as String?) ?? current.id;
+
+      await update(current.copyWith(
+        id: id,
+        fullName: fullName.isNotEmpty ? fullName : current.fullName,
+        email: email,
+        phone: phone,
+      ));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Synchronise prénom / nom / téléphone vers l'API, puis met à jour le stockage local.
+  /// Retourne `null` en cas de succès, sinon un message d'erreur.
+  Future<String?> syncProfile({
+    required String fullName,
+    required String phone,
+    String? email,
+    String? poste,
+  }) async {
+    final current = state;
+    if (current == null) return 'Profil introuvable';
+
+    final (firstName, lastName) = UserProfile.splitFullName(fullName);
+    if (firstName.isEmpty) return 'Le nom complet est obligatoire';
+
+    try {
+      if (current.role == UserRole.teacher) {
+        await TeacherApiService.updateMyProfile(
+          firstName: firstName,
+          lastName: lastName,
+          phone: phone,
+        );
+      } else {
+        await UsersApiService.updateMyProfile(
+          firstName: firstName,
+          lastName: lastName,
+          phone: phone,
+        );
+      }
+
+      await update(current.copyWith(
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        email: (email ?? current.email).trim(),
+        poste: poste ?? current.poste,
+      ));
+      return null;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      if (data is Map && data['message'] != null) {
+        final msg = data['message'];
+        if (msg is List) return msg.join(', ');
+        return msg.toString();
+      }
+      return 'Impossible de synchroniser le profil. Vérifiez votre connexion.';
+    } catch (_) {
+      return 'Impossible de synchroniser le profil. Vérifiez votre connexion.';
+    }
   }
 }
 

@@ -20,6 +20,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late TextEditingController _posteCtrl;
   bool _isEditing = false;
   bool _isSaving = false;
+  bool _isLoadingRemote = false;
 
   @override
   void initState() {
@@ -29,6 +30,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _emailCtrl = TextEditingController(text: p?.email ?? '');
     _phoneCtrl = TextEditingController(text: p?.phone ?? '');
     _posteCtrl = TextEditingController(text: p?.poste ?? '');
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadFromApi());
+  }
+
+  Future<void> _loadFromApi() async {
+    if (!mounted) return;
+    setState(() => _isLoadingRemote = true);
+    final ok = await ref.read(profileProvider.notifier).refreshFromApi();
+    if (!mounted) return;
+    if (ok) {
+      final p = ref.read(profileProvider);
+      if (p != null && !_isEditing) {
+        _nameCtrl.text = p.fullName;
+        _emailCtrl.text = p.email;
+        _phoneCtrl.text = p.phone;
+        _posteCtrl.text = p.poste ?? '';
+      }
+    }
+    setState(() => _isLoadingRemote = false);
   }
 
   @override
@@ -44,27 +63,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
 
-    final profile = ref.read(profileProvider);
-    if (profile != null) {
-      await ref.read(profileProvider.notifier).update(
-            profile.copyWith(
-              fullName: _nameCtrl.text.trim(),
-              email: _emailCtrl.text.trim(),
-              phone: _phoneCtrl.text.trim(),
-              poste: _posteCtrl.text.trim(),
-            ),
-          );
-    }
+    final error = await ref.read(profileProvider.notifier).syncProfile(
+          fullName: _nameCtrl.text.trim(),
+          phone: _phoneCtrl.text.trim(),
+          email: _emailCtrl.text.trim(),
+          poste: _posteCtrl.text.trim(),
+        );
+
+    if (!mounted) return;
 
     setState(() {
       _isSaving = false;
-      _isEditing = false;
+      if (error == null) _isEditing = false;
     });
-    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Enregistré localement (non synchronisé)'),
-        backgroundColor: Color(0xFFB45309),
+      SnackBar(
+        content: Text(
+          error == null ? 'Profil synchronisé' : error,
+        ),
+        backgroundColor: error == null ? successGreen : dangerRed,
       ),
     );
   }
@@ -98,157 +116,168 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              // ── Avatar ────────────────────────────────────────────
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  color: primaryBlue.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: primaryBlue.withValues(alpha: 0.3), width: 2),
-                ),
-                child: Center(
-                  child: Text(
-                    profile.initials,
-                    style: const TextStyle(
-                        color: primaryBlue,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(profile.roleLabel,
-                  style: const TextStyle(
-                      color: primaryBlue,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13)),
-              if (profile.etablissement != null) ...[
-                const SizedBox(height: 2),
-                Text(profile.etablissement!,
-                    style: const TextStyle(color: textGrey, fontSize: 12)),
-              ],
-
-              const SizedBox(height: 28),
-
-              // ── Champs ─────────────────────────────────────────────
-              _Field(
-                controller: _nameCtrl,
-                label: 'Nom complet',
-                icon: Icons.person_outline,
-                enabled: _isEditing,
-                validator: (v) => v!.trim().isEmpty ? 'Obligatoire' : null,
-              ),
-              const SizedBox(height: 14),
-              _Field(
-                controller: _emailCtrl,
-                label: 'Email',
-                icon: Icons.email_outlined,
-                enabled: _isEditing,
-                keyboardType: TextInputType.emailAddress,
-                validator: (v) {
-                  if (v!.trim().isEmpty) return 'Obligatoire';
-                  if (!v.contains('@')) return 'Email invalide';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 14),
-              _Field(
-                controller: _phoneCtrl,
-                label: 'Téléphone',
-                icon: Icons.phone_outlined,
-                enabled: _isEditing,
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 14),
-              _Field(
-                controller: _posteCtrl,
-                label: 'Poste / Classe',
-                icon: Icons.work_outline,
-                enabled: _isEditing,
-              ),
-
-              const SizedBox(height: 28),
-
-              // ── Bouton sauvegarder ────────────────────────────────
-              if (_isEditing)
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryBlue,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  // ── Avatar ────────────────────────────────────────────
+                  Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      color: primaryBlue.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: primaryBlue.withValues(alpha: 0.3), width: 2),
                     ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2))
-                        : const Text('Sauvegarder',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15)),
+                    child: Center(
+                      child: Text(
+                        profile.initials,
+                        style: const TextStyle(
+                            color: primaryBlue,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ),
-                ),
-
-              const SizedBox(height: 20),
-
-              // ── Infos compte ──────────────────────────────────────
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Informations du compte',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: textDark)),
-                    const SizedBox(height: 12),
-                    _InfoRow('Rôle', profile.roleLabel),
-                    _InfoRow('ID', profile.id),
-                    _InfoRow('Langue', 'Français'),
+                  const SizedBox(height: 8),
+                  Text(profile.roleLabel,
+                      style: const TextStyle(
+                          color: primaryBlue,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13)),
+                  if (profile.etablissement != null) ...[
+                    const SizedBox(height: 2),
+                    Text(profile.etablissement!,
+                        style: const TextStyle(color: textGrey, fontSize: 12)),
                   ],
-                ),
-              ),
 
-              const SizedBox(height: 16),
+                  const SizedBox(height: 28),
 
-              // ── Déconnexion ───────────────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.logout, color: dangerRed),
-                  label: const Text('Se déconnecter',
-                      style: TextStyle(color: dangerRed)),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: dangerRed),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                  // ── Champs ─────────────────────────────────────────────
+                  _Field(
+                    controller: _nameCtrl,
+                    label: 'Nom complet',
+                    icon: Icons.person_outline,
+                    enabled: _isEditing,
+                    validator: (v) => v!.trim().isEmpty ? 'Obligatoire' : null,
                   ),
-                  onPressed: () => ref.read(authProvider.notifier).logout(),
-                ),
+                  const SizedBox(height: 14),
+                  _Field(
+                    controller: _emailCtrl,
+                    label: 'Email',
+                    icon: Icons.email_outlined,
+                    enabled: false,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (v) {
+                      if (v!.trim().isEmpty) return 'Obligatoire';
+                      if (!v.contains('@')) return 'Email invalide';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  _Field(
+                    controller: _phoneCtrl,
+                    label: 'Téléphone',
+                    icon: Icons.phone_outlined,
+                    enabled: _isEditing,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 14),
+                  _Field(
+                    controller: _posteCtrl,
+                    label: 'Poste / Classe',
+                    icon: Icons.work_outline,
+                    enabled: _isEditing,
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // ── Bouton sauvegarder ────────────────────────────────
+                  if (_isEditing)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _isSaving ? null : _save,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryBlue,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: _isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2))
+                            : const Text('Sauvegarder',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15)),
+                      ),
+                    ),
+
+                  const SizedBox(height: 20),
+
+                  // ── Infos compte ──────────────────────────────────────
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Informations du compte',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, color: textDark)),
+                        const SizedBox(height: 12),
+                        _InfoRow('Rôle', profile.roleLabel),
+                        _InfoRow('ID', profile.id),
+                        _InfoRow('Langue', 'Français'),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // ── Déconnexion ───────────────────────────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.logout, color: dangerRed),
+                      label: const Text('Se déconnecter',
+                          style: TextStyle(color: dangerRed)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: dangerRed),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => ref.read(authProvider.notifier).logout(),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          if (_isLoadingRemote)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
+        ],
       ),
     );
   }

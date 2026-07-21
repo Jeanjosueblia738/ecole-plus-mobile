@@ -8,6 +8,22 @@ class TeacherApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  /// Mise à jour du profil enseignant (prénom, nom, téléphone, photo)
+  static Future<Map<String, dynamic>> updateMyProfile({
+    String? firstName,
+    String? lastName,
+    String? phone,
+    String? photoUrl,
+  }) async {
+    final response = await ApiClient.instance.patch('/teachers/me', data: {
+      if (firstName != null) 'firstName': firstName,
+      if (lastName != null) 'lastName': lastName,
+      if (phone != null) 'phone': phone,
+      if (photoUrl != null) 'photoUrl': photoUrl,
+    });
+    return response.data as Map<String, dynamic>;
+  }
+
   // Classes de l'enseignant (1 → N)
   static Future<List<dynamic>> getMyClasses({String? year}) async {
     final response = await ApiClient.instance.get(
