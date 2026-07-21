@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/finance_provider.dart';
+import '../../../core/security/user_role.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/school_year.dart';
 import '../data/finance_model.dart';
@@ -33,7 +35,14 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(_reload);
+    Future.microtask(() {
+      final role = ref.read(authProvider).role;
+      if (role == UserRole.cashier) {
+        if (mounted) Navigator.of(context).maybePop();
+        return;
+      }
+      _reload();
+    });
   }
 
   @override

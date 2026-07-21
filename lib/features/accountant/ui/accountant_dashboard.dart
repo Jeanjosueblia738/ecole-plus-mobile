@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/security/user_role.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/finance_api_service.dart';
 import '../../../core/services/students_api_service.dart';
+import '../../../core/utils/school_year.dart';
+import '../../finance/ui/cash_session_screen.dart';
 import '../../finance/ui/finance_dashboard_screen.dart';
+import '../../finance/ui/finance_ops_hub_screen.dart';
 import '../../finance/ui/payment_history_screen.dart';
 import '../../finance/ui/payment_screen.dart';
 import '../../finance/ui/unpaid_students_screen.dart';
@@ -18,7 +23,8 @@ class AccountantDashboard extends ConsumerStatefulWidget {
 
 class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
   int _unpaidCount = 0;
-  double _totalDu = 0, _totalPaye = 0;
+  int _operationsToday = 0;
+  double _totalDu = 0, _totalPaye = 0, _todayEncaisse = 0;
   bool _loading = true;
   String? _error;
 
@@ -34,14 +40,28 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
       _error = null;
     });
     try {
-      final s = await StudentsApiService.getStats();
+      final year = currentSchoolYear();
+      final results = await Future.wait([
+        FinanceApiService.getStats(year: year),
+        StudentsApiService.getStats().catchError((_) => <String, dynamic>{}),
+      ]);
       if (!mounted) {
         return;
       }
+      final finance = results[0];
+      final students = results[1];
       setState(() {
-        _unpaidCount = (s['unpaidCount'] as num?)?.toInt() ?? 0;
-        _totalDu = (s['totalDu'] as num?)?.toDouble() ?? 0;
-        _totalPaye = (s['totalPaye'] as num?)?.toDouble() ?? 0;
+        _unpaidCount = (students['unpaidCount'] as num?)?.toInt() ?? 0;
+        _totalDu = (finance['totalAttenduXof'] as num?)?.toDouble() ??
+            (finance['totalDu'] as num?)?.toDouble() ??
+            0;
+        _totalPaye = (finance['totalRecouvertXof'] as num?)?.toDouble() ??
+            (finance['totalPaye'] as num?)?.toDouble() ??
+            0;
+        _todayEncaisse =
+            (finance['encaissementsAujourdhuiXof'] as num?)?.toDouble() ?? 0;
+        _operationsToday =
+            (finance['operationsAujourdhui'] as num?)?.toInt() ?? 0;
         _loading = false;
       });
     } catch (e) {
@@ -63,15 +83,18 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
-    final solde = _totalDu - _totalPaye;
+    final isCashier = auth.role == UserRole.cashier;
+    final solde = (_totalDu > 0 ? _totalDu : 0) - _totalPaye;
     final taux = _totalDu > 0 ? (_totalPaye / _totalDu * 100).round() : 0;
+    final roleLabel = isCashier ? 'Caissier' : 'Comptable';
+    final accent = isCashier ? const Color(0xFF059669) : successGreen;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
       appBar: AppBar(
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Finance',
-              style: TextStyle(
+          Text(isCashier ? 'Caisse' : 'Finance',
+              style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white)),
@@ -79,7 +102,7 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
             Text(auth.tenantName!,
                 style: const TextStyle(fontSize: 11, color: Colors.white70)),
         ]),
-        backgroundColor: successGreen,
+        backgroundColor: accent,
         foregroundColor: Colors.white,
         actions: [
           if (_loading)
@@ -135,77 +158,95 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                 ),
               ),
             _ProfileCard(
-                name: auth.fullName,
-                role: 'Comptable / Caissier',
-                color: successGreen),
+                name: auth.fullName, role: roleLabel, color: accent),
             const SizedBox(height: 20),
-            const Text('Situation financière',
-                style: TextStyle(
+            Text(isCashier ? 'Caisse du jour' : 'Situation financière',
+                style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: textDark)),
             const SizedBox(height: 12),
 
-            // Taux recouvrement
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: taux >= 80
-                    ? successGreen.withValues(alpha: 0.08)
-                    : warningYellow.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: taux >= 80
-                        ? successGreen.withValues(alpha: 0.3)
-                        : warningYellow.withValues(alpha: 0.3)),
-              ),
-              child: Row(children: [
-                Icon(Icons.trending_up_outlined,
-                    color: taux >= 80 ? successGreen : warningYellow, size: 32),
-                const SizedBox(width: 12),
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('$taux%',
-                      style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: taux >= 80 ? successGreen : warningYellow)),
-                  const Text('Taux de recouvrement',
-                      style: TextStyle(fontSize: 12, color: textGrey)),
+            if (!isCashier) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: taux >= 80
+                      ? successGreen.withValues(alpha: 0.08)
+                      : warningYellow.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: taux >= 80
+                          ? successGreen.withValues(alpha: 0.3)
+                          : warningYellow.withValues(alpha: 0.3)),
+                ),
+                child: Row(children: [
+                  Icon(Icons.trending_up_outlined,
+                      color: taux >= 80 ? successGreen : warningYellow,
+                      size: 32),
+                  const SizedBox(width: 12),
+                  Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('$taux%',
+                            style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: taux >= 80
+                                    ? successGreen
+                                    : warningYellow)),
+                        const Text('Taux de recouvrement',
+                            style: TextStyle(fontSize: 12, color: textGrey)),
+                      ]),
                 ]),
-              ]),
-            ),
-
-            const SizedBox(height: 12),
+              ),
+              const SizedBox(height: 12),
+            ],
             Row(children: [
               _KpiCard(
-                  label: 'Total dû',
-                  value: _fmt(_totalDu),
-                  icon: Icons.account_balance_outlined,
+                  label: isCashier ? 'Encaissé aujourd\'hui' : 'Total dû',
+                  value: _fmt(isCashier ? _todayEncaisse : _totalDu),
+                  icon: isCashier
+                      ? Icons.today_outlined
+                      : Icons.account_balance_outlined,
                   color: primaryBlue,
                   loading: _loading),
               const SizedBox(width: 12),
               _KpiCard(
-                  label: 'Encaissé',
-                  value: _fmt(_totalPaye),
+                  label: isCashier ? 'Opérations' : 'Encaissé',
+                  value: isCashier
+                      ? _operationsToday.toString()
+                      : _fmt(_totalPaye),
                   icon: Icons.payments_outlined,
                   color: successGreen,
                   loading: _loading),
             ]),
             const SizedBox(height: 12),
             Row(children: [
-              _KpiCard(
-                  label: 'Reste',
-                  value: _fmt(solde),
-                  icon: Icons.money_off_outlined,
-                  color: dangerRed,
-                  loading: _loading),
-              const SizedBox(width: 12),
+              if (!isCashier) ...[
+                _KpiCard(
+                    label: 'Reste',
+                    value: _fmt(solde < 0 ? 0 : solde),
+                    icon: Icons.money_off_outlined,
+                    color: dangerRed,
+                    loading: _loading),
+                const SizedBox(width: 12),
+              ],
               _KpiCard(
                   label: 'Impayés',
                   value: _unpaidCount.toString(),
                   icon: Icons.people_alt_outlined,
                   color: warningYellow,
                   loading: _loading),
+              if (isCashier) ...[
+                const SizedBox(width: 12),
+                _KpiCard(
+                    label: 'À recouvrir',
+                    value: _fmt(solde < 0 ? 0 : solde),
+                    icon: Icons.money_off_outlined,
+                    color: dangerRed,
+                    loading: _loading),
+              ],
             ]),
 
             const SizedBox(height: 20),
@@ -236,6 +277,16 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                         builder: (_) => const PaymentHistoryScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
+                icon: Icons.point_of_sale_outlined,
+                title: 'Caisse',
+                subtitle: 'Ouverture / clôture journalière',
+                color: const Color(0xFFD97706),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CashSessionScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
                 icon: Icons.warning_amber_outlined,
                 title: 'Liste des impayés',
                 subtitle: '$_unpaidCount élève(s) non à jour',
@@ -244,16 +295,45 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const UnpaidStudentsScreen()))),
-            const SizedBox(height: 10),
-            _ActionTile(
-                icon: Icons.account_balance_wallet_outlined,
-                title: 'Espace finance',
-                subtitle: 'Frais, Mobile Money, synthèse',
-                color: const Color(0xFF0D9488),
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const FinanceDashboardScreen()))),
+            if (!isCashier) ...[
+              const SizedBox(height: 10),
+              _ActionTile(
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'Espace finance',
+                  subtitle: 'Frais, Mobile Money, synthèse',
+                  color: const Color(0xFF0D9488),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const FinanceDashboardScreen()))),
+              const SizedBox(height: 10),
+              _ActionTile(
+                  icon: Icons.analytics_outlined,
+                  title: 'Pilotage financier',
+                  subtitle: 'Dépenses, fournisseurs, paie, budget, banque',
+                  color: const Color(0xFF4F46E5),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const FinanceOpsHubScreen()))),
+            ],
+            if (isCashier) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Text(
+                  'Profil caissier : encaissements et dossiers élèves uniquement. '
+                  'Configuration des frais et pilotage financier réservés au comptable.',
+                  style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
+                ),
+              ),
+            ],
           ]),
         ),
       ),

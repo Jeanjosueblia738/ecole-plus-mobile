@@ -39,6 +39,9 @@ class AuthState {
   bool get isSurveillant => role == UserRole.surveillant;
   bool get isSecretary => role == UserRole.secretary;
   bool get isAccountant => role == UserRole.accountant;
+  bool get isCashier => role == UserRole.cashier;
+  bool get isFinanceStaff =>
+      role == UserRole.accountant || role == UserRole.cashier;
 
   String get fullName {
     if (firstName != null && lastName != null) {
@@ -260,7 +263,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         'EDUCATOR' => UserRole.surveillant,
         'SECRETARY' => UserRole.secretary,
         'ACCOUNTANT' => UserRole.accountant,
-        'CASHIER' => UserRole.accountant,
+        'CASHIER' => UserRole.cashier,
         'TEACHER' => UserRole.teacher,
         'PARENT' => UserRole.parent,
         'STUDENT' => UserRole.student,

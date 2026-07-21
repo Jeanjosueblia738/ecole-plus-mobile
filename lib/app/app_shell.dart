@@ -36,6 +36,7 @@ class AppShell extends ConsumerWidget {
       UserRole.surveillant => const SurveillantDashboard(),
       UserRole.secretary => const SecretaryDashboard(),
       UserRole.accountant => const AccountantDashboard(),
+      UserRole.cashier => const AccountantDashboard(),
       UserRole.teacher => const TeacherDashboard(),
       UserRole.parent => const ParentDashboard(),
       UserRole.student => const StudentDashboard(),

@@ -4,7 +4,8 @@ enum UserRole {
   censor, // CENSOR
   surveillant, // SURVEILLANT, EDUCATOR
   secretary, // SECRETARY
-  accountant, // ACCOUNTANT, CASHIER
+  accountant, // ACCOUNTANT
+  cashier, // CASHIER
   teacher, // TEACHER
   parent, // PARENT
   student, // STUDENT
@@ -17,6 +18,7 @@ extension UserRoleLabel on UserRole {
         UserRole.surveillant => 'Surveillant Général',
         UserRole.secretary => 'Secrétaire',
         UserRole.accountant => 'Comptable',
+        UserRole.cashier => 'Caissier',
         UserRole.teacher => 'Enseignant',
         UserRole.parent => 'Parent',
         UserRole.student => 'Élève',

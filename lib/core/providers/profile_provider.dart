@@ -51,6 +51,7 @@ class UserProfile {
         UserRole.surveillant => 'Surveillant Général',
         UserRole.secretary => 'Secrétaire',
         UserRole.accountant => 'Comptable',
+        UserRole.cashier => 'Caissier',
         UserRole.teacher => 'Enseignant',
         UserRole.parent => 'Parent d\'élève',
         UserRole.student => 'Élève',
