@@ -19,6 +19,7 @@ class _CahierScreenState extends ConsumerState<CahierScreen> {
   List<dynamic> _entries = [];
   bool _loading = true;
   bool _showForm = false;
+  String? _error;
 
   @override
   void initState() {
@@ -27,6 +28,10 @@ class _CahierScreenState extends ConsumerState<CahierScreen> {
   }
 
   Future<void> _loadClasses() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final classes = await TeacherApiService.getMyClasses()
           .timeout(const Duration(seconds: 15));
@@ -39,9 +44,21 @@ class _CahierScreenState extends ConsumerState<CahierScreen> {
         }
       });
       await _loadEntries();
-    } catch (e) {
-      debugPrint('ECOLE+ cahier classes: $e');
-      if (mounted) setState(() => _loading = false);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error =
+              'Impossible de charger les classes. Vérifiez votre connexion.';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Impossible de charger les classes du cahier de texte'),
+            backgroundColor: dangerRed,
+          ),
+        );
+      }
     }
   }
 
@@ -50,7 +67,10 @@ class _CahierScreenState extends ConsumerState<CahierScreen> {
       setState(() => _loading = false);
       return;
     }
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final entries = await CahierApiService.getByClass(_selectedClassId!,
               trimestre: _trimestre)
@@ -60,9 +80,20 @@ class _CahierScreenState extends ConsumerState<CahierScreen> {
         _entries = entries;
         _loading = false;
       });
-    } catch (e) {
-      debugPrint('ECOLE+ cahier: $e');
-      if (mounted) setState(() => _loading = false);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error =
+              'Impossible de charger le cahier de texte. Tirez pour actualiser.';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur de chargement du cahier de texte'),
+            backgroundColor: dangerRed,
+          ),
+        );
+      }
     }
   }
 
@@ -84,12 +115,19 @@ class _CahierScreenState extends ConsumerState<CahierScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('✅ Émargement enregistré'),
+              content: Text('Émargement enregistré'),
               backgroundColor: successGreen),
         );
       }
-    } catch (e) {
-      debugPrint('ECOLE+ emargement: $e');
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Échec de l\'émargement. Réessayez.'),
+            backgroundColor: dangerRed,
+          ),
+        );
+      }
     }
   }
 
@@ -127,6 +165,31 @@ class _CahierScreenState extends ConsumerState<CahierScreen> {
         child: Icon(_showForm ? Icons.close : Icons.add, color: Colors.white),
       ),
       body: Column(children: [
+        if (_error != null)
+          Material(
+            color: Colors.red.shade50,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline,
+                      color: Colors.red.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(_error!,
+                        style: TextStyle(
+                            color: Colors.red.shade800, fontSize: 13)),
+                  ),
+                  TextButton(
+                    onPressed: _selectedClassId == null
+                        ? _loadClasses
+                        : _loadEntries,
+                    child: const Text('Réessayer'),
+                  ),
+                ],
+              ),
+            ),
+          ),
         // ── Filtres ────────────────────────────────────────────────────
         Container(
           color: Colors.white,

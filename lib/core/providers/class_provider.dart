@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/classes_api_service.dart';
+import '../utils/school_year.dart';
 
 // ─── Modèle Classe ────────────────────────────────────────────────────────
 class SchoolClass {
@@ -33,6 +35,18 @@ class SchoolClass {
         cycle: json['cycle'],
         capacity: json['capacity'] ?? 50,
       );
+
+  factory SchoolClass.fromApi(Map<String, dynamic> json) {
+    final level = json['level']?.toString() ?? '';
+    final cycle = kCollegeLevels.contains(level) ? 'Collège' : 'Lycée';
+    return SchoolClass(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      level: level,
+      cycle: cycle,
+      capacity: (json['capacity'] as num?)?.toInt() ?? 50,
+    );
+  }
 }
 
 // Niveaux standard système ivoirien
@@ -44,59 +58,25 @@ const kAllLevels = [...kCollegeLevels, ...kLyceeLevels];
 class ClassNotifier extends StateNotifier<List<SchoolClass>> {
   static const _storageKey = 'school_classes';
 
-  ClassNotifier() : super(_defaultClasses());
+  ClassNotifier() : super(const []);
 
-  static List<SchoolClass> _defaultClasses() => [
-        const SchoolClass(
-            id: 'c1',
-            name: '6ème A',
-            level: '6ème',
-            cycle: 'Collège',
-            capacity: 45),
-        const SchoolClass(
-            id: 'c2',
-            name: '5ème A',
-            level: '5ème',
-            cycle: 'Collège',
-            capacity: 45),
-        const SchoolClass(
-            id: 'c3',
-            name: '4ème A',
-            level: '4ème',
-            cycle: 'Collège',
-            capacity: 45),
-        const SchoolClass(
-            id: 'c4',
-            name: '3ème A',
-            level: '3ème',
-            cycle: 'Collège',
-            capacity: 45),
-        const SchoolClass(
-            id: 'c5',
-            name: '2nde A',
-            level: '2nde',
-            cycle: 'Lycée',
-            capacity: 50),
-        const SchoolClass(
-            id: 'c6',
-            name: '1ère A',
-            level: '1ère',
-            cycle: 'Lycée',
-            capacity: 50),
-        const SchoolClass(
-            id: 'c7',
-            name: 'Tle A',
-            level: 'Terminale',
-            cycle: 'Lycée',
-            capacity: 50),
-      ];
+  String? error;
+  bool loading = false;
 
   Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_storageKey);
-    if (data != null) {
-      final List decoded = jsonDecode(data);
-      state = decoded.map((e) => SchoolClass.fromJson(e)).toList();
+    loading = true;
+    error = null;
+    try {
+      final raw = await ClassesApiService.getAll(year: currentSchoolYear());
+      state = raw
+          .map((e) => SchoolClass.fromApi(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      await _save();
+    } catch (_) {
+      error = 'Impossible de charger les classes';
+      state = [];
+    } finally {
+      loading = false;
     }
   }
 

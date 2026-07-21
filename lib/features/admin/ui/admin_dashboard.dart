@@ -29,6 +29,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
   int _totalTeachers = 0;
   int _totalClasses = 0;
   bool _isLoadingStats = true;
+  String? _error;
 
   @override
   void initState() {
@@ -40,7 +41,10 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
     if (!mounted) {
       return;
     }
-    setState(() => _isLoadingStats = true);
+    setState(() {
+      _isLoadingStats = true;
+      _error = null;
+    });
     try {
       final studentStats = await StudentsApiService.getStats()
           .timeout(const Duration(seconds: 15));
@@ -65,15 +69,21 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
           _pendingJustifications =
               (attendanceStats['unJustified'] as num?)?.toInt() ?? 0;
         });
-      } catch (e) {
-        debugPrint('ECOLE+ absences: $e');
+      } catch (_) {
+        if (mounted) {
+          setState(() => _error =
+              'Impossible de charger toutes les statistiques. Tirez pour actualiser.');
+        }
       }
-    } catch (e) {
-      debugPrint('ECOLE+ stats: $e');
+    } catch (_) {
       if (!mounted) {
         return;
       }
-      setState(() => _isLoadingStats = false);
+      setState(() {
+        _isLoadingStats = false;
+        _error =
+            'Impossible de charger les statistiques. Vérifiez votre connexion.';
+      });
     }
   }
 
@@ -127,6 +137,32 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (_error != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: Colors.red.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(_error!,
+                          style: TextStyle(
+                              color: Colors.red.shade800, fontSize: 13)),
+                    ),
+                    TextButton(
+                        onPressed: _loadRealStats,
+                        child: const Text('Réessayer')),
+                  ],
+                ),
+              ),
             // ── KPIs ──────────────────────────────────────────────────
             Row(children: [
               _KpiCard(

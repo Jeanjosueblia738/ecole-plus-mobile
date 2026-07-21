@@ -20,6 +20,7 @@ class _CahierDirecteurScreenState extends ConsumerState<CahierDirecteurScreen> {
   List<dynamic> _entries = [];
   Map<String, dynamic>? _stats;
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -28,7 +29,10 @@ class _CahierDirecteurScreenState extends ConsumerState<CahierDirecteurScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       // Charger stats + classes en parallèle
       final results = await Future.wait([
@@ -40,6 +44,15 @@ class _CahierDirecteurScreenState extends ConsumerState<CahierDirecteurScreen> {
       final stats = results[0] as Map<String, dynamic>;
       final classes = results[1] as List<dynamic>;
 
+      if (classes.isEmpty && stats.isEmpty) {
+        setState(() {
+          _loading = false;
+          _error =
+              'Impossible de charger le cahier. Vérifiez votre connexion.';
+        });
+        return;
+      }
+
       setState(() {
         _stats = stats;
         _classes = classes;
@@ -49,9 +62,20 @@ class _CahierDirecteurScreenState extends ConsumerState<CahierDirecteurScreen> {
         }
       });
       await _loadEntries();
-    } catch (e) {
-      debugPrint('ECOLE+ cahier directeur: $e');
-      if (mounted) setState(() => _loading = false);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error =
+              'Impossible de charger le cahier. Vérifiez votre connexion.';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur de chargement du cahier de texte'),
+            backgroundColor: dangerRed,
+          ),
+        );
+      }
     }
   }
 
@@ -60,7 +84,10 @@ class _CahierDirecteurScreenState extends ConsumerState<CahierDirecteurScreen> {
       setState(() => _loading = false);
       return;
     }
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final entries = await CahierApiService.getByClass(_selectedClassId!,
               trimestre: _trimestre)
@@ -70,9 +97,20 @@ class _CahierDirecteurScreenState extends ConsumerState<CahierDirecteurScreen> {
         _entries = entries;
         _loading = false;
       });
-    } catch (e) {
-      debugPrint('ECOLE+ cahier entries: $e');
-      if (mounted) setState(() => _loading = false);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error =
+              'Impossible de charger les séances. Tirez pour actualiser.';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur de chargement des séances'),
+            backgroundColor: dangerRed,
+          ),
+        );
+      }
     }
   }
 
@@ -114,6 +152,31 @@ class _CahierDirecteurScreenState extends ConsumerState<CahierDirecteurScreen> {
           padding: const EdgeInsets.all(12),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (_error != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: Colors.red.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(_error!,
+                          style: TextStyle(
+                              color: Colors.red.shade800, fontSize: 13)),
+                    ),
+                    TextButton(
+                        onPressed: _loadData, child: const Text('Réessayer')),
+                  ],
+                ),
+              ),
             // ── Stats globales ─────────────────────────────────────────
             Row(children: [
               _StatCard(

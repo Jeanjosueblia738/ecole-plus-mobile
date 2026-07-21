@@ -63,8 +63,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Profil mis à jour ✓'),
-        backgroundColor: Color(0xFF16A34A),
+        content: Text('Enregistré localement (non synchronisé)'),
+        backgroundColor: Color(0xFFB45309),
       ),
     );
   }

@@ -129,9 +129,42 @@ class TimetableNotifier extends StateNotifier<List<TimetableEntry>> {
     }
   }
 
-  Future<void> addEntry(TimetableEntry entry) async {
+  /// Ajoute un créneau. Si [classId] est fourni, tente POST `/timetable`.
+  /// Retourne `true` si synchronisé serveur, `false` si local seulement.
+  Future<bool> addEntry(TimetableEntry entry, {String? classId}) async {
+    if (classId != null && classId.isNotEmpty) {
+      try {
+        final dayApi = switch (entry.day) {
+          WeekDay.lundi => 'LUNDI',
+          WeekDay.mardi => 'MARDI',
+          WeekDay.mercredi => 'MERCREDI',
+          WeekDay.jeudi => 'JEUDI',
+          WeekDay.vendredi => 'VENDREDI',
+          WeekDay.samedi => 'SAMEDI',
+        };
+        final res = await TimetableApiService.create({
+          'classId': classId,
+          'subject': entry.subject,
+          'day': dayApi,
+          'startTime': entry.startTime,
+          'endTime': entry.endTime,
+          'year': currentSchoolYear(),
+          if (entry.room != null && entry.room!.isNotEmpty) 'room': entry.room,
+        });
+        final saved = timetableEntryFromApi(
+          Map<String, dynamic>.from(res),
+          fallbackClassName: entry.className,
+          fallbackTeacherName: entry.teacherName,
+        );
+        state = [...state, saved];
+        return true;
+      } catch (_) {
+        // fallback local ci-dessous
+      }
+    }
     state = [...state, entry];
     await _save();
+    return false;
   }
 
   Future<void> removeEntry(String id) async {

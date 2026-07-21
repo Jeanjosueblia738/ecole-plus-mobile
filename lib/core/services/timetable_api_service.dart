@@ -30,4 +30,9 @@ class TimetableApiService {
     }
     return const [];
   }
+
+  static Future<Map<String, dynamic>> create(Map<String, dynamic> data) async {
+    final response = await ApiClient.instance.post('/timetable', data: data);
+    return response.data as Map<String, dynamic>;
+  }
 }

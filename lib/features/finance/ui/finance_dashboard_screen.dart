@@ -361,14 +361,17 @@ class _PendingPaymentCard extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () async {
-              await ref
+              final ok = await ref
                   .read(paymentProvider.notifier)
                   .validatePayment(payment.id);
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Paiement validé ✓'),
-                  backgroundColor: Color(0xFF16A34A),
+                SnackBar(
+                  content: Text(ok
+                      ? 'Paiement validé ✓'
+                      : 'Validation serveur non disponible'),
+                  backgroundColor:
+                      ok ? const Color(0xFF16A34A) : const Color(0xFFB45309),
                 ),
               );
             },

@@ -173,6 +173,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => TimetableSlotForm(
         className: widget.className,
+        classId: widget.classId,
         initialDay: WeekDay.values[_selectedDay],
       ),
     );

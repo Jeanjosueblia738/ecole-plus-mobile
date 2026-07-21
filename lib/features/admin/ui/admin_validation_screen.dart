@@ -157,15 +157,18 @@ class _JustificationCard extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8)),
                   ),
                   onPressed: () async {
-                    await ref
+                    final ok = await ref
                         .read(attendanceProvider.notifier)
                         .validateJustification(record.id);
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Validée localement — sync serveur non disponible'),
-                        backgroundColor: Color(0xFFD97706),
+                      SnackBar(
+                        content: Text(ok
+                            ? 'Justification validée ✓'
+                            : 'Validation non persistée — endpoint serveur indisponible'),
+                        backgroundColor: ok
+                            ? const Color(0xFF16A34A)
+                            : const Color(0xFFB45309),
                       ),
                     );
                   },

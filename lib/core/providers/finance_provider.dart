@@ -93,7 +93,10 @@ final feeProvider = StateNotifierProvider<FeeNotifier, List<SchoolFee>>(
 class PaymentNotifier extends StateNotifier<List<Payment>> {
   PaymentNotifier() : super([]);
 
+  String? error;
+
   Future<void> loadForStudent(String studentId) async {
+    error = null;
     try {
       final data = await FinanceApiService.getStudentFinance(studentId);
       final fees = (data['fees'] as List?) ?? [];
@@ -130,7 +133,9 @@ class PaymentNotifier extends StateNotifier<List<Payment>> {
         ...payments,
       ];
     } catch (_) {
-      // keep prior state
+      // Ne pas conserver d'anciens paiements comme s'ils étaient à jour.
+      state = state.where((p) => p.studentId != studentId).toList();
+      error = 'Impossible de charger les paiements';
     }
   }
 
@@ -188,30 +193,9 @@ class PaymentNotifier extends StateNotifier<List<Payment>> {
     return payment;
   }
 
-  Future<void> validatePayment(String id) async {
-    state = [
-      for (final p in state)
-        if (p.id == id)
-          Payment(
-            id: p.id,
-            studentId: p.studentId,
-            studentName: p.studentName,
-            className: p.className,
-            feeId: p.feeId,
-            feeLabel: p.feeLabel,
-            montant: p.montant,
-            method: p.method,
-            status: PaymentStatus.valide,
-            date: p.date,
-            operatorName: p.operatorName,
-            phoneNumber: p.phoneNumber,
-            transactionId: p.transactionId,
-            chequeNumber: p.chequeNumber,
-            receiptNumber: p.receiptNumber,
-          )
-        else
-          p,
-    ];
+  /// Pas d'endpoint de validation côté API — ne pas simuler un succès serveur.
+  Future<bool> validatePayment(String id) async {
+    return false;
   }
 }
 

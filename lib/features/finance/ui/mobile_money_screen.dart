@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/providers/finance_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/payment_gateway_service.dart';
-import '../../../services/receipt_pdf_service.dart';
 import '../data/finance_model.dart';
 import '../../student/data/student.dart';
-import 'package:printing/printing.dart';
 
-class MobileMoneyScreen extends ConsumerStatefulWidget {
+class MobileMoneyScreen extends StatefulWidget {
   final Student student;
   final SchoolFee fee;
 
@@ -19,10 +15,10 @@ class MobileMoneyScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<MobileMoneyScreen> createState() => _MobileMoneyScreenState();
+  State<MobileMoneyScreen> createState() => _MobileMoneyScreenState();
 }
 
-class _MobileMoneyScreenState extends ConsumerState<MobileMoneyScreen> {
+class _MobileMoneyScreenState extends State<MobileMoneyScreen> {
   MobileMoneyOperator _operator = MobileMoneyOperator.orangeMoney;
   final _phoneCtrl = TextEditingController();
   bool _isProcessing = false;
@@ -54,83 +50,13 @@ class _MobileMoneyScreenState extends ConsumerState<MobileMoneyScreen> {
 
     if (!mounted) return;
 
-    if (result.success) {
-      final payment = await ref.read(paymentProvider.notifier).addPayment(
-            studentId: widget.student.id,
-            studentName: widget.student.fullName,
-            className: widget.student.className,
-            feeId: widget.fee.id,
-            feeLabel: widget.fee.label,
-            montant: widget.fee.montant,
-            method: PaymentMethod.mobileMoney,
-            operatorName: _operator.label,
-            phoneNumber: _phoneCtrl.text.trim(),
-            transactionId: result.transactionId,
-          );
-
-      // Valider immédiatement (simulation)
-      await ref.read(paymentProvider.notifier).validatePayment(payment.id);
-
-      if (!mounted) return;
-      setState(() => _isProcessing = false);
-      _showSuccess(payment);
-    } else {
-      setState(() {
-        _isProcessing = false;
-        _errorMsg = result.errorMessage;
-      });
-    }
-  }
-
-  Future<void> _printAndClose(BuildContext ctx, dynamic payment) async {
-    final bytes = await ReceiptPdfService.generate(payment);
-    if (!ctx.mounted) return;
-    Navigator.pop(ctx);
-    await Printing.layoutPdf(
-      onLayout: (_) async => bytes,
-      name: 'Recu_${payment.receiptNumber}',
-    );
-    if (!ctx.mounted) return;
-    Navigator.pop(ctx, true);
-  }
-
-  void _showSuccess(dynamic payment) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(children: [
-          Icon(Icons.check_circle, color: Color(0xFF16A34A), size: 28),
-          SizedBox(width: 8),
-          Text('Transaction réussie !'),
-        ]),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Réf : ${payment.transactionId}'),
-            Text('Montant : ${payment.montantFormate}'),
-            Text('Opérateur : ${payment.operatorName}'),
-            Text('Reçu : ${payment.receiptNumber}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => _printAndClose(context, payment),
-            child: const Text('Reçu PDF'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context, true);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: successGreen),
-            child: const Text('OK', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+    // Aucun faux succès : on n'enregistre pas de paiement école
+    // tant que la passerelle MM n'est pas intégrée.
+    setState(() {
+      _isProcessing = false;
+      _errorMsg = result.errorMessage ??
+          PaymentGatewayService.notAvailableMessage;
+    });
   }
 
   @override
@@ -221,7 +147,9 @@ class _MobileMoneyScreenState extends ConsumerState<MobileMoneyScreen> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Un message de confirmation sera envoyé au numéro saisi.',
+                      'Paiement Mobile Money non disponible pour le moment '
+                      '(passerelle non intégrée). Aucun paiement ne sera '
+                      'enregistré comme réel.',
                       style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
                     ),
                   ),

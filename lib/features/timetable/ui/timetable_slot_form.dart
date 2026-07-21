@@ -7,11 +7,13 @@ import '../data/timetable_model.dart';
 
 class TimetableSlotForm extends ConsumerStatefulWidget {
   final String className;
+  final String? classId;
   final WeekDay initialDay;
 
   const TimetableSlotForm({
     super.key,
     required this.className,
+    this.classId,
     required this.initialDay,
   });
 
@@ -25,6 +27,7 @@ class _TimetableSlotFormState extends ConsumerState<TimetableSlotForm> {
   String _subject = kSubjects.first.name;
   final _teacherCtrl = TextEditingController();
   final _roomCtrl = TextEditingController();
+  bool _saving = false;
 
   @override
   void initState() {
@@ -41,6 +44,7 @@ class _TimetableSlotFormState extends ConsumerState<TimetableSlotForm> {
 
   Future<void> _save() async {
     if (_teacherCtrl.text.trim().isEmpty) return;
+    setState(() => _saving = true);
 
     // Calculer la fin = créneau suivant
     final slotIndex = kTeachingSlots.indexOf(_startSlot);
@@ -59,8 +63,21 @@ class _TimetableSlotFormState extends ConsumerState<TimetableSlotForm> {
       room: _roomCtrl.text.trim().isEmpty ? null : _roomCtrl.text.trim(),
     );
 
-    await ref.read(timetableProvider.notifier).addEntry(entry);
+    final synced = await ref.read(timetableProvider.notifier).addEntry(
+          entry,
+          classId: widget.classId,
+        );
     if (!mounted) return;
+    setState(() => _saving = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(synced
+            ? 'Créneau enregistré'
+            : 'Créneau enregistré localement (non synchronisé)'),
+        backgroundColor:
+            synced ? const Color(0xFF16A34A) : const Color(0xFFB45309),
+      ),
+    );
     Navigator.pop(context);
   }
 
@@ -174,15 +191,22 @@ class _TimetableSlotFormState extends ConsumerState<TimetableSlotForm> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: _save,
+              onPressed: _saving ? null : _save,
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryBlue,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
-              child: const Text('Ajouter le créneau',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+              child: _saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Text('Ajouter le créneau',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ),
         ],

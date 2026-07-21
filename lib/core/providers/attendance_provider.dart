@@ -63,33 +63,6 @@ class AttendanceNotifier extends StateNotifier<List<AttendanceRecord>> {
     String? justificatifPath,
   }) async {
     await AttendanceApiService.justify(recordId, motif);
-    // Soumission parent → en attente de validation admin (pas encore Justifiée).
-    state = [
-      for (final r in state)
-        if (r.id == recordId)
-          AttendanceRecord(
-            id: r.id,
-            studentId: r.studentId,
-            studentName: r.studentName,
-            className: r.className,
-            subject: r.subject,
-            date: r.date,
-            duration: r.duration,
-            isLate: r.isLate,
-            status: 'En attente',
-            justificationMotif: motif,
-            justificatifPath: justificatifPath,
-            smsId: r.smsId,
-            smsSent: r.smsSent,
-          )
-        else
-          r,
-    ];
-  }
-
-  /// Validation admin. Pas d'endpoint API dédié pour l'instant — sync locale.
-  // TODO: brancher sur PATCH/PUT /attendance/:id/validate quand l'API existera.
-  Future<void> validateJustification(String recordId) async {
     state = [
       for (final r in state)
         if (r.id == recordId)
@@ -103,14 +76,19 @@ class AttendanceNotifier extends StateNotifier<List<AttendanceRecord>> {
             duration: r.duration,
             isLate: r.isLate,
             status: 'Justifiée',
-            justificationMotif: r.justificationMotif,
-            justificatifPath: r.justificatifPath,
+            justificationMotif: motif,
+            justificatifPath: justificatifPath,
             smsId: r.smsId,
             smsSent: r.smsSent,
           )
         else
           r,
     ];
+  }
+
+  Future<bool> validateJustification(String recordId) async {
+    // Pas d'endpoint validate côté API (seulement justify) — ne pas simuler.
+    return false;
   }
 }
 

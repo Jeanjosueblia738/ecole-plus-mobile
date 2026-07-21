@@ -33,11 +33,13 @@ class UserProfile {
   });
 
   String get initials {
-    final parts = fullName.trim().split(' ');
-    if (parts.length >= 2) {
+    final trimmed = fullName.trim();
+    if (trimmed.isEmpty) return '?';
+    final parts = trimmed.split(RegExp(r'\s+'));
+    if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-    return fullName[0].toUpperCase();
+    return trimmed[0].toUpperCase();
   }
 
   String get roleLabel => switch (role) {
@@ -104,33 +106,25 @@ class UserProfile {
         langue: json['langue'] ?? 'fr',
       );
 
-  factory UserProfile.defaultForRole(UserRole role) => UserProfile(
-        id: 'user_${role.name}',
-        fullName: switch (role) {
-          UserRole.admin => 'Administrateur ECOLE+',
-          UserRole.censor => 'Censeur ECOLE+',
-          UserRole.surveillant => 'Surveillant Général',
-          UserRole.secretary => 'Secrétaire ECOLE+',
-          UserRole.accountant => 'Comptable ECOLE+',
-          UserRole.teacher => 'M. Koné Enseignant',
-          UserRole.parent => 'M. Kouassi Jean-Baptiste',
-          UserRole.student => 'Élève ECOLE+',
-        },
-        email: '${role.name}@ecoleplus.ci',
-        phone: '+225 07 00 00 00',
-        role: role,
-        etablissement: 'Lycée Excellence Abidjan',
-        poste: switch (role) {
-          UserRole.admin => 'Directeur Général',
-          UserRole.censor => 'Censeur / Directeur des études',
-          UserRole.surveillant => 'Surveillant Général',
-          UserRole.secretary => 'Secrétaire de scolarité',
-          UserRole.accountant => 'Comptable / Caissier',
-          UserRole.teacher => 'Professeur de Mathématiques',
-          UserRole.parent => 'Parent d\'élève',
-          UserRole.student => '3ème A',
-        },
-      );
+  /// Placeholder sans faux noms (Koné, Kouassi, Lycée Excellence…).
+  factory UserProfile.defaultForRole(
+    UserRole role, {
+    String? id,
+    String? fullName,
+    String? email,
+    String? etablissement,
+  }) {
+    final name = (fullName ?? '').trim();
+    return UserProfile(
+      id: id ?? 'user_${role.name}',
+      fullName: name.isNotEmpty ? name : 'Profil',
+      email: (email ?? '').trim(),
+      phone: '',
+      role: role,
+      etablissement: etablissement,
+      poste: null,
+    );
+  }
 }
 
 class ProfileNotifier extends StateNotifier<UserProfile?> {
@@ -139,41 +133,43 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
 
   Future<void> loadForRole(
     UserRole role, {
+    String? userId,
     String? fullName,
     String? email,
-    String? userId,
     String? etablissement,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString('${_key}_${role.name}');
     if (data != null) {
-      final saved = UserProfile.fromJson(jsonDecode(data));
-      // Préférer nom/email auth réels sur les mocks / prefs figés.
-      state = saved.copyWith(
-        fullName: (fullName != null && fullName.trim().isNotEmpty)
-            ? fullName.trim()
-            : saved.fullName,
-        email: (email != null && email.trim().isNotEmpty)
-            ? email.trim()
-            : saved.email,
-        etablissement: etablissement ?? saved.etablissement,
-      );
-    } else {
-      final defaults = UserProfile.defaultForRole(role);
-      state = UserProfile(
-        id: userId ?? defaults.id,
-        fullName: (fullName != null && fullName.trim().isNotEmpty)
-            ? fullName.trim()
-            : defaults.fullName,
-        email: (email != null && email.trim().isNotEmpty)
-            ? email.trim()
-            : defaults.email,
-        phone: defaults.phone,
-        role: role,
-        etablissement: etablissement ?? defaults.etablissement,
-        poste: defaults.poste,
-      );
+      try {
+        final saved = UserProfile.fromJson(jsonDecode(data));
+        // Enrichir avec la session auth si le profil local est encore un placeholder.
+        final sessionName = (fullName ?? '').trim();
+        final looksPlaceholder = saved.fullName == 'Profil' ||
+            saved.fullName.contains('Koné') ||
+            saved.fullName.contains('Kouassi') ||
+            (saved.etablissement ?? '') == 'Lycée Excellence Abidjan';
+        if (looksPlaceholder && sessionName.isNotEmpty) {
+          state = saved.copyWith(
+            fullName: sessionName,
+            email: (email ?? '').trim().isNotEmpty ? email!.trim() : saved.email,
+            etablissement: etablissement ?? saved.etablissement,
+          );
+        } else {
+          state = saved;
+        }
+        return;
+      } catch (_) {
+        // fall through to session / placeholder
+      }
     }
+    state = UserProfile.defaultForRole(
+      role,
+      id: userId,
+      fullName: fullName,
+      email: email,
+      etablissement: etablissement,
+    );
   }
 
   Future<void> update(UserProfile profile) async {

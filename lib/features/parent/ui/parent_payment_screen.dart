@@ -3,7 +3,6 @@ import '../../finance/data/finance_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/parent_api_service.dart';
-import '../../../core/network/api_client.dart';
 import '../../../services/payment_gateway_service.dart';
 
 class ParentPaymentScreen extends ConsumerStatefulWidget {
@@ -363,7 +362,6 @@ class _MobileMoneyPaymentSheetState extends State<_MobileMoneyPaymentSheet> {
     });
 
     try {
-      // 1. Simuler la transaction Mobile Money
       final result = await PaymentGatewayService.processMobileMoney(
         operator: _operator,
         phoneNumber: _phoneCtrl.text.trim(),
@@ -373,97 +371,19 @@ class _MobileMoneyPaymentSheetState extends State<_MobileMoneyPaymentSheet> {
 
       if (!mounted) return;
 
-      if (result.success) {
-        // 2. Enregistrer dans l'API — obligatoire pour confirmer le succès
-        try {
-          await ApiClient.instance.post('/finance/payments', data: {
-            'studentId': widget.studentId,
-            'feeId': widget.feeId,
-            'amountXof': widget.montantXof,
-            'paymentMode': _operator == MobileMoneyOperator.orangeMoney
-                ? 'orange_money'
-                : _operator == MobileMoneyOperator.wave
-                    ? 'wave'
-                    : _operator == MobileMoneyOperator.mtnMoney
-                        ? 'mtn_money'
-                        : 'moov_money',
-            'transactionId': result.transactionId,
-            'phoneNumber': _phoneCtrl.text.trim(),
-          });
-        } catch (e) {
-          debugPrint('ECOLE+ paiement API: $e');
-          if (!mounted) return;
-          setState(() {
-            _processing = false;
-            _error =
-                'Paiement MM OK mais enregistrement école échoué. Contactez la scolarité avec la ref ${result.transactionId}.';
-          });
-          return;
-        }
-
-        if (!mounted) return;
-        setState(() => _processing = false);
-        _showSuccess(result.transactionId!);
-      } else {
-        setState(() {
-          _processing = false;
-          _error = result.errorMessage;
-        });
-      }
+      // Passerelle non intégrée : ne jamais enregistrer un faux succès
+      // comme paiement réel à l'école.
+      setState(() {
+        _processing = false;
+        _error = result.errorMessage ??
+            PaymentGatewayService.notAvailableMessage;
+      });
     } catch (e) {
       setState(() {
         _processing = false;
         _error = e.toString();
       });
     }
-  }
-
-  void _showSuccess(String transactionId) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-                color: successGreen.withValues(alpha: 0.1),
-                shape: BoxShape.circle),
-            child: const Icon(Icons.check_circle_outline,
-                color: successGreen, size: 40),
-          ),
-          const SizedBox(height: 16),
-          const Text('Paiement réussi !',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text('${_fmt(widget.montantXof)} payés via ${_operator.label}',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600)),
-          const SizedBox(height: 4),
-          Text('Réf: $transactionId',
-              style: const TextStyle(fontSize: 11, color: Colors.grey)),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context, true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryBlue,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-              ),
-              child:
-                  const Text('Fermer', style: TextStyle(color: Colors.white)),
-            ),
-          ),
-        ]),
-      ),
-    );
   }
 
   @override
@@ -565,6 +485,30 @@ class _MobileMoneyPaymentSheetState extends State<_MobileMoneyPaymentSheet> {
                   ),
                 ),
               )),
+
+          const SizedBox(height: 16),
+
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF9C3),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Color(0xFF92400E), size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Paiement Mobile Money non disponible pour le moment '
+                    '(passerelle non intégrée). Aucun paiement ne sera '
+                    'enregistré comme réel.',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
           const SizedBox(height: 16),
 

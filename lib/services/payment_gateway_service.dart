@@ -1,4 +1,3 @@
-import 'dart:math';
 import '../features/finance/data/finance_model.dart';
 
 // ─── Résultat d'une transaction Mobile Money ──────────────────────────────
@@ -14,44 +13,31 @@ class MobileMoneyResult {
   });
 }
 
-// ─── Service simulation paiements Mobile Money CI ─────────────────────────
-// En production : intégrer les SDK officiels
-// Orange Money CI : https://developer.orange.com/apis/om-civieng
-// Wave CI         : API Wave Business
-// MTN Money CI    : MTN MoMo API
+// ─── Passerelle Mobile Money CI ───────────────────────────────────────────
+// Orange Money CI / Wave / MTN MoMo / Moov ne sont pas encore intégrés.
+// Ne jamais simuler un succès ni enregistrer un faux paiement comme réel.
 class PaymentGatewayService {
-  // Simulation d'une transaction Mobile Money
-  // Délai simulé : 2-4 secondes (comme une vraie transaction)
+  static const notAvailableMessage =
+      'Paiement Mobile Money non disponible — passerelle non intégrée. '
+      'Effectuez le paiement à l\'école ou contactez la scolarité.';
+
+  /// Tente un paiement Mobile Money. Pour l'instant : validation du numéro
+  /// puis refus explicite (aucune simulation de succès).
   static Future<MobileMoneyResult> processMobileMoney({
     required MobileMoneyOperator operator,
     required String phoneNumber,
     required double montant,
     required String reference,
   }) async {
-    // Validation numéro selon opérateur CI
     final validationError = _validatePhone(operator, phoneNumber);
     if (validationError != null) {
       return MobileMoneyResult(success: false, errorMessage: validationError);
     }
 
-    // Simulation délai réseau
-    await Future.delayed(Duration(milliseconds: 2000 + Random().nextInt(2000)));
-
-    // Simulation taux de succès 90%
-    final isSuccess = Random().nextDouble() > 0.1;
-
-    if (isSuccess) {
-      return MobileMoneyResult(
-        success: true,
-        transactionId: _generateTransactionId(operator),
-      );
-    } else {
-      return MobileMoneyResult(
-        success: false,
-        errorMessage:
-            'Solde insuffisant ou transaction refusée par ${operator.label}',
-      );
-    }
+    return const MobileMoneyResult(
+      success: false,
+      errorMessage: notAvailableMessage,
+    );
   }
 
   // Validation numéros CI par opérateur
@@ -78,16 +64,5 @@ class PaymentGatewayService {
       return 'Ce numéro ne correspond pas à ${operator.label}';
     }
     return null;
-  }
-
-  static String _generateTransactionId(MobileMoneyOperator op) {
-    final prefix = switch (op) {
-      MobileMoneyOperator.orangeMoney => 'OM',
-      MobileMoneyOperator.wave => 'WV',
-      MobileMoneyOperator.mtnMoney => 'MT',
-      MobileMoneyOperator.moov => 'MV',
-    };
-    final rand = Random().nextInt(999999999).toString().padLeft(9, '0');
-    return '$prefix$rand';
   }
 }
