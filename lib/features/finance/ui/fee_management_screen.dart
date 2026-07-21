@@ -125,7 +125,7 @@ class _FeeCard extends StatelessWidget {
 
   const _FeeCard({required this.fee, required this.onDelete});
 
-  Color get _typeColor => switch (fee.type) {
+  Color get _typeColor => switch (fee.typeKind) {
         FeeType.scolarite => primaryBlue,
         FeeType.inscription => infoBlue,
         FeeType.transport => successGreen,
@@ -176,7 +176,7 @@ class _FeeCard extends StatelessWidget {
                         color: _typeColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(fee.type.label,
+                      child: Text(fee.type,
                           style: TextStyle(
                               color: _typeColor,
                               fontSize: 10,
@@ -252,7 +252,7 @@ class _FeeFormSheet extends StatefulWidget {
 class _FeeFormSheetState extends State<_FeeFormSheet> {
   final _labelCtrl = TextEditingController();
   final _montantCtrl = TextEditingController();
-  FeeType _type = FeeType.scolarite;
+  final _typeCtrl = TextEditingController(text: 'Scolarité');
   String _trimestre = 'T1';
   final String _schoolYear = currentSchoolYear();
   bool _obligatoire = true;
@@ -262,11 +262,14 @@ class _FeeFormSheetState extends State<_FeeFormSheet> {
   void dispose() {
     _labelCtrl.dispose();
     _montantCtrl.dispose();
+    _typeCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
-    if (_labelCtrl.text.trim().isEmpty || _montantCtrl.text.trim().isEmpty) {
+    if (_labelCtrl.text.trim().isEmpty ||
+        _montantCtrl.text.trim().isEmpty ||
+        _typeCtrl.text.trim().isEmpty) {
       return;
     }
 
@@ -278,7 +281,7 @@ class _FeeFormSheetState extends State<_FeeFormSheet> {
     try {
       await widget.ref.read(feeProvider.notifier).add(SchoolFee(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
-            type: _type,
+            type: _typeCtrl.text.trim(),
             label: _labelCtrl.text.trim(),
             montant: montant,
             trimestre: _trimestre,
@@ -323,6 +326,17 @@ class _FeeFormSheetState extends State<_FeeFormSheet> {
             ),
           ),
           const SizedBox(height: 10),
+          TextField(
+            controller: _typeCtrl,
+            decoration: InputDecoration(
+              labelText: 'Type de frais',
+              hintText: 'Scolarité, Transport, Cantine…',
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(children: [
             Expanded(
               child: TextField(
@@ -338,28 +352,6 @@ class _FeeFormSheetState extends State<_FeeFormSheet> {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: DropdownButtonFormField<FeeType>(
-                initialValue: _type,
-                decoration: InputDecoration(
-                  labelText: 'Type',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  isDense: true,
-                ),
-                items: FeeType.values
-                    .map((t) => DropdownMenuItem(
-                          value: t,
-                          child: Text(t.label,
-                              style: const TextStyle(fontSize: 13)),
-                        ))
-                    .toList(),
-                onChanged: (v) => setState(() => _type = v!),
-              ),
-            ),
-          ]),
-          const SizedBox(height: 10),
-          Row(children: [
-            Expanded(
               child: DropdownButtonFormField<String>(
                 initialValue: _trimestre,
                 decoration: InputDecoration(
@@ -374,18 +366,18 @@ class _FeeFormSheetState extends State<_FeeFormSheet> {
                 onChanged: (v) => setState(() => _trimestre = v!),
               ),
             ),
-            const SizedBox(width: 10),
-            Row(
-              children: [
-                const Text('Obligatoire', style: TextStyle(fontSize: 13)),
-                Switch(
-                  value: _obligatoire,
-                  onChanged: (v) => setState(() => _obligatoire = v),
-                  activeThumbColor: primaryBlue,
-                ),
-              ],
-            ),
           ]),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Text('Obligatoire', style: TextStyle(fontSize: 13)),
+              Switch(
+                value: _obligatoire,
+                onChanged: (v) => setState(() => _obligatoire = v),
+                activeThumbColor: primaryBlue,
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,

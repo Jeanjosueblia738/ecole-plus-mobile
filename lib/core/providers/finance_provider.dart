@@ -5,19 +5,12 @@ import '../services/finance_api_service.dart';
 import '../utils/school_year.dart';
 import 'student_provider.dart';
 
-FeeType _mapFeeType(dynamic raw) {
-  final s = (raw?.toString() ?? '').toUpperCase();
-  if (s.contains('ANNEXE') || s.contains('TRANSPORT')) return FeeType.transport;
-  if (s.contains('INSCRIPTION')) return FeeType.inscription;
-  if (s.contains('EXAMEN')) return FeeType.examen;
-  if (s.contains('CANTINE')) return FeeType.cantine;
-  return FeeType.scolarite;
-}
-
 SchoolFee schoolFeeFromApi(Map<String, dynamic> json) {
   return SchoolFee(
     id: json['id']?.toString() ?? '',
-    type: _mapFeeType(json['type']),
+    type: (json['type']?.toString().trim().isNotEmpty == true)
+        ? json['type'].toString().trim()
+        : 'Scolarité',
     label: json['label']?.toString() ?? '',
     montant: (json['amountXof'] as num?)?.toDouble() ??
         (json['montant'] as num?)?.toDouble() ??
@@ -72,9 +65,7 @@ class FeeNotifier extends StateNotifier<List<SchoolFee>> {
       'amountXof': fee.montant,
       'dueDate': fee.dateEcheance.toIso8601String().split('T').first,
       'year': currentSchoolYear(),
-      'type': fee.type == FeeType.scolarite || fee.type == FeeType.inscription
-          ? 'SCOLAIRE'
-          : 'ANNEXE',
+      'type': fee.type.trim().isEmpty ? 'Scolarité' : fee.type.trim(),
       if (fee.classLevel != null) 'level': fee.classLevel,
     });
     await load(year: currentSchoolYear());

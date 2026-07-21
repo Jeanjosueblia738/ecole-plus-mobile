@@ -1,4 +1,5 @@
-// ─── Types de frais (réalité ivoirienne) ──────────────────────────────────
+// ─── Types de frais (libellé libre côté API) ──────────────────────────────
+/// Conservé pour couleur d’affichage approximative à partir du texte saisi.
 enum FeeType {
   scolarite,
   inscription,
@@ -17,6 +18,17 @@ extension FeeTypeLabel on FeeType {
         FeeType.examen => 'Examens',
         FeeType.divers => 'Divers',
       };
+}
+
+FeeType feeTypeFromLabel(String? raw) {
+  final s = (raw ?? '').toLowerCase();
+  if (s.contains('transport')) return FeeType.transport;
+  if (s.contains('inscription')) return FeeType.inscription;
+  if (s.contains('examen')) return FeeType.examen;
+  if (s.contains('cantine')) return FeeType.cantine;
+  if (s.contains('annexe') || s.contains('divers')) return FeeType.divers;
+  if (s.contains('scolari')) return FeeType.scolarite;
+  return FeeType.divers;
 }
 
 // ─── Opérateurs Mobile Money CI ───────────────────────────────────────────
@@ -64,7 +76,8 @@ extension PaymentStatusLabel on PaymentStatus {
 // ─── Frais configuré pour un type ─────────────────────────────────────────
 class SchoolFee {
   final String id;
-  final FeeType type;
+  /// Libellé libre du type (ex. Scolarité, Transport…)
+  final String type;
   final String label;
   final double montant; // en XOF
   final String trimestre; // '1er' | '2ème' | '3ème' | 'Annuel'
@@ -83,12 +96,14 @@ class SchoolFee {
     required this.dateEcheance,
   });
 
+  FeeType get typeKind => feeTypeFromLabel(type);
+
   String get montantFormate =>
       '${montant.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]} ")} FCFA';
 
   Map<String, dynamic> toJson() => {
         'id': id,
-        'type': type.name,
+        'type': type,
         'label': label,
         'montant': montant,
         'trimestre': trimestre,
@@ -99,7 +114,7 @@ class SchoolFee {
 
   factory SchoolFee.fromJson(Map<String, dynamic> json) => SchoolFee(
         id: json['id'],
-        type: FeeType.values.byName(json['type']),
+        type: json['type']?.toString() ?? 'Scolarité',
         label: json['label'],
         montant: (json['montant'] as num).toDouble(),
         trimestre: json['trimestre'],
