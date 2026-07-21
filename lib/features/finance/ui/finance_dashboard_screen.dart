@@ -77,7 +77,11 @@ class _FinanceDashboardScreenState
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
-    final canConfigureFees = auth.role != UserRole.cashier;
+    final isAccountant = auth.role == UserRole.accountant;
+    final isCashier = auth.role == UserRole.cashier;
+    final canCash = isAccountant || isCashier;
+    final canConfigureFees = isAccountant;
+    final isViewOnly = !canCash;
     final stats = ref.watch(financeStatsProvider);
     final payments = ref.watch(paymentProvider);
     final pending = ref.watch(pendingPaymentsProvider);
@@ -92,7 +96,7 @@ class _FinanceDashboardScreenState
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
-        title: const Text('Gestion Financière'),
+        title: Text(isViewOnly ? 'Vue financière' : 'Gestion Financière'),
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -123,9 +127,13 @@ class _FinanceDashboardScreenState
               ),
             ],
             WorkspaceHero(
-              eyebrow: canConfigureFees ? 'Comptabilité' : 'Poste de caisse',
-              title: 'Gestion financière',
-              subtitle: 'Encaissements, historique et suivi du recouvrement',
+              eyebrow: isViewOnly
+                  ? 'Direction'
+                  : (canConfigureFees ? 'Comptabilité' : 'Poste de caisse'),
+              title: isViewOnly ? 'Vue globale' : 'Gestion financière',
+              subtitle: isViewOnly
+                  ? 'Synthèse du recouvrement — lecture seule'
+                  : 'Encaissements, historique et suivi du recouvrement',
               color: primaryBlue,
               loading: _loading,
               metrics: [
@@ -149,19 +157,20 @@ class _FinanceDashboardScreenState
               ),
             ),
             const SizedBox(height: 20),
-            const WorkspaceSectionTitle('Actions'),
+            WorkspaceSectionTitle(isViewOnly ? 'Consultation' : 'Actions'),
             const SizedBox(height: 12),
 
-            // ── Actions ────────────────────────────────────────────
-            _ActionTile(
-              icon: Icons.add_card,
-              title: 'Enregistrer un paiement',
-              subtitle: 'Espèces, Mobile Money ou Chèque',
-              color: successGreen,
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const PaymentScreen())),
-            ),
-            const SizedBox(height: 10),
+            if (canCash) ...[
+              _ActionTile(
+                icon: Icons.add_card,
+                title: 'Enregistrer un paiement',
+                subtitle: 'Espèces, Mobile Money ou Chèque',
+                color: successGreen,
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const PaymentScreen())),
+              ),
+              const SizedBox(height: 10),
+            ],
             _ActionTile(
               icon: Icons.history,
               title: 'Historique des paiements',
@@ -173,8 +182,8 @@ class _FinanceDashboardScreenState
                   MaterialPageRoute(
                       builder: (_) => const PaymentHistoryScreen())),
             ),
-            const SizedBox(height: 10),
-            if (canConfigureFees)
+            if (canConfigureFees) ...[
+              const SizedBox(height: 10),
               _ActionTile(
                 icon: Icons.settings,
                 title: 'Configurer les frais',
@@ -185,8 +194,16 @@ class _FinanceDashboardScreenState
                     MaterialPageRoute(
                         builder: (_) => const FeeManagementScreen())),
               ),
+            ],
+            if (isViewOnly) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Le pilotage financier et les encaissements sont réservés au comptable et au caissier.',
+                style: TextStyle(fontSize: 12, color: textGrey),
+              ),
+            ],
 
-            if (pending.isNotEmpty) ...[
+            if (canCash && pending.isNotEmpty) ...[
               const SizedBox(height: 20),
               Row(
                 children: [

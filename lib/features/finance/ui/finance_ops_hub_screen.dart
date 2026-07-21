@@ -21,7 +21,7 @@ class _FinanceOpsHubScreenState extends ConsumerState<FinanceOpsHubScreen> {
     super.initState();
     Future.microtask(() {
       final role = ref.read(authProvider).role;
-      if (role == UserRole.cashier) {
+      if (role != UserRole.accountant) {
         if (mounted) Navigator.of(context).maybePop();
       }
     });
@@ -30,7 +30,7 @@ class _FinanceOpsHubScreenState extends ConsumerState<FinanceOpsHubScreen> {
   @override
   Widget build(BuildContext context) {
     final role = ref.watch(authProvider).role;
-    if (role == UserRole.cashier) {
+    if (role != UserRole.accountant) {
       return const Scaffold(
         body: Center(child: Text('Accès réservé au comptable')),
       );
