@@ -1,4 +1,5 @@
 import '../network/api_client.dart';
+import '../utils/school_year.dart';
 
 class TeacherApiService {
   // Profil de l'enseignant connecté
@@ -7,9 +8,12 @@ class TeacherApiService {
     return response.data as Map<String, dynamic>;
   }
 
-  // Classes de l'enseignant
-  static Future<List<dynamic>> getMyClasses() async {
-    final response = await ApiClient.instance.get('/teachers/my-classes');
+  // Classes de l'enseignant (1 → N)
+  static Future<List<dynamic>> getMyClasses({String? year}) async {
+    final response = await ApiClient.instance.get(
+      '/teachers/my-classes',
+      params: {'year': year ?? currentSchoolYear()},
+    );
     return response.data as List<dynamic>;
   }
 
@@ -21,8 +25,11 @@ class TeacherApiService {
   }
 
   // Stats globales enseignant
-  static Future<Map<String, dynamic>> getStats() async {
-    final response = await ApiClient.instance.get('/teachers/my-stats');
+  static Future<Map<String, dynamic>> getStats({String? year}) async {
+    final response = await ApiClient.instance.get(
+      '/teachers/my-stats',
+      params: {'year': year ?? currentSchoolYear()},
+    );
     return response.data as Map<String, dynamic>;
   }
 
