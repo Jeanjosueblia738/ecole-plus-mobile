@@ -185,7 +185,7 @@ class _CahierDirecteurScreenState extends ConsumerState<CahierDirecteurScreen> {
                   color: primaryBlue),
               const SizedBox(width: 10),
               _StatCard(
-                  label: 'Avec devoirs',
+                  label: 'Avec travail à rendre',
                   value: (_stats?['avecDevoirs'] ?? 0).toString(),
                   color: warningYellow),
               const SizedBox(width: 10),
@@ -453,7 +453,7 @@ class _DirecteurEntryCard extends StatelessWidget {
             if (entry['devoirDescription'] != null) ...[
               const SizedBox(height: 8),
               _InfoRow(
-                  label: 'Devoir',
+                  label: 'Travail à rendre',
                   value: entry['devoirDescription'] as String,
                   color: const Color(0xFF92400E)),
             ],

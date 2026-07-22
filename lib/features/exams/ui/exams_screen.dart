@@ -72,7 +72,7 @@ class _ExamsScreenState extends State<ExamsScreen> {
 
   String _typeLabel(String? type) => switch (type?.toUpperCase()) {
         'DEVOIR' => 'Devoir',
-        'COMPOSITION' => 'Composition',
+        'COMPOSITION' => 'Interrogation',
         'EXAMEN' => 'Examen',
         _ => type ?? 'Examen',
       };
@@ -82,7 +82,7 @@ class _ExamsScreenState extends State<ExamsScreen> {
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
-        title: const Text('Examens'),
+        title: const Text('Évaluations'),
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -104,7 +104,7 @@ class _ExamsScreenState extends State<ExamsScreen> {
                 )
               : _exams.isEmpty
                   ? const Center(
-                      child: Text('Aucun examen planifié',
+                      child: Text('Aucune évaluation planifiée',
                           style: TextStyle(color: textGrey)),
                     )
                   : RefreshIndicator(

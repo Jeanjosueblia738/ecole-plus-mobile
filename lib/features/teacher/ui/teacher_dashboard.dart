@@ -359,7 +359,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
             _ModuleTile(
                 icon: Icons.grade_outlined,
                 title: 'Saisie des notes',
-                subtitle: 'Devoirs, compositions, examens',
+                subtitle: 'Notes : devoirs, interrogations, examens',
                 color: const Color(0xFF7C3AED),
                 onTap: _openGrades),
             const SizedBox(height: 10),
@@ -375,8 +375,8 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
             const SizedBox(height: 10),
             _ModuleTile(
                 icon: Icons.event_note_outlined,
-                title: 'Examens',
-                subtitle: 'Agenda des compositions et examens',
+                title: 'Évaluations',
+                subtitle: 'Agenda des interrogations et examens',
                 color: dangerRed,
                 onTap: () => Navigator.push(
                     context,

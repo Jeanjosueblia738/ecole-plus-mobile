@@ -52,7 +52,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'Impossible de charger les devoirs';
+          _error = 'Impossible de charger les travaux à rendre';
           _loading = false;
         });
       }
@@ -70,7 +70,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
-        title: const Text('Devoirs'),
+        title: const Text('Travail à rendre'),
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -123,8 +123,8 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                           ? Center(
                               child: Text(
                                 _showPast
-                                    ? 'Aucun devoir passé'
-                                    : 'Aucun devoir à rendre',
+                                    ? 'Aucun travail passé'
+                                    : 'Aucun travail à rendre',
                                 style: const TextStyle(color: textGrey),
                               ),
                             )

@@ -410,7 +410,7 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
             Row(children: [
               _ActionBtn(
                   icon: Icons.home_work_outlined,
-                  label: 'Devoirs',
+                  label: 'À rendre',
                   color: const Color(0xFF2563EB),
                   onTap: () => Navigator.push(
                       context,
@@ -428,7 +428,7 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
               const SizedBox(width: 12),
               _ActionBtn(
                   icon: Icons.event_note_outlined,
-                  label: 'Examens',
+                  label: 'Évaluations',
                   color: warningYellow,
                   onTap: () => Navigator.push(
                       context,

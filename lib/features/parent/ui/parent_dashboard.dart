@@ -584,8 +584,8 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
               const SizedBox(height: 10),
               _NavTile(
                   icon: Icons.assignment_outlined,
-                  title: 'Devoirs',
-                  subtitle: 'Devoirs à rendre pour votre enfant',
+                  title: 'Travail à rendre',
+                  subtitle: 'Travaux à rendre pour votre enfant',
                   color: const Color(0xFF2563EB),
                   onTap: () => Navigator.push(
                       context,
@@ -608,8 +608,8 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
               const SizedBox(height: 10),
               _NavTile(
                   icon: Icons.event_note_outlined,
-                  title: 'Examens',
-                  subtitle: 'Compositions et examens planifiés',
+                  title: 'Évaluations',
+                  subtitle: 'Interrogations et examens planifiés',
                   color: dangerRed,
                   onTap: () => Navigator.push(
                       context,

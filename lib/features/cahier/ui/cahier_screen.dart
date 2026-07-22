@@ -466,11 +466,11 @@ class _CahierFormState extends State<_CahierForm> {
             maxLines: 2),
         const SizedBox(height: 10),
 
-        // Devoir
+        // Travail à rendre
         _Field(
             controller: _devoirCtrl,
-            label: 'Devoir donné',
-            hint: 'Description du devoir...',
+            label: 'Travail à rendre',
+            hint: 'Description du travail à rendre...',
             maxLines: 2),
         const SizedBox(height: 8),
 
@@ -615,7 +615,7 @@ class _CahierCard extends StatelessWidget {
                   color: warningYellow.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text('Devoir',
+                child: const Text('À rendre',
                     style: TextStyle(
                         fontSize: 10,
                         color: Color(0xFF92400E),
@@ -690,7 +690,7 @@ class _CahierCard extends StatelessWidget {
             if (hasDevoir) ...[
               const SizedBox(height: 10),
               _Section(
-                title: 'Devoir',
+                title: 'Travail à rendre',
                 content: entry['devoirDescription'] as String,
                 color: warningYellow,
                 suffix: entry['devoirDateRemise'] != null
