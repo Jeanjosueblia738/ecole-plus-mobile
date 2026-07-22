@@ -20,7 +20,6 @@ class GradeListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final grades = ref.watch(
         gradesByStudentProvider((studentId: studentId, trimestre: trimestre)));
-    final gradeErr = ref.read(gradeProvider.notifier).error;
 
     // Grouper par matière
     final Map<String, List<Grade>> bySubject = {};
@@ -37,25 +36,15 @@ class GradeListScreen extends ConsumerWidget {
         centerTitle: true,
       ),
       body: grades.isEmpty
-          ? Center(
+          ? const Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    gradeErr != null
-                        ? Icons.error_outline
-                        : Icons.assignment_outlined,
-                    size: 56,
-                    color: gradeErr != null
-                        ? const Color(0xFFDC2626)
-                        : const Color(0xFF9CA3AF),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    gradeErr ?? 'Aucune note ce trimestre',
-                    style: const TextStyle(color: textGrey),
-                    textAlign: TextAlign.center,
-                  ),
+                  Icon(Icons.assignment_outlined,
+                      size: 56, color: Color(0xFF9CA3AF)),
+                  SizedBox(height: 12),
+                  Text('Aucune note ce trimestre',
+                      style: TextStyle(color: textGrey)),
                 ],
               ),
             )
@@ -185,6 +174,7 @@ class _EvalBadge extends StatelessWidget {
       EvalType.examen => const Color(0xFF7C3AED),
       EvalType.devoir => const Color(0xFF2563EB),
       EvalType.controle => const Color(0xFF059669),
+      EvalType.tp => const Color(0xFFD97706),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

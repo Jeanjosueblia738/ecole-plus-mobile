@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/class_provider.dart';
 import '../../../core/providers/finance_provider.dart';
 import '../../../core/providers/student_provider.dart';
 import '../../../core/security/user_role.dart';
@@ -26,6 +27,7 @@ class _FinanceDashboardScreenState
   String? _error;
   double? _apiEncaisse;
   double? _apiTaux;
+  bool _statsFailed = false;
 
   @override
   void initState() {
@@ -37,6 +39,9 @@ class _FinanceDashboardScreenState
     setState(() {
       _loading = true;
       _error = null;
+      _statsFailed = false;
+      _apiEncaisse = null;
+      _apiTaux = null;
     });
     try {
       final year = currentSchoolYear();
@@ -44,6 +49,7 @@ class _FinanceDashboardScreenState
         ref.read(studentProvider.notifier).load(),
         ref.read(feeProvider.notifier).load(year: year),
         ref.read(paymentProvider.notifier).loadAll(year: year),
+        ref.read(classProvider.notifier).load(),
       ]);
       try {
         final stats = await FinanceApiService.getStats(year: year);
@@ -59,16 +65,21 @@ class _FinanceDashboardScreenState
         }
         _apiEncaisse = encaisse;
         _apiTaux = taux;
+        _statsFailed = false;
       } catch (_) {
-        // fallback local stats below
+        _statsFailed = true;
+        _error =
+            'Impossible de charger les statistiques financières (API).';
       }
       final feeErr = ref.read(feeProvider.notifier).error;
       final payErr = ref.read(paymentProvider.notifier).error;
-      if (feeErr != null || payErr != null) {
-        _error = [feeErr, payErr].whereType<String>().join(' · ');
+      final localErr = [feeErr, payErr].whereType<String>().join(' · ');
+      if (localErr.isNotEmpty) {
+        _error = _error == null ? localErr : '$_error · $localErr';
       }
     } catch (e) {
       _error = 'Impossible de charger la finance';
+      _statsFailed = true;
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -82,12 +93,12 @@ class _FinanceDashboardScreenState
     final canCash = isAccountant || isCashier;
     final canConfigureFees = isAccountant;
     final isViewOnly = !canCash;
-    final stats = ref.watch(financeStatsProvider);
     final payments = ref.watch(paymentProvider);
     final pending = ref.watch(pendingPaymentsProvider);
 
-    final encaisse = _apiEncaisse ?? stats['encaisse'] ?? 0;
-    final taux = _apiTaux ?? ((stats['tauxRecouvrement'] ?? 0) * 100);
+    // Ne pas retomber silencieusement sur des KPI locaux incorrects.
+    final encaisse = _statsFailed ? null : _apiEncaisse;
+    final taux = _statsFailed ? null : _apiTaux;
 
     // Formatter XOF
     String xof(double v) =>
@@ -120,10 +131,21 @@ class _FinanceDashboardScreenState
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: warningYellow.withValues(alpha: 0.15),
+                  color: dangerRed.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: dangerRed.withValues(alpha: 0.3)),
                 ),
-                child: Text(_error!, style: const TextStyle(fontSize: 13)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: dangerRed, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(_error!,
+                          style: const TextStyle(
+                              fontSize: 13, color: dangerRed)),
+                    ),
+                  ],
+                ),
               ),
             ],
             WorkspaceHero(
@@ -137,9 +159,14 @@ class _FinanceDashboardScreenState
               color: primaryBlue,
               loading: _loading,
               metrics: [
-                WorkspaceHeroMetric(label: 'Encaissé', value: xof(encaisse)),
                 WorkspaceHeroMetric(
-                    label: 'Taux', value: '${taux.toStringAsFixed(1)}%'),
+                    label: 'Encaissé',
+                    value: encaisse != null ? xof(encaisse) : '—'),
+                WorkspaceHeroMetric(
+                    label: 'Taux',
+                    value: taux != null
+                        ? '${taux.toStringAsFixed(1)}%'
+                        : '—'),
                 WorkspaceHeroMetric(
                     label: 'En attente', value: '${pending.length}'),
                 WorkspaceHeroMetric(
@@ -147,15 +174,17 @@ class _FinanceDashboardScreenState
               ],
             ),
             const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: (taux / 100).clamp(0.0, 1.0),
-                backgroundColor: primaryBlue.withValues(alpha: 0.12),
-                valueColor: const AlwaysStoppedAnimation<Color>(primaryBlue),
-                minHeight: 6,
+            if (taux != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: (taux / 100).clamp(0.0, 1.0),
+                  backgroundColor: primaryBlue.withValues(alpha: 0.12),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(primaryBlue),
+                  minHeight: 6,
+                ),
               ),
-            ),
             const SizedBox(height: 20),
             WorkspaceSectionTitle(isViewOnly ? 'Consultation' : 'Actions'),
             const SizedBox(height: 12),

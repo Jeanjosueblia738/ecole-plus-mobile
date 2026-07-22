@@ -47,6 +47,8 @@ class UserProfile {
 
   String get roleLabel => switch (role) {
         UserRole.admin => 'Administrateur',
+        UserRole.founder => 'Fondateur',
+        UserRole.director => 'Directeur',
         UserRole.censor => 'Censeur',
         UserRole.surveillant => 'Surveillant Général',
         UserRole.secretary => 'Secrétaire',

@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/classes_api_service.dart';
 import '../utils/school_year.dart';
 
@@ -56,8 +54,6 @@ const kAllLevels = [...kCollegeLevels, ...kLyceeLevels];
 
 // ─── Notifier ─────────────────────────────────────────────────────────────
 class ClassNotifier extends StateNotifier<List<SchoolClass>> {
-  static const _storageKey = 'school_classes';
-
   ClassNotifier() : super(const []);
 
   String? error;
@@ -71,7 +67,6 @@ class ClassNotifier extends StateNotifier<List<SchoolClass>> {
       state = raw
           .map((e) => SchoolClass.fromApi(Map<String, dynamic>.from(e as Map)))
           .toList();
-      await _save();
     } catch (_) {
       error = 'Impossible de charger les classes';
       state = [];
@@ -80,28 +75,50 @@ class ClassNotifier extends StateNotifier<List<SchoolClass>> {
     }
   }
 
-  Future<void> add(SchoolClass c) async {
-    state = [...state, c];
-    await _save();
+  Future<bool> add(SchoolClass c) async {
+    error = null;
+    try {
+      await ClassesApiService.create({
+        'name': c.name,
+        'level': c.level,
+        'year': currentSchoolYear(),
+        'capacity': c.capacity,
+      });
+      await load();
+      return error == null;
+    } catch (_) {
+      error = 'Impossible de créer la classe';
+      return false;
+    }
   }
 
-  Future<void> update(SchoolClass c) async {
-    state = [
-      for (final s in state)
-        if (s.id == c.id) c else s
-    ];
-    await _save();
+  Future<bool> update(SchoolClass c) async {
+    error = null;
+    try {
+      await ClassesApiService.update(c.id, {
+        'name': c.name,
+        'level': c.level,
+        'year': currentSchoolYear(),
+        'capacity': c.capacity,
+      });
+      await load();
+      return error == null;
+    } catch (_) {
+      error = 'Impossible de modifier la classe';
+      return false;
+    }
   }
 
-  Future<void> remove(String id) async {
-    state = state.where((c) => c.id != id).toList();
-    await _save();
-  }
-
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        _storageKey, jsonEncode(state.map((c) => c.toJson()).toList()));
+  Future<bool> remove(String id) async {
+    error = null;
+    try {
+      await ClassesApiService.delete(id);
+      await load();
+      return error == null;
+    } catch (_) {
+      error = 'Impossible de supprimer la classe';
+      return false;
+    }
   }
 }
 

@@ -32,6 +32,16 @@ class AuthState {
 
   bool get isLoggedIn => role != null;
   bool get isAdmin => role == UserRole.admin;
+  bool get isFounder => role == UserRole.founder;
+  bool get isDirector => role == UserRole.director;
+  /// OWNER_ROLES Nest — écriture users / classes (pas le directeur).
+  bool get isOwner =>
+      role == UserRole.admin || role == UserRole.founder;
+  /// Direction — même tableau de bord admin.
+  bool get isDirection =>
+      role == UserRole.admin ||
+      role == UserRole.founder ||
+      role == UserRole.director;
   bool get isTeacher => role == UserRole.teacher;
   bool get isParent => role == UserRole.parent;
   bool get isStudent => role == UserRole.student;
@@ -256,8 +266,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   UserRole? _parseRole(String? role) => switch (role) {
         'ADMIN' => UserRole.admin,
-        'FOUNDER' => UserRole.admin,
-        'DIRECTOR' => UserRole.admin,
+        'FOUNDER' => UserRole.founder,
+        'DIRECTOR' => UserRole.director,
         'CENSOR' => UserRole.censor,
         'SURVEILLANT' => UserRole.surveillant,
         'EDUCATOR' => UserRole.surveillant,

@@ -1,11 +1,12 @@
 // ─── Types d'évaluation (système ivoirien) ────────────────────────────────
-enum EvalType { controle, devoir, examen }
+enum EvalType { controle, devoir, examen, tp }
 
 extension EvalTypeLabel on EvalType {
   String get label => switch (this) {
-        EvalType.controle => 'Contrôle',
+        EvalType.controle => 'Interrogation',
         EvalType.devoir => 'Devoir',
         EvalType.examen => 'Examen',
+        EvalType.tp => 'TP',
       };
 }
 
@@ -52,15 +53,18 @@ String displayTrimestre(String raw) {
   }
 }
 
-EvalType _evalFromApi(dynamic raw) {
+EvalType evalTypeFromApi(dynamic raw) {
   final s = (raw?.toString() ?? 'CONTROLE').toUpperCase();
   return switch (s) {
     'DEVOIR' => EvalType.devoir,
     'EXAMEN' => EvalType.examen,
-    'TP' => EvalType.controle,
+    'TP' => EvalType.tp,
+    'CONTROLE' => EvalType.controle,
     _ => EvalType.controle,
   };
 }
+
+String evalTypeDisplayLabel(dynamic raw) => evalTypeFromApi(raw).label;
 
 String _formatGradeDate(dynamic raw) {
   if (raw == null) return '';
@@ -140,7 +144,7 @@ class Grade {
       subject: json['subject']?.toString() ?? '',
       coefficient: (json['coefficient'] as num?)?.toInt() ?? 1,
       value: (json['value'] as num?)?.toDouble() ?? 0,
-      evalType: _evalFromApi(json['evalType']),
+      evalType: evalTypeFromApi(json['evalType']),
       trimestre: displayTrimestre(json['trimestre']?.toString() ?? 'T1'),
       date: _formatGradeDate(json['date']),
       comment: json['comment'] as String?,

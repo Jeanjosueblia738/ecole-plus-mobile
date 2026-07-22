@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/students_api_service.dart';
 import '../../../core/services/attendance_api_service.dart';
-import '../../../core/security/user_role.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/dashboard_tile.dart';
 import '../../../shared/widgets/workspace_hero.dart';
@@ -91,7 +90,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
-    if (auth.role != UserRole.admin) {
+    if (!auth.isDirection) {
       return const Scaffold(body: Center(child: Text('Accès refusé')));
     }
 
@@ -249,24 +248,26 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                     color: textDark)),
             const SizedBox(height: 12),
 
-            DashboardTile(
-              icon: Icons.manage_accounts_outlined,
-              title: 'Gestion des utilisateurs',
-              color: const Color(0xFF7C3AED),
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const UsersScreen())),
-            ),
-            const SizedBox(height: 10),
-            DashboardTile(
-              icon: Icons.class_outlined,
-              title: 'Gestion des classes',
-              color: const Color(0xFF0D9488),
-              onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const ClassManagementScreen())),
-            ),
-            const SizedBox(height: 10),
+            if (auth.isOwner) ...[
+              DashboardTile(
+                icon: Icons.manage_accounts_outlined,
+                title: 'Gestion des utilisateurs',
+                color: const Color(0xFF7C3AED),
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const UsersScreen())),
+              ),
+              const SizedBox(height: 10),
+              DashboardTile(
+                icon: Icons.class_outlined,
+                title: 'Gestion des classes',
+                color: const Color(0xFF0D9488),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ClassManagementScreen())),
+              ),
+              const SizedBox(height: 10),
+            ],
             DashboardTile(
               icon: Icons.bar_chart_outlined,
               title: 'Statistiques & Rapports',

@@ -5,6 +5,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/security/user_role.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/student_api_service.dart';
+import '../../grades/data/grade_model.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
 import 'grades_screen.dart';
@@ -325,7 +326,7 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
                 final val = (g['value'] as num).toDouble();
                 final isGood = val >= 10;
                 final subject = g['subject'] as String? ?? '';
-                final evalType = g['evalType'] as String? ?? '';
+                final evalType = evalTypeDisplayLabel(g['evalType']);
                 final color = _subjectColor(subject);
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),

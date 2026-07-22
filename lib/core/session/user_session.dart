@@ -23,6 +23,12 @@ class UserSession {
 
   // 🔹 Vérifications rapides
   static bool get isAdmin => _currentRole == UserRole.admin;
+  static bool get isOwner =>
+      _currentRole == UserRole.admin || _currentRole == UserRole.founder;
+  static bool get isDirection =>
+      _currentRole == UserRole.admin ||
+      _currentRole == UserRole.founder ||
+      _currentRole == UserRole.director;
   static bool get isTeacher => _currentRole == UserRole.teacher;
   static bool get isParent => _currentRole == UserRole.parent;
   static bool get isLoggedIn => _currentRole != null;

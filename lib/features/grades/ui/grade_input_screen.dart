@@ -18,6 +18,7 @@ String _apiEvalType(EvalType type) => switch (type) {
       EvalType.controle => 'CONTROLE',
       EvalType.devoir => 'DEVOIR',
       EvalType.examen => 'EXAMEN',
+      EvalType.tp => 'TP',
     };
 
 class GradeInputScreen extends ConsumerStatefulWidget {

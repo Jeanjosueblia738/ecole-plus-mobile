@@ -429,6 +429,7 @@ class _EvalChip extends StatelessWidget {
       EvalType.examen => const Color(0xFF7C3AED),
       EvalType.devoir => const Color(0xFF2563EB),
       EvalType.controle => const Color(0xFF059669),
+      EvalType.tp => const Color(0xFFD97706),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

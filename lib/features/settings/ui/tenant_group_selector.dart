@@ -24,6 +24,8 @@ class _TenantGroupSelectorState extends ConsumerState<TenantGroupSelector> {
 
   static const _staffRoles = {
     UserRole.admin,
+    UserRole.founder,
+    UserRole.director,
     UserRole.censor,
     UserRole.secretary,
   };

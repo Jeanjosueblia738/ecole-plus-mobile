@@ -5,6 +5,7 @@ import '../../../core/providers/parent_provider.dart';
 import '../../../core/security/user_role.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/parent_api_service.dart';
+import '../../grades/data/grade_model.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
 import 'parent_payment_screen.dart';
@@ -410,7 +411,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                                     style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 13)),
-                                Text(g['evalType'] ?? '',
+                                Text(evalTypeDisplayLabel(g['evalType']),
                                     style: const TextStyle(
                                         fontSize: 11, color: textGrey)),
                               ])),

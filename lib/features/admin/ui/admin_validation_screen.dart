@@ -12,7 +12,7 @@ class AdminValidationScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
     final canValidate =
-        auth.isAdmin || auth.isSurveillant || auth.isCensor;
+        auth.isDirection || auth.isSurveillant || auth.isCensor;
     if (!canValidate) {
       return const Scaffold(body: Center(child: Text('Accès refusé')));
     }

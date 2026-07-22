@@ -10,6 +10,6 @@ class RoleVisibility {
   }
 
   static bool canSeeAdminFeatures(UserRole role) {
-    return role == UserRole.admin;
+    return role.isDirection;
   }
 }

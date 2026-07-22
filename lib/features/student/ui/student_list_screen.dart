@@ -45,7 +45,7 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
     final students = ref.watch(studentProvider);
     final classNames = ref.watch(classNamesProvider);
     final auth = ref.watch(authProvider);
-    final canManageStudents = auth.isAdmin || auth.isSecretary;
+    final canManageStudents = auth.isOwner || auth.isSecretary;
 
     if (!classNames.contains(_selectedClass)) {
       _selectedClass = 'Toutes';

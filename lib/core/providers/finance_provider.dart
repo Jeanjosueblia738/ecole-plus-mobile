@@ -3,6 +3,7 @@ import '../../features/finance/data/finance_model.dart';
 import '../../features/student/data/student.dart';
 import '../services/finance_api_service.dart';
 import '../utils/school_year.dart';
+import 'class_provider.dart';
 import 'student_provider.dart';
 
 SchoolFee schoolFeeFromApi(Map<String, dynamic> json) {
@@ -258,13 +259,38 @@ final financeStatsProvider = Provider<Map<String, double>>((ref) {
   final payments = ref.watch(paymentProvider);
   final fees = ref.watch(feeProvider);
   final students = ref.watch(studentProvider);
+  final classes = ref.watch(classProvider);
+
+  String? studentLevel(Student student) {
+    for (final c in classes) {
+      if (c.id == student.classId || c.name == student.className) {
+        return c.level;
+      }
+    }
+    for (final level in kAllLevels) {
+      if (student.className.contains(level)) return level;
+    }
+    return null;
+  }
+
+  bool feeApplies(SchoolFee fee, String? level) {
+    if (fee.classLevel == null || fee.classLevel!.isEmpty) return true;
+    if (level == null) return false;
+    return fee.classLevel == level;
+  }
 
   final totalEncaisse = payments
       .where((p) => p.status == PaymentStatus.valide)
       .fold(0.0, (s, p) => s + p.montant);
 
-  final totalDu =
-      fees.fold(0.0, (s, f) => s + f.montant) * (students.isEmpty ? 1 : 1);
+  // total dû = somme (montant frais × élèves du niveau ciblé)
+  var totalDu = 0.0;
+  for (final fee in fees) {
+    final count = students
+        .where((s) => feeApplies(fee, studentLevel(s)))
+        .length;
+    totalDu += fee.montant * count;
+  }
 
   return {
     'encaisse': totalEncaisse,
@@ -280,8 +306,30 @@ final studentFinanceSummaryProvider =
     Provider.family<StudentFinanceSummary, Student>((ref, student) {
   final fees = ref.watch(feeProvider);
   final payments = ref.watch(paymentsByStudentProvider(student.id));
+  final classes = ref.watch(classProvider);
 
-  final totalDu = fees.fold(0.0, (s, f) => s + f.montant);
+  String? level;
+  for (final c in classes) {
+    if (c.id == student.classId || c.name == student.className) {
+      level = c.level;
+      break;
+    }
+  }
+  if (level == null) {
+    for (final l in kAllLevels) {
+      if (student.className.contains(l)) {
+        level = l;
+        break;
+      }
+    }
+  }
+
+  final totalDu = fees
+      .where((f) =>
+          f.classLevel == null ||
+          f.classLevel!.isEmpty ||
+          (level != null && f.classLevel == level))
+      .fold(0.0, (s, f) => s + f.montant);
   final totalPaye = payments
       .where((p) => p.status == PaymentStatus.valide)
       .fold(0.0, (s, p) => s + p.montant);

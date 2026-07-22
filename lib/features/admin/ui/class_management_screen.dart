@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/class_provider.dart';
 import '../../../core/providers/student_provider.dart';
 import '../../../core/theme/app_colors.dart';
@@ -10,6 +11,7 @@ class ClassManagementScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final classesByCycle = ref.watch(classesByCycleProvider);
+    final canWrite = ref.watch(authProvider).isOwner;
 
     return Scaffold(
       backgroundColor: background,
@@ -19,11 +21,13 @@ class ClassManagementScreen extends ConsumerWidget {
         foregroundColor: Colors.white,
         centerTitle: true,
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: primaryBlue,
-        onPressed: () => _showClassForm(context, ref),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      floatingActionButton: canWrite
+          ? FloatingActionButton(
+              backgroundColor: primaryBlue,
+              onPressed: () => _showClassForm(context, ref),
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
       body: classesByCycle.isEmpty
           ? const Center(
               child: Text('Aucune classe configurée',
@@ -71,6 +75,7 @@ class ClassManagementScreen extends ConsumerWidget {
                       return _ClassCard(
                         schoolClass: c,
                         studentCount: studentCount,
+                        canWrite: canWrite,
                         onEdit: () => _showClassForm(context, ref, existing: c),
                         onDelete: () =>
                             _confirmDelete(context, ref, c.id, c.name),
@@ -126,12 +131,14 @@ class ClassManagementScreen extends ConsumerWidget {
 class _ClassCard extends StatelessWidget {
   final SchoolClass schoolClass;
   final int studentCount;
+  final bool canWrite;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _ClassCard({
     required this.schoolClass,
     required this.studentCount,
+    required this.canWrite,
     required this.onEdit,
     required this.onDelete,
   });
@@ -196,28 +203,29 @@ class _ClassCard extends StatelessWidget {
             ),
           ),
           // Actions
-          PopupMenuButton<String>(
-            onSelected: (v) {
-              if (v == 'edit') onEdit();
-              if (v == 'delete') onDelete();
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(children: [
-                    Icon(Icons.edit, size: 16),
-                    SizedBox(width: 8),
-                    Text('Modifier'),
-                  ])),
-              const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(children: [
-                    Icon(Icons.delete, size: 16, color: dangerRed),
-                    SizedBox(width: 8),
-                    Text('Supprimer', style: TextStyle(color: dangerRed)),
-                  ])),
-            ],
-          ),
+          if (canWrite)
+            PopupMenuButton<String>(
+              onSelected: (v) {
+                if (v == 'edit') onEdit();
+                if (v == 'delete') onDelete();
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(children: [
+                      Icon(Icons.edit, size: 16),
+                      SizedBox(width: 8),
+                      Text('Modifier'),
+                    ])),
+                const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(children: [
+                      Icon(Icons.delete, size: 16, color: dangerRed),
+                      SizedBox(width: 8),
+                      Text('Supprimer', style: TextStyle(color: dangerRed)),
+                    ])),
+              ],
+            ),
         ],
       ),
     );
@@ -264,21 +272,25 @@ class _ClassFormSheetState extends State<_ClassFormSheet> {
     final capacity = int.tryParse(_capCtrl.text) ?? 40;
 
     final c = SchoolClass(
-      id: widget.existing?.id ??
-          DateTime.now().millisecondsSinceEpoch.toString(),
+      id: widget.existing?.id ?? '',
       name: _nameCtrl.text.trim(),
       level: _level,
       cycle: _cycle,
       capacity: capacity,
     );
 
-    if (widget.existing == null) {
-      await widget.ref.read(classProvider.notifier).add(c);
-    } else {
-      await widget.ref.read(classProvider.notifier).update(c);
-    }
+    final notifier = widget.ref.read(classProvider.notifier);
+    final ok = widget.existing == null
+        ? await notifier.add(c)
+        : await notifier.update(c);
 
     if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(notifier.error ?? 'Erreur')),
+      );
+      return;
+    }
     Navigator.pop(context);
   }
 

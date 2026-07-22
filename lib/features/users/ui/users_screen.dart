@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/network/api_client.dart';
 
@@ -32,14 +34,14 @@ const _roleColors = {
   'STUDENT': Color(0xFF0284C7),
 };
 
-class UsersScreen extends StatefulWidget {
+class UsersScreen extends ConsumerStatefulWidget {
   const UsersScreen({super.key});
 
   @override
-  State<UsersScreen> createState() => _UsersScreenState();
+  ConsumerState<UsersScreen> createState() => _UsersScreenState();
 }
 
-class _UsersScreenState extends State<UsersScreen> {
+class _UsersScreenState extends ConsumerState<UsersScreen> {
   List<dynamic> _users = [];
   bool _loading = true;
 
@@ -161,6 +163,8 @@ class _UsersScreenState extends State<UsersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canWrite = ref.watch(authProvider).isOwner;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
       appBar: AppBar(
@@ -182,19 +186,22 @@ class _UsersScreenState extends State<UsersScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final created = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(builder: (_) => const CreateUserScreen()),
-          );
-          if (created == true) {
-            _loadUsers();
-          }
-        },
-        backgroundColor: primaryBlue,
-        child: const Icon(Icons.person_add_outlined, color: Colors.white),
-      ),
+      floatingActionButton: canWrite
+          ? FloatingActionButton(
+              onPressed: () async {
+                final created = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreateUserScreen()),
+                );
+                if (created == true) {
+                  _loadUsers();
+                }
+              },
+              backgroundColor: primaryBlue,
+              child:
+                  const Icon(Icons.person_add_outlined, color: Colors.white),
+            )
+          : null,
       body: RefreshIndicator(
         onRefresh: _loadUsers,
         child: _loading
@@ -288,46 +295,51 @@ class _UsersScreenState extends State<UsersScreen> {
                                           color: roleColor)),
                                 ),
                               ]),
-                          trailing: PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert, color: textGrey),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            onSelected: (val) {
-                              if (val == 'toggle') {
-                                _toggleStatus(user);
-                              }
-                              if (val == 'reset') {
-                                _resetPassword(user['id'] as String);
-                              }
-                            },
-                            itemBuilder: (_) => [
-                              const PopupMenuItem(
-                                value: 'reset',
-                                child: Row(children: [
-                                  Icon(Icons.key_outlined,
-                                      size: 18, color: primaryBlue),
-                                  SizedBox(width: 8),
-                                  Text('Réinitialiser mot de passe'),
-                                ]),
-                              ),
-                              PopupMenuItem(
-                                value: 'toggle',
-                                child: Row(children: [
-                                  Icon(
-                                    isActive
-                                        ? Icons.block_outlined
-                                        : Icons.check_circle_outline,
-                                    size: 18,
-                                    color: isActive ? dangerRed : successGreen,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(isActive
-                                      ? 'Désactiver le compte'
-                                      : 'Activer le compte'),
-                                ]),
-                              ),
-                            ],
-                          ),
+                          trailing: canWrite
+                              ? PopupMenuButton<String>(
+                                  icon: const Icon(Icons.more_vert,
+                                      color: textGrey),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  onSelected: (val) {
+                                    if (val == 'toggle') {
+                                      _toggleStatus(user);
+                                    }
+                                    if (val == 'reset') {
+                                      _resetPassword(user['id'] as String);
+                                    }
+                                  },
+                                  itemBuilder: (_) => [
+                                    const PopupMenuItem(
+                                      value: 'reset',
+                                      child: Row(children: [
+                                        Icon(Icons.key_outlined,
+                                            size: 18, color: primaryBlue),
+                                        SizedBox(width: 8),
+                                        Text('Réinitialiser mot de passe'),
+                                      ]),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'toggle',
+                                      child: Row(children: [
+                                        Icon(
+                                          isActive
+                                              ? Icons.block_outlined
+                                              : Icons.check_circle_outline,
+                                          size: 18,
+                                          color: isActive
+                                              ? dangerRed
+                                              : successGreen,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(isActive
+                                            ? 'Désactiver le compte'
+                                            : 'Activer le compte'),
+                                      ]),
+                                    ),
+                                  ],
+                                )
+                              : null,
                         ),
                       );
                     },

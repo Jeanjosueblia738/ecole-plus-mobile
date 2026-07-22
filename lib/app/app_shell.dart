@@ -32,6 +32,8 @@ class AppShell extends ConsumerWidget {
 
     return switch (authState.role) {
       UserRole.admin => const AdminDashboard(),
+      UserRole.founder => const AdminDashboard(),
+      UserRole.director => const AdminDashboard(),
       UserRole.censor => const CensorDashboard(),
       UserRole.surveillant => const SurveillantDashboard(),
       UserRole.secretary => const SecretaryDashboard(),
