@@ -27,6 +27,7 @@ const kSubjects = [
   Subject(name: 'Physique-Chimie', coefficient: 3),
   Subject(name: 'Histoire-Géographie', coefficient: 3),
   Subject(name: 'Philosophie', coefficient: 2),
+  Subject(name: 'EDHC', coefficient: 2),
   Subject(name: 'EPS', coefficient: 2),
   Subject(name: 'Arts', coefficient: 1),
 ];
