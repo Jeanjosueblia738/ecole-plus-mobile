@@ -367,15 +367,27 @@ class _MobileMoneyPaymentSheetState extends State<_MobileMoneyPaymentSheet> {
         phoneNumber: _phoneCtrl.text.trim(),
         montant: widget.montantXof.toDouble(),
         reference: 'ECOLE-${DateTime.now().millisecondsSinceEpoch}',
+        studentId: widget.studentId,
+        feeId: widget.feeId,
       );
 
       if (!mounted) return;
 
-      // Passerelle non intégrée : ne jamais enregistrer un faux succès
-      // comme paiement réel à l'école.
+      if (result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Paiement confirmé'),
+            backgroundColor: successGreen,
+          ),
+        );
+        Navigator.pop(context, true);
+        return;
+      }
+
       setState(() {
         _processing = false;
         _error = result.errorMessage ??
+            result.message ??
             PaymentGatewayService.notAvailableMessage;
       });
     } catch (e) {

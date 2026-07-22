@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import '../core/network/api_client.dart';
 import '../features/finance/data/finance_model.dart';
 
 // ─── Résultat d'une transaction Mobile Money ──────────────────────────────
@@ -5,46 +7,89 @@ class MobileMoneyResult {
   final bool success;
   final String? transactionId;
   final String? errorMessage;
+  final String? status;
+  final String? message;
 
   const MobileMoneyResult({
     required this.success,
     this.transactionId,
     this.errorMessage,
+    this.status,
+    this.message,
   });
 }
 
-// ─── Passerelle Mobile Money CI ───────────────────────────────────────────
-// Orange Money CI / Wave / MTN MoMo / Moov ne sont pas encore intégrés.
-// Ne jamais simuler un succès ni enregistrer un faux paiement comme réel.
+String _providerApiCode(MobileMoneyOperator operator) => switch (operator) {
+      MobileMoneyOperator.orangeMoney => 'ORANGE_MONEY',
+      MobileMoneyOperator.wave => 'WAVE',
+      MobileMoneyOperator.mtnMoney => 'MTN_MOMO',
+      MobileMoneyOperator.moov => 'MOOV_MONEY',
+    };
+
+/// Passerelle Mobile Money → API Nest `/payments/fees/initiate`
 class PaymentGatewayService {
   static const notAvailableMessage =
-      'Paiement Mobile Money non disponible — passerelle non intégrée. '
-      'Effectuez le paiement à l\'école ou contactez la scolarité.';
+      'Paiement Mobile Money indisponible. '
+      'L’école doit configurer son compte marchand (Paramètres → Mobile Money).';
 
-  /// Tente un paiement Mobile Money. Pour l'instant : validation du numéro
-  /// puis refus explicite (aucune simulation de succès).
   static Future<MobileMoneyResult> processMobileMoney({
     required MobileMoneyOperator operator,
     required String phoneNumber,
     required double montant,
     required String reference,
+    required String studentId,
+    required String feeId,
   }) async {
     final validationError = _validatePhone(operator, phoneNumber);
     if (validationError != null) {
       return MobileMoneyResult(success: false, errorMessage: validationError);
     }
 
-    return const MobileMoneyResult(
-      success: false,
-      errorMessage: notAvailableMessage,
-    );
+    try {
+      final response = await ApiClient.instance.post(
+        '/payments/fees/initiate',
+        data: {
+          'provider': _providerApiCode(operator),
+          'studentId': studentId,
+          'feeId': feeId,
+          'amountXof': montant.round(),
+          'payerPhone': phoneNumber.trim(),
+        },
+      );
+      final data = response.data as Map<String, dynamic>? ?? {};
+      final status = data['status']?.toString() ?? 'PENDING';
+      final ok = status.toUpperCase() == 'SUCCESS';
+      return MobileMoneyResult(
+        success: ok,
+        status: status,
+        transactionId:
+            data['transactionId']?.toString() ?? data['externalId']?.toString(),
+        message: data['message']?.toString(),
+        errorMessage: ok
+            ? null
+            : (data['message']?.toString() ??
+                data['ussdHint']?.toString() ??
+                'Paiement en attente de confirmation opérateur.'),
+      );
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map
+          ? (e.response!.data['message']?.toString())
+          : null;
+      return MobileMoneyResult(
+        success: false,
+        errorMessage: msg ?? notAvailableMessage,
+      );
+    } catch (_) {
+      return const MobileMoneyResult(
+        success: false,
+        errorMessage: notAvailableMessage,
+      );
+    }
   }
 
-  // Validation numéros CI par opérateur
   static String? _validatePhone(MobileMoneyOperator operator, String phone) {
     final cleaned = phone.replaceAll(RegExp(r'[\s\-\+]'), '');
 
-    // Format CI : +225 XX XX XX XX XX (10 chiffres hors indicatif)
     if (cleaned.length != 10 && cleaned.length != 13) {
       return 'Numéro invalide — format attendu : 07 XX XX XX XX';
     }
