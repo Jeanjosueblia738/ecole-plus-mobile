@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/providers/student_provider.dart';
 import '../../../core/services/attendance_api_service.dart';
+import '../../../core/sync/offline_outbox.dart';
 import '../../../core/theme/app_colors.dart';
 
 class AttendanceInputScreen extends ConsumerStatefulWidget {
@@ -127,15 +128,17 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
       };
     }).toList();
 
+    final payload = {
+      'classId': classId,
+      'subject': subject,
+      'date': today,
+      'startTime': _fmt(_start),
+      'endTime': _fmt(_end),
+      'records': records,
+    };
+
     try {
-      final result = await AttendanceApiService.bulkCreate({
-        'classId': classId,
-        'subject': subject,
-        'date': today,
-        'startTime': _fmt(_start),
-        'endTime': _fmt(_end),
-        'records': records,
-      });
+      final result = await AttendanceApiService.bulkCreate(payload);
       if (!mounted) return;
       final absents = result['absents'] ??
           records.where((r) => r['status'] == 'ABSENT').length;
@@ -145,10 +148,12 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
       });
       _showConfirmDialog(absents as int, students.length, classId, subject);
     } catch (e) {
+      await OfflineOutbox.enqueue(type: 'attendance.bulk', payload: payload);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Erreur appel: $e'),
-        backgroundColor: dangerRed,
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text(
+            'Hors ligne — appel mis en file, sync au retour réseau'),
+        backgroundColor: Colors.orange,
       ));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

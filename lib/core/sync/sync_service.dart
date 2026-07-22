@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../database/app_database.dart';
+import 'offline_outbox.dart';
 
 enum SyncStatus { idle, syncing, success, error }
 
@@ -17,12 +18,13 @@ class SyncResult {
   });
 }
 
-// ─── Service de synchronisation SharedPreferences → SQLite ────────────────
+// ─── Service de synchronisation SharedPreferences → SQLite + outbox API ───
 class SyncService {
   Future<SyncResult> syncAll() async {
     debugPrint('🔄 Sync démarrée...');
     int total = 0;
     try {
+      total += await OfflineOutbox.flush();
       total += await _syncStudents();
       total += await _syncAttendance();
       total += await _syncGrades();

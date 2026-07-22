@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/student_provider.dart';
 import '../../../core/services/grades_api_service.dart';
+import '../../../core/sync/offline_outbox.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/grade_model.dart';
 
@@ -139,11 +140,12 @@ class _GradeInputScreenState extends ConsumerState<GradeInputScreen> {
     }
 
     setState(() => _isSaving = true);
+    final payload = {
+      'classId': classId,
+      'grades': gradesPayload,
+    };
     try {
-      await GradesApiService.bulkCreate({
-        'classId': classId,
-        'grades': gradesPayload,
-      });
+      await GradesApiService.bulkCreate(payload);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
@@ -152,10 +154,12 @@ class _GradeInputScreenState extends ConsumerState<GradeInputScreen> {
       ));
       Navigator.pop(context);
     } catch (e) {
+      await OfflineOutbox.enqueue(type: 'grades.bulk', payload: payload);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Erreur enregistrement: $e'),
-        backgroundColor: dangerRed,
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text(
+            'Hors ligne — notes mises en file, sync au retour réseau'),
+        backgroundColor: Colors.orange,
       ));
     } finally {
       if (mounted) setState(() => _isSaving = false);
