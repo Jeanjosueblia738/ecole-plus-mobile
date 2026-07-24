@@ -5,6 +5,8 @@ import '../../../core/providers/student_provider.dart';
 import '../../../core/services/attendance_api_service.dart';
 import '../../../core/sync/offline_outbox.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/dio_error_message.dart';
+import 'package:dio/dio.dart';
 
 class AttendanceInputScreen extends ConsumerStatefulWidget {
   final String className;
@@ -140,21 +142,32 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
     try {
       final result = await AttendanceApiService.bulkCreate(payload);
       if (!mounted) return;
-      final absents = result['absents'] ??
+      final absents = (result['absents'] as num?)?.toInt() ??
           records.where((r) => r['status'] == 'ABSENT').length;
       setState(() {
         _appelSaved = true;
         _resolvedClassId = classId;
       });
-      _showConfirmDialog(absents as int, students.length, classId, subject);
+      _showConfirmDialog(absents, students.length, classId, subject);
     } catch (e) {
-      await OfflineOutbox.enqueue(type: 'attendance.bulk', payload: payload);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text(
-            'Hors ligne — appel mis en file, sync au retour réseau'),
-        backgroundColor: Colors.orange,
-      ));
+      if (isOfflineEnqueueableError(e)) {
+        await OfflineOutbox.enqueue(type: 'attendance.bulk', payload: payload);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Hors ligne — appel mis en file, sync au retour réseau'),
+          backgroundColor: Colors.orange,
+        ));
+      } else {
+        if (!mounted) return;
+        final msg = e is DioException
+            ? dioErrorMessage(e, fallback: 'Erreur lors de l\'appel')
+            : e.toString();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(msg),
+          backgroundColor: dangerRed,
+        ));
+      }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

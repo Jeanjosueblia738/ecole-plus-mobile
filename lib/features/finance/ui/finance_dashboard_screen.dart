@@ -226,7 +226,7 @@ class _FinanceDashboardScreenState
             ],
             if (isViewOnly) ...[
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Le pilotage financier et les encaissements sont réservés au comptable et au caissier.',
                 style: TextStyle(fontSize: 12, color: textGrey),
               ),

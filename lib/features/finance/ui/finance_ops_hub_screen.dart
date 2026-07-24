@@ -507,7 +507,8 @@ class _BankScreenState extends State<_BankScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
-                value: type,
+                key: ValueKey(type),
+                initialValue: type,
                 items: const [
                   DropdownMenuItem(value: 'CREDIT', child: Text('Crédit')),
                   DropdownMenuItem(value: 'DEBIT', child: Text('Débit')),
@@ -600,7 +601,8 @@ class _BankScreenState extends State<_BankScreen> {
                   Padding(
                     padding: const EdgeInsets.all(12),
                     child: DropdownButtonFormField<String>(
-                      value: _selected,
+                      key: ValueKey(_selected),
+                      initialValue: _selected,
                       items: _accounts.map((a) {
                         final m = Map<String, dynamic>.from(a as Map);
                         return DropdownMenuItem(value: m['id']?.toString(), child: Text(m['name']?.toString() ?? ''));

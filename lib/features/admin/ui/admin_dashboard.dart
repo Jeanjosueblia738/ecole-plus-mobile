@@ -7,7 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/dashboard_tile.dart';
 import '../../../shared/widgets/workspace_hero.dart';
 import 'admin_stats_screen.dart';
-import 'admin_validation_screen.dart';
+// AdminValidationScreen masqué : API sans endpoint validate pending (voir commentaire écran).
 import 'class_management_screen.dart';
 import '../../analytics/ui/dropout_risk_screen.dart';
 import '../../student/ui/student_list_screen.dart';
@@ -25,7 +25,6 @@ class AdminDashboard extends ConsumerStatefulWidget {
 class _AdminDashboardState extends ConsumerState<AdminDashboard> {
   int _totalStudents = 0;
   int _totalAbsences = 0;
-  int _pendingJustifications = 0;
   int _totalTeachers = 0;
   int _totalClasses = 0;
   bool _isLoadingStats = true;
@@ -66,8 +65,6 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
         setState(() {
           _totalAbsences =
               (attendanceStats['totalAbsences'] as num?)?.toInt() ?? 0;
-          _pendingJustifications =
-              (attendanceStats['unJustified'] as num?)?.toInt() ?? 0;
         });
       } catch (_) {
         if (mounted) {
@@ -181,17 +178,6 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                     label: 'Absences', value: _totalAbsences.toString()),
               ],
             ),
-            if (_pendingJustifications > 0) ...[
-              const SizedBox(height: 12),
-              _KpiCard(
-                  title: 'Justifications',
-                  value: _pendingJustifications.toString(),
-                  sub: 'À traiter',
-                  icon: Icons.access_time_outlined,
-                  color: warningYellow,
-                  isLoading: _isLoadingStats,
-                  showBadge: true),
-            ],
 
             const SizedBox(height: 24),
 
@@ -209,17 +195,6 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
               ),
               const SizedBox(width: 8),
               _ActionBtn(
-                label: 'Présences',
-                color: dangerRed,
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const AdminValidationScreen())),
-              ),
-            ]),
-            const SizedBox(height: 8),
-            Row(children: [
-              _ActionBtn(
                 label: 'Statistiques',
                 color: const Color(0xFF7C3AED),
                 onTap: () => Navigator.push(
@@ -227,7 +202,9 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                     MaterialPageRoute(
                         builder: (_) => const AdminStatsScreen())),
               ),
-              const SizedBox(width: 8),
+            ]),
+            const SizedBox(height: 8),
+            Row(children: [
               _ActionBtn(
                 label: 'Finances',
                 color: successGreen,
@@ -236,17 +213,19 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                     MaterialPageRoute(
                         builder: (_) => const FinanceDashboardScreen())),
               ),
+              const SizedBox(width: 8),
+              _ActionBtn(
+                label: 'Messagerie',
+                color: const Color(0xFF1B3A6B),
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const MessagingScreen())),
+              ),
             ]),
 
             const SizedBox(height: 24),
 
             // ── Modules ───────────────────────────────────────────────
-            const Text('Modules',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: textDark)),
-            const SizedBox(height: 12),
+            const WorkspaceSectionTitle('Modules'),
 
             if (auth.isOwner) ...[
               DashboardTile(
@@ -287,16 +266,6 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
             ),
             const SizedBox(height: 10),
             DashboardTile(
-              icon: Icons.how_to_reg_outlined,
-              title: 'Présences & Absences',
-              color: dangerRed,
-              onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const AdminValidationScreen())),
-            ),
-            const SizedBox(height: 10),
-            DashboardTile(
               icon: Icons.attach_money_outlined,
               title: 'Finance',
               color: successGreen,
@@ -315,87 +284,6 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
             ),
           ]),
         ),
-      ),
-    );
-  }
-}
-
-// ── KPI Card ───────────────────────────────────────────────────────────────
-class _KpiCard extends StatelessWidget {
-  final String title, value, sub;
-  final IconData icon;
-  final Color color;
-  final bool isLoading;
-  final bool showBadge;
-
-  const _KpiCard({
-    required this.title,
-    required this.value,
-    required this.sub,
-    required this.icon,
-    required this.color,
-    this.isLoading = false,
-    this.showBadge = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.15)),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2))
-          ],
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Expanded(
-                child: Text(title,
-                    style: const TextStyle(
-                        fontSize: 12, color: Color(0xFF6B7280)))),
-            Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8)),
-                child: Icon(icon, color: color, size: 18)),
-          ]),
-          const SizedBox(height: 12),
-          isLoading
-              ? Container(
-                  height: 24,
-                  width: 60,
-                  decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(4)))
-              : Row(children: [
-                  Flexible(
-                      child: Text(value,
-                          style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: color),
-                          overflow: TextOverflow.ellipsis)),
-                  if (showBadge) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                            color: dangerRed, shape: BoxShape.circle)),
-                  ],
-                ]),
-          const SizedBox(height: 4),
-          Text(sub,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
-        ]),
       ),
     );
   }

@@ -164,8 +164,9 @@ class _ParentPaymentScreenState extends ConsumerState<ParentPaymentScreen> {
                             style: TextStyle(color: Colors.grey.shade500)),
                       ))
                     else
-                      ...(_finance!['fees'] as List).map((f) => _FeeCard(
-                            fee: f,
+                      ...(_finance!['fees'] as List).whereType<Map>().map((f) =>
+                          _FeeCard(
+                            fee: Map<String, dynamic>.from(f),
                             studentId: widget.studentId,
                             studentName: widget.studentName,
                             onPaymentDone: _loadFinance,
@@ -199,10 +200,12 @@ class _FeeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPaid = fee['isPaid'] as bool? ?? false;
-    final feeInfo = fee['fee'] as Map<String, dynamic>?;
-    final amountXof = (feeInfo?['amountXof'] ?? 0) as num;
-    final amountPaid = (fee['amountPaid'] ?? 0) as num;
+    final isPaid = fee['isPaid'] == true;
+    final feeInfo = fee['fee'] is Map
+        ? Map<String, dynamic>.from(fee['fee'] as Map)
+        : null;
+    final amountXof = (feeInfo?['amountXof'] as num?)?.toDouble() ?? 0;
+    final amountPaid = (fee['amountPaid'] as num?)?.toDouble() ?? 0;
     final remaining = amountXof - amountPaid;
 
     return Container(
@@ -284,14 +287,26 @@ class _FeeCard extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () async {
+                final feeId = fee['feeId']?.toString() ??
+                    feeInfo?['id']?.toString() ??
+                    '';
+                if (feeId.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Identifiant frais manquant'),
+                      backgroundColor: dangerRed,
+                    ),
+                  );
+                  return;
+                }
                 final result = await Navigator.push<bool>(
                   context,
                   MaterialPageRoute(
                     builder: (_) => _MobileMoneyPaymentSheet(
                       studentId: studentId,
                       studentName: studentName,
-                      feeId: fee['feeId'] as String,
-                      feeLabel: feeInfo?['label'] ?? 'Frais',
+                      feeId: feeId,
+                      feeLabel: feeInfo?['label']?.toString() ?? 'Frais',
                       montantXof: remaining.toInt(),
                     ),
                   ),
@@ -374,10 +389,18 @@ class _MobileMoneyPaymentSheetState extends State<_MobileMoneyPaymentSheet> {
       if (!mounted) return;
 
       if (result.success) {
+        final isPending =
+            (result.status ?? '').toUpperCase() == 'PENDING';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result.message ?? 'Paiement confirmé'),
-            backgroundColor: successGreen,
+            content: Text(
+              result.message ??
+                  (isPending
+                      ? 'Paiement initié — confirmation opérateur en attente'
+                      : 'Paiement confirmé'),
+            ),
+            backgroundColor:
+                isPending ? const Color(0xFFB45309) : successGreen,
           ),
         );
         Navigator.pop(context, true);
@@ -391,6 +414,7 @@ class _MobileMoneyPaymentSheetState extends State<_MobileMoneyPaymentSheet> {
             PaymentGatewayService.notAvailableMessage;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _processing = false;
         _error = e.toString();

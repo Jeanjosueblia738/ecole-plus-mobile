@@ -212,7 +212,8 @@ class _CashSessionScreenState extends ConsumerState<CashSessionScreen> {
                           if (_accounts.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             DropdownButtonFormField<String>(
-                              value: _bankAccountId,
+                              key: ValueKey(_bankAccountId),
+                              initialValue: _bankAccountId,
                               items: _accounts.map((a) {
                                 final m = Map<String, dynamic>.from(a as Map);
                                 return DropdownMenuItem(

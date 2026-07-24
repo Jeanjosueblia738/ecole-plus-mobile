@@ -80,7 +80,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          error == null ? 'Profil synchronisé' : error,
+          error ?? 'Profil synchronisé',
         ),
         backgroundColor: error == null ? successGreen : dangerRed,
       ),

@@ -111,7 +111,7 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
                                 .remove(fee.id);
                             if (!mounted) return;
                             final err = ref.read(feeProvider.notifier).error;
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            ScaffoldMessenger.of(this.context).showSnackBar(
                               SnackBar(
                                 content: Text(err ??
                                     'Suppression serveur non disponible'),

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/providers/attendance_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../student/data/attendance_store.dart';
 
+/// Écran historique — **non branché aux dashboards**.
+///
+/// L'API expose `POST /attendance/:id/justify` mais pas de file
+/// « pending validation » ni d'endpoint admin validate/refuse.
+/// Réactiver seulement quand le backend supportera ce flux.
 class AdminValidationScreen extends ConsumerWidget {
   const AdminValidationScreen({super.key});
 
@@ -17,188 +20,41 @@ class AdminValidationScreen extends ConsumerWidget {
       return const Scaffold(body: Center(child: Text('Accès refusé')));
     }
 
-    final pending = ref.watch(pendingJustificationsProvider);
-
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
-        title: const Text('Justifications à valider'),
+        title: const Text('Justifications'),
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         centerTitle: true,
       ),
-      body: pending.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.check_circle_outline,
-                      size: 64, color: Color(0xFF16A34A)),
-                  SizedBox(height: 12),
-                  Text('Aucune justification en attente',
-                      style: TextStyle(color: textGrey, fontSize: 15)),
-                ],
-              ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: pending.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final record = pending[index];
-                return _JustificationCard(record: record);
-              },
-            ),
-    );
-  }
-}
-
-// ── Carte justification ────────────────────────────────────────────────────
-class _JustificationCard extends ConsumerWidget {
-  final AttendanceRecord record;
-  const _JustificationCard({required this.record});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: warningYellow.withValues(alpha: 0.4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── En-tête ──────────────────────────────────────────
-          Row(
+      body: const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: primaryBlue.withValues(alpha: 0.1),
-                child: Text(
-                  record.studentName[0].toUpperCase(),
-                  style: const TextStyle(
-                      color: primaryBlue, fontWeight: FontWeight.bold),
-                ),
+              Icon(Icons.info_outline, size: 48, color: textGrey),
+              SizedBox(height: 12),
+              Text(
+                'Validation des justifications non disponible',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: textDark),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(record.studentName,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
-                    Text('${record.className} • ${record.subject}',
-                        style: const TextStyle(color: textGrey, fontSize: 13)),
-                  ],
-                ),
-              ),
-              // Badge En attente
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF9C3),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text('En attente',
-                    style: TextStyle(
-                        color: Color(0xFF92400E),
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              Text(
+                'Le serveur ne propose pas encore de file de validation '
+                'admin. Les parents/élèves peuvent justifier une absence ; '
+                'le traitement côté direction sera ajouté ultérieurement.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: textGrey, fontSize: 14),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // ── Infos absence ─────────────────────────────────────
-          _InfoRow(Icons.calendar_today_outlined,
-              '${record.date} • ${record.duration}'),
-          if (record.justificationMotif != null)
-            _InfoRow(
-                Icons.comment_outlined, 'Motif : ${record.justificationMotif}'),
-
-          const SizedBox(height: 14),
-
-          // ── Actions ───────────────────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.close, size: 16),
-                  label: const Text('Refuser'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: dangerRed,
-                    side: BorderSide(color: dangerRed.withValues(alpha: 0.4)),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Justification refusée'),
-                        backgroundColor: dangerRed,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.check, size: 16, color: Colors.white),
-                  label: const Text('Valider',
-                      style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: successGreen,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () async {
-                    final ok = await ref
-                        .read(attendanceProvider.notifier)
-                        .validateJustification(record.id);
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(ok
-                            ? 'Justification validée ✓'
-                            : 'Validation non persistée — endpoint serveur indisponible'),
-                        backgroundColor: ok
-                            ? const Color(0xFF16A34A)
-                            : const Color(0xFFB45309),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _InfoRow(this.icon, this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: textGrey),
-          const SizedBox(width: 6),
-          Expanded(
-              child: Text(text,
-                  style: const TextStyle(color: textGrey, fontSize: 13))),
-        ],
+        ),
       ),
     );
   }

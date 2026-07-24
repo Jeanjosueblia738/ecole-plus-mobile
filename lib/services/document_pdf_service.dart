@@ -226,7 +226,7 @@ class DocumentPdfService {
             pw.Text('Classe : $className',
                 style: const pw.TextStyle(fontSize: 11)),
             pw.SizedBox(height: 16),
-            pw.Table.fromTextArray(
+            pw.TableHelper.fromTextArray(
               headers: ['Matière', 'Type', 'Note', 'Coef.'],
               data: grades
                   .map((g) => [

@@ -5,7 +5,7 @@ import '../../../core/providers/student_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/students_api_service.dart';
 import '../../../core/services/attendance_api_service.dart';
-import '../../admin/ui/admin_validation_screen.dart';
+// AdminValidationScreen retiré : pas d'endpoint API validate pending.
 import '../../analytics/ui/dropout_risk_screen.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../student/ui/student_list_screen.dart';
@@ -20,7 +20,7 @@ class SurveillantDashboard extends ConsumerStatefulWidget {
 }
 
 class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
-  int _totalStudents = 0, _totalAbsences = 0, _pendingJustifications = 0;
+  int _totalStudents = 0, _totalAbsences = 0;
   bool _loading = true;
   String? _error;
 
@@ -55,7 +55,6 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
       setState(() {
         _totalStudents = (s['total'] as num?)?.toInt() ?? 0;
         _totalAbsences = (a['totalAbsences'] as num?)?.toInt() ?? 0;
-        _pendingJustifications = (a['unJustified'] as num?)?.toInt() ?? 0;
         _loading = false;
         if (partialFailure) {
           _error =
@@ -105,13 +104,6 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
           duration: '55',
         ),
       ),
-    );
-  }
-
-  void _openJustifications() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AdminValidationScreen()),
     );
   }
 
@@ -199,39 +191,8 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
                     label: 'Élèves', value: _totalStudents.toString()),
                 WorkspaceHeroMetric(
                     label: 'Absences', value: _totalAbsences.toString()),
-                WorkspaceHeroMetric(
-                    label: 'À justifier',
-                    value: _pendingJustifications.toString()),
               ],
             ),
-            if (_pendingJustifications > 0) ...[
-              const SizedBox(height: 12),
-              InkWell(
-                onTap: _openJustifications,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: warningYellow.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border:
-                        Border.all(color: warningYellow.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(children: [
-                    const Icon(Icons.warning_amber_outlined,
-                        color: warningYellow),
-                    const SizedBox(width: 10),
-                    Expanded(
-                        child: Text(
-                            '$_pendingJustifications justification(s) en attente de validation',
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF92400E)))),
-                    Icon(Icons.chevron_right,
-                        color: warningYellow.withValues(alpha: 0.7)),
-                  ]),
-                ),
-              ),
-            ],
             const SizedBox(height: 20),
             const WorkspaceSectionTitle('Actions principales'),
             _ActionTile(
@@ -240,13 +201,6 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
                 subtitle: 'Enregistrer les présences',
                 color: color,
                 onTap: _openAppel),
-            const SizedBox(height: 10),
-            _ActionTile(
-                icon: Icons.check_circle_outlined,
-                title: 'Valider justifications',
-                subtitle: 'Traiter les absences justifiées',
-                color: successGreen,
-                onTap: _openJustifications),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.psychology_outlined,
@@ -269,58 +223,6 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
                         builder: (_) => const StudentListScreen()))),
           ]),
         ),
-      ),
-    );
-  }
-}
-
-class _KpiCard extends StatelessWidget {
-  final String label, value;
-  final IconData icon;
-  final Color color;
-  final bool loading;
-  const _KpiCard(
-      {required this.label,
-      required this.value,
-      required this.icon,
-      required this.color,
-      this.loading = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.2))),
-        child: Row(children: [
-          Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10)),
-              child: Icon(icon, color: color, size: 20)),
-          const SizedBox(width: 10),
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                loading
-                    ? LinearProgressIndicator(
-                        color: color,
-                        backgroundColor: color.withValues(alpha: 0.1))
-                    : Text(value,
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: color),
-                        overflow: TextOverflow.ellipsis),
-                Text(label,
-                    style: const TextStyle(fontSize: 10, color: textGrey)),
-              ])),
-        ]),
       ),
     );
   }

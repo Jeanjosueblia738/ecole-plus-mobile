@@ -401,64 +401,6 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
 }
 
 // ── Widgets ────────────────────────────────────────────────────────────────
-class _KpiCard extends StatelessWidget {
-  final String label, value;
-  final IconData icon;
-  final Color color;
-  final bool isLoading;
-  const _KpiCard(
-      {required this.label,
-      required this.value,
-      required this.icon,
-      required this.color,
-      this.isLoading = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-          boxShadow: [
-            BoxShadow(
-                color: color.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2))
-          ],
-        ),
-        child: Row(children: [
-          Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10)),
-              child: Icon(icon, color: color, size: 22)),
-          const SizedBox(width: 12),
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                isLoading
-                    ? LinearProgressIndicator(
-                        color: color,
-                        backgroundColor: color.withValues(alpha: 0.1))
-                    : Text(value,
-                        style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: color)),
-                Text(label,
-                    style: const TextStyle(fontSize: 11, color: textGrey)),
-              ])),
-        ]),
-      ),
-    );
-  }
-}
-
 class _ActionBtn extends StatelessWidget {
   final IconData icon;
   final String label;

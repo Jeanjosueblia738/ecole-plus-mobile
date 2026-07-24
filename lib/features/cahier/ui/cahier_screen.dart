@@ -39,8 +39,8 @@ class _CahierScreenState extends ConsumerState<CahierScreen> {
       setState(() {
         _classes = classes;
         if (classes.isNotEmpty) {
-          _selectedClassId = classes[0]['id'] as String;
-          _selectedClassName = classes[0]['name'] as String;
+          _selectedClassId = classes[0]['id']?.toString();
+          _selectedClassName = classes[0]['name']?.toString() ?? '';
         }
       });
       await _loadEntries();
@@ -217,14 +217,14 @@ class _CahierScreenState extends ConsumerState<CahierScreen> {
                     final cls = _classes.firstWhere((c) => c['id'] == val);
                     setState(() {
                       _selectedClassId = val;
-                      _selectedClassName = cls['name'] as String;
+                      _selectedClassName = cls['name']?.toString() ?? '';
                     });
                     _loadEntries();
                   },
                   items: _classes
                       .map<DropdownMenuItem<String>>((c) => DropdownMenuItem(
-                          value: c['id'] as String,
-                          child: Text(c['name'] as String)))
+                          value: c['id']?.toString() ?? '',
+                          child: Text(c['name']?.toString() ?? '')))
                       .toList(),
                 ),
               ),
@@ -311,9 +311,12 @@ class _CahierScreenState extends ConsumerState<CahierScreen> {
                       padding: const EdgeInsets.all(12),
                       itemCount: _entries.length,
                       itemBuilder: (ctx, i) => _CahierCard(
-                        entry: _entries[i],
-                        onEmargement: () =>
-                            _emargement(_entries[i]['id'] as String),
+                        entry: Map<String, dynamic>.from(
+                            _entries[i] is Map
+                                ? _entries[i] as Map
+                                : <String, dynamic>{}),
+                        onEmargement: () => _emargement(
+                            _entries[i]['id']?.toString() ?? ''),
                       ),
                     ),
         ),
@@ -600,12 +603,12 @@ class _CahierCard extends StatelessWidget {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  Text(entry['subject'] ?? '',
+                  Text(entry['subject']?.toString() ?? '',
                       style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                           color: primaryBlue)),
-                  Text(_fmtDate(entry['date'] as String? ?? ''),
+                  Text(_fmtDate(entry['date']?.toString() ?? ''),
                       style: const TextStyle(fontSize: 11, color: textGrey)),
                 ])),
             if (hasDevoir)
@@ -676,14 +679,14 @@ class _CahierCard extends StatelessWidget {
             // Plan du cours
             _Section(
                 title: 'Plan du cours',
-                content: entry['planCours'] as String? ?? '',
+                content: entry['planCours']?.toString() ?? '',
                 color: primaryBlue),
 
             if (entry['prochainCours'] != null) ...[
               const SizedBox(height: 10),
               _Section(
                   title: 'Prochain cours',
-                  content: entry['prochainCours'] as String,
+                  content: entry['prochainCours']?.toString() ?? '',
                   color: const Color(0xFF7C3AED)),
             ],
 
@@ -691,10 +694,10 @@ class _CahierCard extends StatelessWidget {
               const SizedBox(height: 10),
               _Section(
                 title: 'Travail à rendre',
-                content: entry['devoirDescription'] as String,
+                content: entry['devoirDescription']?.toString() ?? '',
                 color: warningYellow,
                 suffix: entry['devoirDateRemise'] != null
-                    ? '📅 À rendre le ${_fmtDate(entry['devoirDateRemise'] as String)}'
+                    ? '📅 À rendre le ${_fmtDate(entry['devoirDateRemise']?.toString() ?? '')}'
                     : null,
               ),
             ],

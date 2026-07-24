@@ -109,8 +109,10 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
     }
 
     final today = DateFormat('EEEE d MMMM', 'fr_FR').format(DateTime.now());
-    final totalAbsences = (_attendance?['stats']?['absences'] ?? 0) as int;
-    final nonJustified = (_attendance?['stats']?['nonJustified'] ?? 0) as int;
+    final totalAbsences =
+        (_attendance?['stats']?['absences'] as num?)?.toInt() ?? 0;
+    final nonJustified =
+        (_attendance?['stats']?['nonJustified'] as num?)?.toInt() ?? 0;
     final moyenne = _moyenne;
     final firstName = auth.firstName ?? '';
     final lastName = auth.lastName ?? '';
@@ -325,7 +327,7 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
               ..._grades.take(4).map((g) {
                 final val = (g['value'] as num).toDouble();
                 final isGood = val >= 10;
-                final subject = g['subject'] as String? ?? '';
+                final subject = g['subject']?.toString() ?? '';
                 final evalType = evalTypeDisplayLabel(g['evalType']);
                 final color = _subjectColor(subject);
                 return Container(

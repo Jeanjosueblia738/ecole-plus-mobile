@@ -49,21 +49,20 @@ class _JustifyAbsenceScreenState extends ConsumerState<JustifyAbsenceScreen> {
             recordId: widget.record.id,
             motif: _motifCtrl.text.trim(),
           );
-
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Justification envoyée — en attente de validation'),
+          content: Text('Justification envoyée'),
           backgroundColor: Color(0xFF16A34A),
         ),
       );
       Navigator.pop(context);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Échec de l\'envoi de la justification'),
-          backgroundColor: Color(0xFFDC2626),
+        SnackBar(
+          content: Text('Échec de l\'envoi : $e'),
+          backgroundColor: dangerRed,
         ),
       );
     } finally {

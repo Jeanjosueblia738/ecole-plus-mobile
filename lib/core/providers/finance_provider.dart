@@ -19,7 +19,7 @@ SchoolFee schoolFeeFromApi(Map<String, dynamic> json) {
     trimestre: json['trimestre']?.toString() ??
         json['year']?.toString() ??
         '',
-    classLevel: json['level'] as String?,
+    classLevel: json['level']?.toString(),
     obligatoire: json['obligatoire'] != false,
     dateEcheance: DateTime.tryParse(json['dueDate']?.toString() ?? '') ??
         DateTime.now(),
@@ -37,6 +37,13 @@ PaymentMethod _mapPaymentMode(dynamic raw) {
     return PaymentMethod.mobileMoney;
   }
   return PaymentMethod.especes;
+}
+
+/// Préfixe reçu sûr — jamais substring sur null / id trop court.
+String _receiptIdPrefix(dynamic id) {
+  final s = id?.toString() ?? '';
+  if (s.isEmpty) return '------';
+  return s.length >= 6 ? s.substring(0, 6) : s;
 }
 
 // ─── Frais scolaires (API) ────────────────────────────────────────────────
@@ -121,7 +128,7 @@ class PaymentNotifier extends StateNotifier<List<Payment>> {
                   map['paidAt']?.toString() ?? map['date']?.toString() ?? '') ??
               DateTime.now(),
           receiptNumber: map['receiptNo']?.toString() ??
-              'REC-${map['id']?.toString().substring(0, 6) ?? '------'}',
+              'REC-${_receiptIdPrefix(map['id'])}',
         );
       }).toList();
     } catch (_) {
@@ -160,9 +167,9 @@ class PaymentNotifier extends StateNotifier<List<Payment>> {
           date: DateTime.tryParse(map['updatedAt']?.toString() ?? '') ??
               DateTime.now(),
           receiptNumber: map['receiptNo']?.toString() ??
-              'REC-${map['id']?.toString().substring(0, 6) ?? '------'}',
-          transactionId: map['transactionId'] as String?,
-          phoneNumber: map['phoneNumber'] as String?,
+              'REC-${_receiptIdPrefix(map['id'])}',
+          transactionId: map['transactionId']?.toString(),
+          phoneNumber: map['phoneNumber']?.toString(),
         ));
       }
       state = [

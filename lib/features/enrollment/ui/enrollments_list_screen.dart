@@ -75,6 +75,7 @@ class _EnrollmentsListScreenState extends State<EnrollmentsListScreen> {
       if (reason == null) return;
     }
 
+    if (!mounted) return;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(

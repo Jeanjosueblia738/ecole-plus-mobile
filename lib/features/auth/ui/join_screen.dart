@@ -93,42 +93,47 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
       }
 
       final data = response.data as Map<String, dynamic>;
-      final token = data['access_token'] as String;
-      final user = data['user'] as Map<String, dynamic>;
-      final tenant = data['tenant'] as Map<String, dynamic>;
+      final token = data['access_token']?.toString() ?? '';
+      final user = data['user'] is Map
+          ? Map<String, dynamic>.from(data['user'] as Map)
+          : <String, dynamic>{};
+      final tenant = data['tenant'] is Map
+          ? Map<String, dynamic>.from(data['tenant'] as Map)
+          : <String, dynamic>{};
 
       // Sauvegarder le token
       await AuthStorageService.saveAuthData(
         token: token,
-        tenantCode: tenant['code'] as String,
-        tenantName: tenant['name'] as String,
-        role: user['role'] as String,
-        email: user['email'] as String,
-        userId: user['id'] as String,
+        tenantCode: tenant['code']?.toString() ?? '',
+        tenantName: tenant['name']?.toString() ?? '',
+        role: user['role']?.toString() ?? '',
+        email: user['email']?.toString() ?? '',
+        userId: user['id']?.toString() ?? '',
       );
       await AuthStorageService.write(
-          'first_name', user['firstName'] as String? ?? '');
+          'first_name', user['firstName']?.toString() ?? '');
       await AuthStorageService.write(
-          'last_name', user['lastName'] as String? ?? '');
+          'last_name', user['lastName']?.toString() ?? '');
       if (user['className'] != null) {
         await AuthStorageService.write(
-            'class_name', user['className'] as String);
+            'class_name', user['className']?.toString() ?? '');
       }
 
       // Mettre à jour le state auth (session réelle, pas DEMO)
-      final role = user['role'] as String;
+      final role = UserRoleApi.fromApi(user['role']?.toString()) ??
+          (_type == 'student' ? UserRole.student : UserRole.parent);
       if (!mounted) {
         return;
       }
       ref.read(authProvider.notifier).applyJoinedSession(
-            role: role == 'STUDENT' ? UserRole.student : UserRole.parent,
-            tenantCode: tenant['code'] as String,
-            tenantName: tenant['name'] as String,
-            userId: user['id'] as String?,
-            email: user['email'] as String?,
-            firstName: user['firstName'] as String?,
-            lastName: user['lastName'] as String?,
-            className: user['className'] as String?,
+            role: role,
+            tenantCode: tenant['code']?.toString() ?? '',
+            tenantName: tenant['name']?.toString() ?? '',
+            userId: user['id']?.toString(),
+            email: user['email']?.toString(),
+            firstName: user['firstName']?.toString(),
+            lastName: user['lastName']?.toString(),
+            className: user['className']?.toString(),
           );
 
       setState(() => _step = 4);

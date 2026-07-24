@@ -45,11 +45,17 @@ class AuthApiService {
 
     await AuthStorageService.saveAuthData(
       token: data['access_token'],
-      tenantCode: tenantCode,
-      tenantName: tenantCode,
+      tenantCode: data['tenant']?['code']?.toString() ?? tenantCode,
+      tenantName: data['tenant']?['name']?.toString() ??
+          data['tenantName']?.toString() ??
+          tenantCode,
       role: 'TEACHER',
-      email: data['teacher']['email'],
-      userId: data['teacher']['id'],
+      email: data['teacher']?['email']?.toString() ??
+          data['user']?['email']?.toString() ??
+          email,
+      userId: data['teacher']?['id']?.toString() ??
+          data['user']?['id']?.toString() ??
+          '',
     );
 
     return data;

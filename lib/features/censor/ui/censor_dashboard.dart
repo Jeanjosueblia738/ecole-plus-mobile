@@ -7,7 +7,7 @@ import '../../../core/services/attendance_api_service.dart';
 import '../../../core/services/classes_api_service.dart';
 import '../../../core/services/students_api_service.dart';
 import '../../../core/utils/school_year.dart';
-import '../../admin/ui/admin_validation_screen.dart';
+// AdminValidationScreen retiré : pas d'endpoint API validate pending.
 import '../../analytics/ui/dropout_risk_screen.dart';
 import '../../cahier/ui/cahier_directeur_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
@@ -25,7 +25,7 @@ class CensorDashboard extends ConsumerStatefulWidget {
 
 class _CensorDashboardState extends ConsumerState<CensorDashboard> {
   int _totalStudents = 0, _totalTeachers = 0, _totalClasses = 0;
-  int _totalAbsences = 0, _pendingJustifications = 0;
+  int _totalAbsences = 0;
   bool _loading = true;
   String? _error;
 
@@ -62,7 +62,6 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
         _totalTeachers = (s['totalTeachers'] as num?)?.toInt() ?? 0;
         _totalClasses = (s['totalClasses'] as num?)?.toInt() ?? 0;
         _totalAbsences = (a['totalAbsences'] as num?)?.toInt() ?? 0;
-        _pendingJustifications = (a['unJustified'] as num?)?.toInt() ?? 0;
         _loading = false;
         if (partialFailure) {
           _error =
@@ -85,8 +84,8 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
       await ref.read(studentProvider.notifier).load();
     }
     final students = ref.read(studentProvider);
+    if (!mounted) return;
     if (students.isEmpty) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Aucun élève disponible')),
       );
@@ -171,13 +170,6 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
           canEdit: true,
         ),
       ),
-    );
-  }
-
-  void _openJustifications() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AdminValidationScreen()),
     );
   }
 
@@ -270,46 +262,7 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
               ],
             ),
             const SizedBox(height: 16),
-            const WorkspaceSectionTitle('À traiter'),
-            Row(children: [
-              _buildKpi('Justifications', _pendingJustifications.toString(),
-                  Icons.pending_outlined, warningYellow),
-              const SizedBox(width: 12),
-              _buildKpi('Absences', _totalAbsences.toString(),
-                  Icons.event_busy_outlined, dangerRed),
-            ]),
-            const SizedBox(height: 20),
             const WorkspaceSectionTitle('Actions pédagogiques'),
-            if (_pendingJustifications > 0) ...[
-              InkWell(
-                onTap: _openJustifications,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: warningYellow.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: warningYellow.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(children: [
-                    const Icon(Icons.warning_amber_outlined,
-                        color: warningYellow),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        '$_pendingJustifications justification(s) à valider',
-                        style: const TextStyle(
-                            fontSize: 13, color: Color(0xFF92400E)),
-                      ),
-                    ),
-                    Icon(Icons.chevron_right,
-                        color: warningYellow.withValues(alpha: 0.7)),
-                  ]),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
             _buildAction(
                 Icons.book_outlined,
                 'Cahier de texte',
@@ -345,13 +298,6 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
                 _openTimetable),
             const SizedBox(height: 10),
             _buildAction(
-                Icons.check_circle_outlined,
-                'Valider justifications',
-                'Traiter les absences justifiées',
-                successGreen,
-                _openJustifications),
-            const SizedBox(height: 10),
-            _buildAction(
                 Icons.people_alt_outlined,
                 'Liste des élèves',
                 'Consulter les dossiers scolaires',
@@ -375,43 +321,6 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
       ),
     );
   }
-
-  Widget _buildKpi(String label, String value, IconData icon, Color color) =>
-      Expanded(
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withValues(alpha: 0.2))),
-          child: Row(children: [
-            Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10)),
-                child: Icon(icon, color: color, size: 20)),
-            const SizedBox(width: 10),
-            Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  _loading
-                      ? LinearProgressIndicator(
-                          color: color,
-                          backgroundColor: color.withValues(alpha: 0.1))
-                      : Text(value,
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: color),
-                          overflow: TextOverflow.ellipsis),
-                  Text(label,
-                      style: const TextStyle(fontSize: 10, color: textGrey)),
-                ])),
-          ]),
-        ),
-      );
 
   Widget _buildAction(IconData icon, String title, String subtitle, Color color,
           VoidCallback onTap) =>

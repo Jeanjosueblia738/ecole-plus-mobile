@@ -12,9 +12,17 @@ class RoleGuard extends StatelessWidget {
     required this.child,
   });
 
+  bool _isAllowed(UserRole? current) {
+    if (current == null) return false;
+    if (current == requiredRole) return true;
+    // ADMIN gate = direction (FOUNDER / DIRECTOR) — aligné sur isDirection.
+    if (requiredRole == UserRole.admin && current.isDirection) return true;
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (UserSession.role != requiredRole) {
+    if (!_isAllowed(UserSession.role)) {
       return const Scaffold(
         body: Center(
           child: Text('Accès refusé'),

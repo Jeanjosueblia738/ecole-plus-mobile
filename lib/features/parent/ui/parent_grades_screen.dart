@@ -6,7 +6,6 @@ import '../../../core/providers/grade_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/bulletin_pdf_service.dart';
 import '../../grades/data/grade_model.dart';
-import '../../grades/data/grade_model.dart';
 import '../../conseil/ui/conseil_summary_card.dart';
 import '../../shared/ui/student_documents_section.dart';
 
@@ -176,8 +175,8 @@ class _ParentGradesScreenState extends ConsumerState<ParentGradesScreen> {
                             total: bulletin?.totalEleves,
                             mention: bulletin?.mention),
                       ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
                       child: ConseilSummaryCard(isParent: true),
                     ),
                     if (child != null)

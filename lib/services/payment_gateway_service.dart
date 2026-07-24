@@ -58,18 +58,26 @@ class PaymentGatewayService {
       );
       final data = response.data as Map<String, dynamic>? ?? {};
       final status = data['status']?.toString() ?? 'PENDING';
-      final ok = status.toUpperCase() == 'SUCCESS';
+      final statusUpper = status.toUpperCase();
+      // SUCCESS = confirmé ; PENDING = initié côté opérateur (pas un échec dur).
+      final accepted =
+          statusUpper == 'SUCCESS' || statusUpper == 'PENDING';
+      final pendingMsg = statusUpper == 'PENDING'
+          ? (data['message']?.toString() ??
+              data['ussdHint']?.toString() ??
+              'Paiement initié — confirmation opérateur en attente.')
+          : null;
       return MobileMoneyResult(
-        success: ok,
+        success: accepted,
         status: status,
         transactionId:
             data['transactionId']?.toString() ?? data['externalId']?.toString(),
-        message: data['message']?.toString(),
-        errorMessage: ok
+        message: pendingMsg ?? data['message']?.toString(),
+        errorMessage: accepted
             ? null
             : (data['message']?.toString() ??
                 data['ussdHint']?.toString() ??
-                'Paiement en attente de confirmation opérateur.'),
+                'Paiement refusé ou échoué.'),
       );
     } on DioException catch (e) {
       final msg = e.response?.data is Map

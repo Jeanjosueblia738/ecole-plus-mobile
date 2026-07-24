@@ -1,5 +1,4 @@
 import '../network/api_client.dart';
-import '../utils/school_year.dart';
 
 class ExamsApiService {
   /// Examens / compositions — élève ou enseignant

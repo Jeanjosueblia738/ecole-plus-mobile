@@ -1,5 +1,4 @@
 import '../network/api_client.dart';
-import '../utils/school_year.dart';
 
 class ConseilApiService {
   /// Décisions du conseil de classe — élève

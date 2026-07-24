@@ -91,7 +91,6 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
     final isCashier = auth.role == UserRole.cashier;
     final solde = (_totalDu > 0 ? _totalDu : 0) - _totalPaye;
     final taux = _totalDu > 0 ? (_totalPaye / _totalDu * 100).round() : 0;
-    final roleLabel = isCashier ? 'Caissier' : 'Comptable';
     final accent = isCashier ? const Color(0xFF059669) : successGreen;
 
     return Scaffold(
@@ -295,58 +294,6 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
             ],
           ]),
         ),
-      ),
-    );
-  }
-}
-
-class _KpiCard extends StatelessWidget {
-  final String label, value;
-  final IconData icon;
-  final Color color;
-  final bool loading;
-  const _KpiCard(
-      {required this.label,
-      required this.value,
-      required this.icon,
-      required this.color,
-      this.loading = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.2))),
-        child: Row(children: [
-          Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10)),
-              child: Icon(icon, color: color, size: 20)),
-          const SizedBox(width: 10),
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                loading
-                    ? LinearProgressIndicator(
-                        color: color,
-                        backgroundColor: color.withValues(alpha: 0.1))
-                    : Text(value,
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: color),
-                        overflow: TextOverflow.ellipsis),
-                Text(label,
-                    style: const TextStyle(fontSize: 10, color: textGrey)),
-              ])),
-        ]),
       ),
     );
   }

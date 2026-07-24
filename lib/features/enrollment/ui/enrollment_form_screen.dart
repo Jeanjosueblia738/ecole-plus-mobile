@@ -175,7 +175,8 @@ class _EnrollmentFormScreenState extends State<EnrollmentFormScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _gender,
+                key: ValueKey(_gender),
+                initialValue: _gender,
                 decoration: const InputDecoration(
                   labelText: 'Genre',
                   border: OutlineInputBorder(),

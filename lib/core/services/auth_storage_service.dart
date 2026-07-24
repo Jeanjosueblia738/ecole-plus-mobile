@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../sync/offline_outbox.dart';
+
 class AuthStorageService {
   static const _storage = FlutterSecureStorage();
 
@@ -11,6 +13,19 @@ class AuthStorageService {
   static const _keyUserRole = 'user_role';
   static const _keyUserEmail = 'user_email';
   static const _keyUserId = 'user_id';
+
+  /// Clés session uniquement (web : ne pas prefs.clear() pour préserver le reste).
+  static const _authKeys = [
+    _keyToken,
+    _keyTenantCode,
+    _keyTenantName,
+    _keyUserRole,
+    _keyUserEmail,
+    _keyUserId,
+    'first_name',
+    'last_name',
+    'class_name',
+  ];
 
   // ── Écriture ──────────────────────────────────────────────────────────
   static Future<void> _write(String key, String value) async {
@@ -36,7 +51,9 @@ class AuthStorageService {
   static Future<void> _deleteAll() async {
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+      for (final key in _authKeys) {
+        await prefs.remove(key);
+      }
     } else {
       await _storage.deleteAll();
     }
@@ -77,5 +94,9 @@ class AuthStorageService {
     return token != null && token.isNotEmpty;
   }
 
-  static Future<void> clearAll() => _deleteAll();
+  /// Logout / 401 : vide la session et la file offline (évite fuite cross-user).
+  static Future<void> clearAll() async {
+    await OfflineOutbox.clear();
+    await _deleteAll();
+  }
 }
