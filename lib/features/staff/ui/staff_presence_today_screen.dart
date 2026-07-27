@@ -16,13 +16,18 @@ class StaffPresenceTodayScreen extends StatefulWidget {
 class _StaffPresenceTodayScreenState extends State<StaffPresenceTodayScreen> {
   bool _loading = true;
   List<dynamic> _rows = [];
+  String? _error;
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       _rows = await StaffPresenceApiService.today();
-    } catch (_) {
+    } catch (e) {
       _rows = [];
+      _error = e.toString().replaceFirst('Exception: ', '');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -94,13 +99,24 @@ class _StaffPresenceTodayScreenState extends State<StaffPresenceTodayScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if (_rows.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(24),
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
                       child: Text(
-                        'Aucun pointage aujourd’hui.',
+                        _error!,
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: textGrey),
+                        style: const TextStyle(color: dangerRed),
+                      ),
+                    ),
+                  if (_rows.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        _error != null
+                            ? 'Liste indisponible.'
+                            : 'Aucun pointage aujourd’hui.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: textGrey),
                       ),
                     ),
                   ..._rows.map((raw) {

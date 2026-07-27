@@ -22,6 +22,7 @@ class _CampusQrScanScreenState extends State<CampusQrScanScreen> {
   String? _lastPayload;
   Map<String, dynamic>? _lastResult;
   String? _error;
+  DateTime? _lastScanAt;
 
   @override
   void dispose() {
@@ -36,12 +37,22 @@ class _CampusQrScanScreenState extends State<CampusQrScanScreen> {
         .whereType<String>()
         .firstWhere((s) => s.trim().isNotEmpty, orElse: () => '');
     if (raw.isEmpty) return;
-    if (raw == _lastPayload && _lastResult != null) return;
+
+    if (raw == _lastPayload && _lastResult != null) {
+      final lastAction = _lastResult!['action']?.toString();
+      if (lastAction == 'CLOCK_OUT') return;
+      if (_lastScanAt != null &&
+          DateTime.now().difference(_lastScanAt!) <
+              const Duration(seconds: 3)) {
+        return;
+      }
+    }
 
     setState(() {
       _busy = true;
       _error = null;
       _lastPayload = raw;
+      _lastScanAt = DateTime.now();
     });
 
     try {
@@ -78,7 +89,10 @@ class _CampusQrScanScreenState extends State<CampusQrScanScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      setState(() {
+        _error = e.toString();
+        _lastResult = null;
+      });
     } finally {
       if (mounted) {
         setState(() => _busy = false);

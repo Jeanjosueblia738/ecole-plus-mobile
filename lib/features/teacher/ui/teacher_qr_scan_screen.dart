@@ -21,6 +21,7 @@ class _TeacherQrScanScreenState extends State<TeacherQrScanScreen> {
   String? _lastPayload;
   Map<String, dynamic>? _lastResult;
   String? _error;
+  DateTime? _lastScanAt;
 
   @override
   void dispose() {
@@ -35,12 +36,24 @@ class _TeacherQrScanScreenState extends State<TeacherQrScanScreen> {
         .whereType<String>()
         .firstWhere((s) => s.trim().isNotEmpty, orElse: () => '');
     if (raw.isEmpty) return;
-    if (raw == _lastPayload && _lastResult != null) return;
+
+    // Même QR : bloquer seulement après CLOCK_OUT, ou pendant le cooldown post-scan
+    if (raw == _lastPayload && _lastResult != null) {
+      final lastAction = _lastResult!['action']?.toString();
+      if (lastAction == 'CLOCK_OUT') return;
+      // CLOCK_IN → autoriser le 2e scan (sortie) après un court délai
+      if (_lastScanAt != null &&
+          DateTime.now().difference(_lastScanAt!) <
+              const Duration(seconds: 3)) {
+        return;
+      }
+    }
 
     setState(() {
       _busy = true;
       _error = null;
       _lastPayload = raw;
+      _lastScanAt = DateTime.now();
     });
 
     try {

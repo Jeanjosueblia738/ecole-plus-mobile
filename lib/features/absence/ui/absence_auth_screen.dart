@@ -33,13 +33,18 @@ class _AbsenceAuthScreenState extends ConsumerState<AbsenceAuthScreen> {
     UserRole.founder,
     UserRole.director,
   };
+  String? _listError;
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _listError = null;
+    });
     try {
       _rows = await AbsenceAuthApiService.list();
-    } catch (_) {
+    } catch (e) {
       _rows = [];
+      _listError = e.toString().replaceFirst('Exception: ', '');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -117,6 +122,17 @@ class _AbsenceAuthScreenState extends ConsumerState<AbsenceAuthScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  if (_listError != null)
+                    Card(
+                      color: const Color(0xFFFFEBEE),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(
+                          _listError!,
+                          style: const TextStyle(color: dangerRed),
+                        ),
+                      ),
+                    ),
                   if (canRequestStudent || canRequestStaff)
                     Card(
                       child: Padding(
@@ -272,18 +288,67 @@ class _AbsenceAuthScreenState extends ConsumerState<AbsenceAuthScreen> {
                                     icon: const Icon(Icons.check,
                                         color: successGreen),
                                     onPressed: () async {
-                                      await AbsenceAuthApiService.approve(
-                                          r['id'].toString());
-                                      await _load();
+                                      try {
+                                        final res =
+                                            await AbsenceAuthApiService.approve(
+                                                r['id'].toString());
+                                        if (!mounted) return;
+                                        final warn =
+                                            res['warning']?.toString();
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              warn ??
+                                                  'Demande approuvée'
+                                                      '${res['excusedOccurrences'] != null ? ' · ${res['excusedOccurrences']} séance(s) excusée(s)' : ''}',
+                                            ),
+                                            backgroundColor: warn != null
+                                                ? Colors.orange
+                                                : successGreen,
+                                          ),
+                                        );
+                                        await _load();
+                                      } catch (e) {
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              e
+                                                  .toString()
+                                                  .replaceFirst(
+                                                      'Exception: ', ''),
+                                            ),
+                                            backgroundColor: dangerRed,
+                                          ),
+                                        );
+                                      }
                                     },
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.close,
                                         color: dangerRed),
                                     onPressed: () async {
-                                      await AbsenceAuthApiService.reject(
-                                          r['id'].toString());
-                                      await _load();
+                                      try {
+                                        await AbsenceAuthApiService.reject(
+                                            r['id'].toString());
+                                        await _load();
+                                      } catch (e) {
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              e
+                                                  .toString()
+                                                  .replaceFirst(
+                                                      'Exception: ', ''),
+                                            ),
+                                            backgroundColor: dangerRed,
+                                          ),
+                                        );
+                                      }
                                     },
                                   ),
                                 ],
