@@ -15,6 +15,7 @@ import '../../finance/ui/finance_dashboard_screen.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../users/ui/users_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
+import '../../absence/ui/absence_auth_screen.dart';
 
 class AdminDashboard extends ConsumerStatefulWidget {
   const AdminDashboard({super.key});
@@ -226,6 +227,17 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
 
             // ── Modules ───────────────────────────────────────────────
             const WorkspaceSectionTitle('Modules'),
+
+            DashboardTile(
+              icon: Icons.event_busy_outlined,
+              title: 'Autorisations d’absence',
+              color: const Color(0xFFBE123C),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const AbsenceAuthScreen())),
+            ),
+            const SizedBox(height: 10),
 
             if (auth.isOwner) ...[
               DashboardTile(

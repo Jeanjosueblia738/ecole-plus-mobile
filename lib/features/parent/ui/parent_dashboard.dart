@@ -17,6 +17,7 @@ import '../../messaging/ui/messaging_screen.dart';
 import '../../cahier/ui/homework_screen.dart';
 import '../../analytics/ui/progress_screen.dart';
 import '../../exams/ui/exams_screen.dart';
+import '../../absence/ui/absence_auth_screen.dart';
 
 class ParentDashboard extends ConsumerStatefulWidget {
   const ParentDashboard({super.key});
@@ -517,6 +518,16 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                       color: textDark)),
               const SizedBox(height: 12),
 
+              _NavTile(
+                  icon: Icons.event_busy_outlined,
+                  title: 'Autorisation d’absence',
+                  subtitle: 'Demande pour votre enfant (max 3 jours)',
+                  color: warningYellow,
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const AbsenceAuthScreen()))),
+              const SizedBox(height: 10),
               _NavTile(
                   icon: Icons.grade_outlined,
                   title: 'Notes & Bulletins',

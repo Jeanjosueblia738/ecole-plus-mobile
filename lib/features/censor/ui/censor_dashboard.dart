@@ -16,6 +16,7 @@ import '../../student/ui/grades_screen.dart';
 import '../../student/ui/student_list_screen.dart';
 import '../../timetable/ui/timetable_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
+import '../../absence/ui/absence_auth_screen.dart';
 
 class CensorDashboard extends ConsumerStatefulWidget {
   const CensorDashboard({super.key});
@@ -272,6 +273,16 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const CahierDirecteurScreen()))),
+            const SizedBox(height: 10),
+            _buildAction(
+                Icons.event_busy_outlined,
+                'Autorisations d’absence',
+                'Valider demandes élèves (max 3 j)',
+                const Color(0xFFBE123C),
+                () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const AbsenceAuthScreen()))),
             const SizedBox(height: 10),
             _buildAction(
                 Icons.psychology_outlined,

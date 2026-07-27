@@ -16,6 +16,7 @@ import '../../exams/ui/exams_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
 import 'teacher_hours_screen.dart';
+import '../../absence/ui/absence_auth_screen.dart';
 
 class TeacherDashboard extends ConsumerStatefulWidget {
   const TeacherDashboard({super.key});
@@ -349,6 +350,16 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const TeacherHoursScreen()))),
+            const SizedBox(height: 10),
+            _ModuleTile(
+                icon: Icons.event_busy_outlined,
+                title: 'Autorisation d’absence',
+                subtitle: 'Demande (max 3 jours) — validation direction',
+                color: const Color(0xFFBE123C),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const AbsenceAuthScreen()))),
             const SizedBox(height: 10),
             _ModuleTile(
                 icon: Icons.class_outlined,

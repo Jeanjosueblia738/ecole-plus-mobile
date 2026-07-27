@@ -14,6 +14,7 @@ import 'student_timetable_screen.dart';
 import '../../cahier/ui/homework_screen.dart';
 import '../../analytics/ui/progress_screen.dart';
 import '../../exams/ui/exams_screen.dart';
+import '../../absence/ui/absence_auth_screen.dart';
 
 Color _subjectColor(String s) => switch (s) {
       'Mathématiques' => const Color(0xFF1E3A8A),
@@ -437,6 +438,15 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
                       context,
                       MaterialPageRoute(
                           builder: (_) => ExamsScreen.forStudent()))),
+              const SizedBox(width: 12),
+              _ActionBtn(
+                  icon: Icons.event_busy_outlined,
+                  label: 'Absence',
+                  color: const Color(0xFFBE123C),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const AbsenceAuthScreen()))),
             ]),
 
             const SizedBox(height: 20),

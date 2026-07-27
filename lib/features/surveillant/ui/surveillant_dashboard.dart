@@ -11,6 +11,7 @@ import '../../settings/ui/settings_screen.dart';
 import '../../student/ui/student_list_screen.dart';
 import '../../teacher/ui/attendance_input_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
+import '../../absence/ui/absence_auth_screen.dart';
 
 class SurveillantDashboard extends ConsumerStatefulWidget {
   const SurveillantDashboard({super.key});
@@ -201,6 +202,16 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
                 subtitle: 'Enregistrer les présences',
                 color: color,
                 onTap: _openAppel),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.event_busy_outlined,
+                title: 'Autorisations d’absence',
+                subtitle: 'Valider les demandes élèves (max 3 j)',
+                color: warningYellow,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const AbsenceAuthScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.psychology_outlined,

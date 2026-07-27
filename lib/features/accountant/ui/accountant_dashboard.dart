@@ -14,6 +14,7 @@ import '../../finance/ui/payment_screen.dart';
 import '../../finance/ui/unpaid_students_screen.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
+import '../../absence/ui/absence_auth_screen.dart';
 
 class AccountantDashboard extends ConsumerStatefulWidget {
   const AccountantDashboard({super.key});
@@ -234,6 +235,16 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const PaymentHistoryScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.event_busy_outlined,
+                title: 'Autorisation d’absence',
+                subtitle: 'Demande personnel (max 3 jours)',
+                color: const Color(0xFFBE123C),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const AbsenceAuthScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.warning_amber_outlined,
