@@ -12,6 +12,9 @@ import '../../student/ui/student_list_screen.dart';
 import '../../teacher/ui/attendance_input_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
 import '../../absence/ui/absence_auth_screen.dart';
+import '../../staff/ui/campus_qr_scan_screen.dart';
+import '../../staff/ui/presence_alerts_screen.dart';
+import '../../staff/ui/staff_presence_today_screen.dart';
 
 class SurveillantDashboard extends ConsumerStatefulWidget {
   const SurveillantDashboard({super.key});
@@ -206,12 +209,42 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
             _ActionTile(
                 icon: Icons.event_busy_outlined,
                 title: 'Autorisations d’absence',
-                subtitle: 'Valider les demandes élèves (max 3 j)',
+                subtitle: 'Valider demandes élèves · personnel',
                 color: warningYellow,
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (_) => const AbsenceAuthScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.badge_outlined,
+                title: 'Pointage entrée',
+                subtitle: 'QR campus · entrée / sortie',
+                color: const Color(0xFF0F766E),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CampusQrScanScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.groups_outlined,
+                title: 'Présence personnel',
+                subtitle: 'Liste des pointages du jour',
+                color: primaryBlue,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const StaffPresenceTodayScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.warning_amber_outlined,
+                title: 'Alertes jour J',
+                subtitle: 'Cours non pointés · non assurés',
+                color: Colors.orange.shade800,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const PresenceAlertsScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.psychology_outlined,

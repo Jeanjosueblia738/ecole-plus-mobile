@@ -15,6 +15,9 @@ import '../../finance/ui/unpaid_students_screen.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
 import '../../absence/ui/absence_auth_screen.dart';
+import '../../staff/ui/campus_qr_scan_screen.dart';
+import '../../staff/ui/presence_alerts_screen.dart';
+import '../../staff/ui/staff_presence_today_screen.dart';
 
 class AccountantDashboard extends ConsumerStatefulWidget {
   const AccountantDashboard({super.key});
@@ -239,12 +242,42 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
             _ActionTile(
                 icon: Icons.event_busy_outlined,
                 title: 'Autorisation d’absence',
-                subtitle: 'Demande personnel (max 3 jours)',
+                subtitle: 'Courte ≤3 j · Congé RH ≤90 j',
                 color: const Color(0xFFBE123C),
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (_) => const AbsenceAuthScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.badge_outlined,
+                title: 'Pointage entrée',
+                subtitle: 'QR campus · entrée / sortie',
+                color: const Color(0xFF0F766E),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CampusQrScanScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.groups_outlined,
+                title: 'Présence personnel',
+                subtitle: 'Liste des pointages du jour',
+                color: primaryBlue,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const StaffPresenceTodayScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.warning_amber_outlined,
+                title: 'Alertes jour J',
+                subtitle: 'Cours non pointés · non assurés',
+                color: Colors.orange.shade800,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const PresenceAlertsScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.warning_amber_outlined,

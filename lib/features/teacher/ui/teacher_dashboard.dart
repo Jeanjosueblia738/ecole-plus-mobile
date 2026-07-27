@@ -376,7 +376,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
             _ModuleTile(
                 icon: Icons.event_busy_outlined,
                 title: 'Autorisation d’absence',
-                subtitle: 'Demande (max 3 jours) — validation direction',
+                subtitle: 'Courte ≤3 j · Congé RH ≤90 j — validation direction',
                 color: const Color(0xFFBE123C),
                 onTap: () => Navigator.push(
                     context,

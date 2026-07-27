@@ -21,6 +21,8 @@ class _AbsenceAuthScreenState extends ConsumerState<AbsenceAuthScreen> {
   final _reasonCtrl = TextEditingController();
   String? _studentId;
   bool _busy = false;
+  /// SHORT ≤3 j · LEAVE ≤90 j (personnel uniquement)
+  String _category = 'SHORT';
 
   static const _studentValidators = {
     UserRole.surveillant,
@@ -67,6 +69,14 @@ class _AbsenceAuthScreenState extends ConsumerState<AbsenceAuthScreen> {
     }
   }
 
+  int get _maxDays {
+    final role = ref.read(authProvider).role;
+    final isStudentSide =
+        role == UserRole.parent || role == UserRole.student;
+    if (isStudentSide) return 3;
+    return _category == 'LEAVE' ? 90 : 3;
+  }
+
   Future<void> _pickDate(TextEditingController ctrl) async {
     final now = DateTime.now();
     final d = await showDatePicker(
@@ -88,9 +98,11 @@ class _AbsenceAuthScreenState extends ConsumerState<AbsenceAuthScreen> {
     final isStudent = role == UserRole.student;
     final canRequestStudent = isParent || isStudent;
     final canRequestStaff = !isParent && !isStudent && role != null;
-    final canValidateStudent = role != null && _studentValidators.contains(role);
+    final canValidateStudent =
+        role != null && _studentValidators.contains(role);
     final canValidateStaff = role != null && _staffValidators.contains(role);
     final days = _durationDays();
+    final maxDays = _maxDays;
 
     return Scaffold(
       appBar: AppBar(
@@ -116,8 +128,28 @@ class _AbsenceAuthScreenState extends ConsumerState<AbsenceAuthScreen> {
                               canRequestStudent
                                   ? 'Nouvelle demande élève'
                                   : 'Nouvelle demande personnel',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
                             ),
+                            if (canRequestStaff) ...[
+                              const SizedBox(height: 8),
+                              SegmentedButton<String>(
+                                segments: const [
+                                  ButtonSegment(
+                                    value: 'SHORT',
+                                    label: Text('Courte ≤3 j'),
+                                  ),
+                                  ButtonSegment(
+                                    value: 'LEAVE',
+                                    label: Text('Congé RH ≤90 j'),
+                                  ),
+                                ],
+                                selected: {_category},
+                                onSelectionChanged: (s) {
+                                  setState(() => _category = s.first);
+                                },
+                              ),
+                            ],
                             const SizedBox(height: 8),
                             if (isParent)
                               TextField(
@@ -129,51 +161,58 @@ class _AbsenceAuthScreenState extends ConsumerState<AbsenceAuthScreen> {
                             TextField(
                               controller: _startCtrl,
                               readOnly: true,
-                              decoration: const InputDecoration(labelText: 'Début'),
+                              decoration:
+                                  const InputDecoration(labelText: 'Début'),
                               onTap: () => _pickDate(_startCtrl),
                             ),
                             TextField(
                               controller: _endCtrl,
                               readOnly: true,
-                              decoration: const InputDecoration(labelText: 'Fin'),
+                              decoration:
+                                  const InputDecoration(labelText: 'Fin'),
                               onTap: () => _pickDate(_endCtrl),
                             ),
                             TextField(
                               controller: _reasonCtrl,
-                              decoration: const InputDecoration(labelText: 'Motif'),
+                              decoration:
+                                  const InputDecoration(labelText: 'Motif'),
                               maxLines: 2,
                             ),
                             const SizedBox(height: 6),
                             Text(
                               days == null
-                                  ? 'Maximum 3 jours'
-                                  : '$days jour(s) — max 3',
+                                  ? 'Maximum $maxDays jours'
+                                  : '$days jour(s) — max $maxDays',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: days != null && days > 3
+                                color: days != null && days > maxDays
                                     ? dangerRed
                                     : textGrey,
                               ),
                             ),
                             const SizedBox(height: 8),
                             FilledButton(
-                              onPressed: _busy || (days != null && days > 3)
+                              onPressed: _busy ||
+                                      (days != null && days > maxDays)
                                   ? null
                                   : () async {
                                       setState(() => _busy = true);
                                       try {
                                         if (canRequestStudent) {
-                                          await AbsenceAuthApiService.createStudent(
+                                          await AbsenceAuthApiService
+                                              .createStudent(
                                             studentId: _studentId,
                                             startDate: _startCtrl.text,
                                             endDate: _endCtrl.text,
                                             reason: _reasonCtrl.text.trim(),
                                           );
                                         } else {
-                                          await AbsenceAuthApiService.createStaff(
+                                          await AbsenceAuthApiService
+                                              .createStaff(
                                             startDate: _startCtrl.text,
                                             endDate: _endCtrl.text,
                                             reason: _reasonCtrl.text.trim(),
+                                            category: _category,
                                           );
                                         }
                                         _reasonCtrl.clear();
@@ -201,12 +240,17 @@ class _AbsenceAuthScreenState extends ConsumerState<AbsenceAuthScreen> {
                     final r = Map<String, dynamic>.from(raw as Map);
                     final status = r['status']?.toString() ?? '';
                     final kind = r['kind']?.toString() ?? '';
+                    final category = r['category']?.toString() ?? 'SHORT';
                     final canDecide = status == 'PENDING' &&
                         ((kind == 'STUDENT' && canValidateStudent) ||
                             (kind == 'STAFF' && canValidateStaff));
                     final student = r['student'] is Map
                         ? Map<String, dynamic>.from(r['student'] as Map)
                         : null;
+                    final excused = r['excusedOccurrences'] ??
+                        (r['excusedOccurrenceIds'] is List
+                            ? (r['excusedOccurrenceIds'] as List).length
+                            : null);
                     return Card(
                       child: ListTile(
                         title: Text(
@@ -215,7 +259,10 @@ class _AbsenceAuthScreenState extends ConsumerState<AbsenceAuthScreen> {
                               : 'Staff — ${r['requesterName'] ?? ''}',
                         ),
                         subtitle: Text(
-                          '${r['durationDays']} j · $status\n${r['reason'] ?? ''}',
+                          '${r['durationDays']} j · $status'
+                          '${kind == 'STAFF' ? (category == 'LEAVE' ? ' · Congé RH' : ' · Courte') : ''}'
+                          '${excused != null && excused != 0 ? ' · $excused séance(s) excusée(s)' : ''}\n'
+                          '${r['reason'] ?? ''}',
                         ),
                         isThreeLine: true,
                         trailing: canDecide

@@ -17,6 +17,9 @@ import '../../student/ui/student_list_screen.dart';
 import '../../timetable/ui/timetable_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
 import '../../absence/ui/absence_auth_screen.dart';
+import '../../staff/ui/campus_qr_scan_screen.dart';
+import '../../staff/ui/presence_alerts_screen.dart';
+import '../../staff/ui/staff_presence_today_screen.dart';
 
 class CensorDashboard extends ConsumerStatefulWidget {
   const CensorDashboard({super.key});
@@ -277,12 +280,42 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
             _buildAction(
                 Icons.event_busy_outlined,
                 'Autorisations d’absence',
-                'Valider demandes élèves (max 3 j)',
+                'Élèves ≤3 j · Personnel courte / congé RH',
                 const Color(0xFFBE123C),
                 () => Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (_) => const AbsenceAuthScreen()))),
+            const SizedBox(height: 10),
+            _buildAction(
+                Icons.badge_outlined,
+                'Pointage entrée',
+                'QR campus · entrée / sortie',
+                const Color(0xFF0F766E),
+                () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CampusQrScanScreen()))),
+            const SizedBox(height: 10),
+            _buildAction(
+                Icons.groups_outlined,
+                'Présence personnel',
+                'Liste des pointages du jour',
+                primaryBlue,
+                () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const StaffPresenceTodayScreen()))),
+            const SizedBox(height: 10),
+            _buildAction(
+                Icons.warning_amber_outlined,
+                'Alertes jour J',
+                'Cours non pointés · remplacements',
+                Colors.orange.shade800,
+                () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const PresenceAlertsScreen()))),
             const SizedBox(height: 10),
             _buildAction(
                 Icons.psychology_outlined,

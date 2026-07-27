@@ -11,6 +11,7 @@ import '../../enrollment/ui/enrollments_list_screen.dart';
 import '../../student/ui/student_list_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
 import '../../staff/ui/campus_qr_scan_screen.dart';
+import '../../staff/ui/staff_presence_today_screen.dart';
 
 class SecretaryDashboard extends ConsumerStatefulWidget {
   const SecretaryDashboard({super.key});
@@ -219,6 +220,16 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const CampusQrScanScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.groups_outlined,
+                title: 'Présence personnel',
+                subtitle: 'Liste des pointages du jour',
+                color: primaryBlue,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const StaffPresenceTodayScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.description_outlined,

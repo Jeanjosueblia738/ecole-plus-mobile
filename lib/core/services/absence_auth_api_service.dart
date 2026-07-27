@@ -34,6 +34,7 @@ class AbsenceAuthApiService {
     required String startDate,
     required String endDate,
     required String reason,
+    String category = 'SHORT',
   }) async {
     final response = await ApiClient.instance.post(
       '/absence-auth/staff',
@@ -41,6 +42,7 @@ class AbsenceAuthApiService {
         'startDate': startDate,
         'endDate': endDate,
         'reason': reason,
+        'category': category,
       },
     );
     return response.data as Map<String, dynamic>;

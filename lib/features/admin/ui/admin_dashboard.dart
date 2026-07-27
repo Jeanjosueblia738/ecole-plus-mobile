@@ -17,6 +17,8 @@ import '../../users/ui/users_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
 import '../../absence/ui/absence_auth_screen.dart';
 import '../../staff/ui/campus_qr_scan_screen.dart';
+import '../../staff/ui/presence_alerts_screen.dart';
+import '../../staff/ui/staff_presence_today_screen.dart';
 
 class AdminDashboard extends ConsumerStatefulWidget {
   const AdminDashboard({super.key});
@@ -247,6 +249,26 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                   context,
                   MaterialPageRoute(
                       builder: (_) => const CampusQrScanScreen())),
+            ),
+            const SizedBox(height: 10),
+            DashboardTile(
+              icon: Icons.groups_outlined,
+              title: 'Présence personnel',
+              color: primaryBlue,
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const StaffPresenceTodayScreen())),
+            ),
+            const SizedBox(height: 10),
+            DashboardTile(
+              icon: Icons.warning_amber_outlined,
+              title: 'Alertes jour J',
+              color: Colors.orange.shade800,
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const PresenceAlertsScreen())),
             ),
             const SizedBox(height: 10),
 
