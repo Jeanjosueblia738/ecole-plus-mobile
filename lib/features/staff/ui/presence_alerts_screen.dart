@@ -15,21 +15,33 @@ class _PresenceAlertsScreenState extends State<PresenceAlertsScreen> {
   Map<String, dynamic>? _alerts;
   List<dynamic> _teachers = [];
   String? _busyId;
+  String? _error;
+  String? _teachersNote;
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+      _teachersNote = null;
+    });
     try {
       final a = await PresenceAlertsApiService.todayAlerts();
       List<dynamic> teachers = [];
       try {
         teachers = await PresenceAlertsApiService.listTeachers();
-      } catch (_) {}
+      } catch (_) {
+        _teachersNote =
+            'Liste des remplaçants indisponible — réessayez plus tard.';
+      }
       setState(() {
         _alerts = a;
         _teachers = teachers;
       });
-    } catch (_) {
-      setState(() => _alerts = null);
+    } catch (e) {
+      setState(() {
+        _alerts = null;
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -125,6 +137,22 @@ class _PresenceAlertsScreenState extends State<PresenceAlertsScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(color: dangerRed),
+                      ),
+                    ),
+                  if (_teachersNote != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        _teachersNote!,
+                        style: const TextStyle(color: Colors.orange),
+                      ),
+                    ),
                   Row(
                     children: [
                       Expanded(

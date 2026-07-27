@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/services/auth_storage_service.dart';
 import '../../../core/services/finance_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import 'teacher_qr_scan_screen.dart';
@@ -15,11 +16,16 @@ class _TeacherHoursScreenState extends State<TeacherHoursScreen> {
   bool _loading = true;
   List<dynamic> _occurrences = [];
   Map<String, dynamic>? _me;
+  String? _error;
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     final now = DateTime.now();
     try {
+      final myId = await AuthStorageService.getUserId();
       final occ = await FinanceApiService.listOccurrences(
         year: now.year,
         month: now.month,
@@ -29,16 +35,29 @@ class _TeacherHoursScreenState extends State<TeacherHoursScreen> {
         month: now.month,
       );
       final teachers = (sum['teachers'] as List?) ?? [];
+      Map<String, dynamic>? me;
+      if (teachers.isNotEmpty) {
+        Map<String, dynamic>? match;
+        if (myId != null && myId.isNotEmpty) {
+          for (final t in teachers) {
+            final m = Map<String, dynamic>.from(t as Map);
+            if (m['teacherId']?.toString() == myId) {
+              match = m;
+              break;
+            }
+          }
+        }
+        me = match ?? Map<String, dynamic>.from(teachers.first as Map);
+      }
       setState(() {
         _occurrences = occ;
-        _me = teachers.isNotEmpty
-            ? Map<String, dynamic>.from(teachers.first as Map)
-            : null;
+        _me = me;
       });
-    } catch (_) {
+    } catch (e) {
       setState(() {
         _occurrences = [];
         _me = null;
+        _error = e.toString().replaceFirst('Exception: ', '');
       });
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -106,6 +125,15 @@ class _TeacherHoursScreenState extends State<TeacherHoursScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: dangerRed),
+                      ),
+                    ),
                   if (_me != null) ...[
                     Row(
                       children: [
@@ -149,12 +177,14 @@ class _TeacherHoursScreenState extends State<TeacherHoursScreen> {
                     const SizedBox(height: 16),
                   ],
                   if (_occurrences.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(24),
+                    Padding(
+                      padding: const EdgeInsets.all(24),
                       child: Text(
-                        'Aucune séance ce mois. La direction doit générer les séances depuis l’emploi du temps.',
+                        _error != null
+                            ? 'Impossible de charger les séances.'
+                            : 'Aucune séance ce mois. La direction doit générer les séances depuis l’emploi du temps.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: textGrey),
+                        style: const TextStyle(color: textGrey),
                       ),
                     ),
                   ..._occurrences.map((raw) {
