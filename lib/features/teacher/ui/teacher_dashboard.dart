@@ -16,6 +16,8 @@ import '../../exams/ui/exams_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
 import 'teacher_hours_screen.dart';
+import 'teacher_qr_scan_screen.dart';
+import '../../staff/ui/campus_qr_scan_screen.dart';
 import '../../absence/ui/absence_auth_screen.dart';
 
 class TeacherDashboard extends ConsumerStatefulWidget {
@@ -344,12 +346,32 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
             _ModuleTile(
                 icon: Icons.access_time,
                 title: 'Mes heures',
-                subtitle: 'Pointe début/fin et suivi paie',
+                subtitle: 'Scan QR classe · arrivée / fin de cours',
                 color: const Color(0xFFEA580C),
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (_) => const TeacherHoursScreen()))),
+            const SizedBox(height: 10),
+            _ModuleTile(
+                icon: Icons.qr_code_scanner,
+                title: 'Scanner QR cours',
+                subtitle: 'Bureau classe · avant et après le cours',
+                color: const Color(0xFF7C3AED),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const TeacherQrScanScreen()))),
+            const SizedBox(height: 10),
+            _ModuleTile(
+                icon: Icons.badge_outlined,
+                title: 'Pointage entrée',
+                subtitle: 'QR campus · entrée / sortie établissement',
+                color: const Color(0xFF0F766E),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CampusQrScanScreen()))),
             const SizedBox(height: 10),
             _ModuleTile(
                 icon: Icons.event_busy_outlined,

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../network/api_client.dart';
 
 class FinanceApiService {
@@ -166,6 +167,30 @@ class FinanceApiService {
     final response =
         await ApiClient.instance.post('/payroll/occurrences/$id/clock-out');
     return response.data as Map<String, dynamic>;
+  }
+
+  /// Scan QR classe — clientTime = horloge téléphone (ISO8601)
+  static Future<Map<String, dynamic>> qrScan({
+    required String payload,
+    required DateTime clientTime,
+  }) async {
+    try {
+      final response = await ApiClient.instance.post(
+        '/payroll/qr-scan',
+        data: {
+          'payload': payload,
+          'clientTime': clientTime.toUtc().toIso8601String(),
+        },
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map
+          ? (e.response!.data['message'] ?? e.message)
+          : e.message;
+      throw Exception(
+        msg is List ? msg.join(' · ') : (msg?.toString() ?? 'Scan impossible'),
+      );
+    }
   }
 
   static Future<List<dynamic>> listBudgets({String? year}) async {

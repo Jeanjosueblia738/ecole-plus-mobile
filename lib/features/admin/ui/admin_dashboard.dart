@@ -16,6 +16,7 @@ import '../../settings/ui/settings_screen.dart';
 import '../../users/ui/users_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
 import '../../absence/ui/absence_auth_screen.dart';
+import '../../staff/ui/campus_qr_scan_screen.dart';
 
 class AdminDashboard extends ConsumerStatefulWidget {
   const AdminDashboard({super.key});
@@ -236,6 +237,16 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                   context,
                   MaterialPageRoute(
                       builder: (_) => const AbsenceAuthScreen())),
+            ),
+            const SizedBox(height: 10),
+            DashboardTile(
+              icon: Icons.badge_outlined,
+              title: 'Pointage entrée',
+              color: const Color(0xFF0F766E),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const CampusQrScanScreen())),
             ),
             const SizedBox(height: 10),
 

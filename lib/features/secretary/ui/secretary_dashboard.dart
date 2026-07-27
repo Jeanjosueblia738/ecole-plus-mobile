@@ -10,6 +10,7 @@ import '../../student/ui/student_form_screen.dart';
 import '../../enrollment/ui/enrollments_list_screen.dart';
 import '../../student/ui/student_list_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
+import '../../staff/ui/campus_qr_scan_screen.dart';
 
 class SecretaryDashboard extends ConsumerStatefulWidget {
   const SecretaryDashboard({super.key});
@@ -208,6 +209,16 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const StudentListScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.badge_outlined,
+                title: 'Pointage entrée',
+                subtitle: 'QR campus · entrée / sortie',
+                color: const Color(0xFF0F766E),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CampusQrScanScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.description_outlined,

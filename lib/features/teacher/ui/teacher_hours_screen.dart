@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/finance_api_service.dart';
 import '../../../core/theme/app_colors.dart';
+import 'teacher_qr_scan_screen.dart';
 
-/// Pointe début/fin + récap heures du mois (enseignant)
+/// Pointe via QR + récap heures du mois (enseignant)
 class TeacherHoursScreen extends StatefulWidget {
   const TeacherHoursScreen({super.key});
 
@@ -14,7 +15,6 @@ class _TeacherHoursScreenState extends State<TeacherHoursScreen> {
   bool _loading = true;
   List<dynamic> _occurrences = [];
   Map<String, dynamic>? _me;
-  String? _busyId;
 
   Future<void> _load() async {
     setState(() => _loading = true);
@@ -54,6 +54,15 @@ class _TeacherHoursScreenState extends State<TeacherHoursScreen> {
   String _fmt(num n) =>
       '${n.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]} ')} FCFA';
 
+  Future<void> _openScanner() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const TeacherQrScanScreen(),
+      ),
+    );
+    if (mounted) _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,14 +71,41 @@ class _TeacherHoursScreenState extends State<TeacherHoursScreen> {
         title: const Text('Mes heures'),
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            tooltip: 'Scanner QR classe',
+            icon: const Icon(Icons.qr_code_scanner),
+            onPressed: _openScanner,
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: primaryBlue,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.qr_code_scanner),
+        label: const Text('Scanner QR'),
+        onPressed: _openScanner,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F0FE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Pointez en scannant le QR collé sur le bureau de la classe. '
+                      '1er scan = arrivée, 2e scan = fin. Les heures viennent de l’horloge du téléphone.',
+                      style: TextStyle(fontSize: 13, color: textDark),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   if (_me != null) ...[
                     Row(
                       children: [
@@ -103,7 +139,8 @@ class _TeacherHoursScreenState extends State<TeacherHoursScreen> {
                         Expanded(
                           child: _StatCard(
                             label: 'Retenue est.',
-                            value: _fmt((_me!['estimatedDeductionXof'] as num?) ?? 0),
+                            value: _fmt(
+                                (_me!['estimatedDeductionXof'] as num?) ?? 0),
                             color: dangerRed,
                           ),
                         ),
@@ -122,55 +159,29 @@ class _TeacherHoursScreenState extends State<TeacherHoursScreen> {
                     ),
                   ..._occurrences.map((raw) {
                     final o = Map<String, dynamic>.from(raw as Map);
-                    final id = o['id']?.toString() ?? '';
                     final status = o['status']?.toString() ?? '';
                     final cls = o['class'] is Map
                         ? (o['class'] as Map)['name']
                         : null;
+                    final source = o['clockSource']?.toString();
                     return Card(
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         title: Text('${o['subject']} · ${cls ?? ''}'),
                         subtitle: Text(
                           '${o['startTime']}-${o['endTime']} · prévu ${o['plannedMinutes']} min · $status'
-                          '${o['actualMinutes'] != null ? ' · fait ${o['actualMinutes']} min' : ''}',
+                          '${o['actualMinutes'] != null ? ' · fait ${o['actualMinutes']} min' : ''}'
+                          '${o['room'] != null ? ' · ${o['room']}' : ''}'
+                          '${source != null ? ' · $source' : ''}',
                         ),
                         trailing: status == 'SCHEDULED'
-                            ? TextButton(
-                                onPressed: _busyId == id
-                                    ? null
-                                    : () async {
-                                        setState(() => _busyId = id);
-                                        try {
-                                          await FinanceApiService.clockIn(id);
-                                          await _load();
-                                        } finally {
-                                          if (mounted) {
-                                            setState(() => _busyId = null);
-                                          }
-                                        }
-                                      },
-                                child: const Text('Début'),
-                              )
+                            ? const Icon(Icons.qr_code_2, color: textGrey)
                             : status == 'IN_PROGRESS'
-                                ? TextButton(
-                                    onPressed: _busyId == id
-                                        ? null
-                                        : () async {
-                                            setState(() => _busyId = id);
-                                            try {
-                                              await FinanceApiService.clockOut(
-                                                  id);
-                                              await _load();
-                                            } finally {
-                                              if (mounted) {
-                                                setState(() => _busyId = null);
-                                              }
-                                            }
-                                          },
-                                    child: const Text('Fin'),
-                                  )
-                                : null,
+                                ? const Icon(Icons.timer, color: Colors.orange)
+                                : status == 'COMPLETED'
+                                    ? const Icon(Icons.check_circle,
+                                        color: successGreen)
+                                    : null,
                       ),
                     );
                   }),
