@@ -9,6 +9,7 @@ enum UserRole {
   accountant, // ACCOUNTANT
   cashier, // CASHIER
   teacher, // TEACHER
+  rh, // RH
   parent, // PARENT
   student, // STUDENT
 }
@@ -24,6 +25,7 @@ extension UserRoleLabel on UserRole {
         UserRole.accountant => 'Comptable',
         UserRole.cashier => 'Caissier',
         UserRole.teacher => 'Enseignant',
+        UserRole.rh => 'Ressources humaines',
         UserRole.parent => 'Parent',
         UserRole.student => 'Élève',
       };
@@ -51,6 +53,7 @@ extension UserRoleApi on UserRole {
         'ACCOUNTANT' => UserRole.accountant,
         'CASHIER' => UserRole.cashier,
         'TEACHER' => UserRole.teacher,
+        'RH' => UserRole.rh,
         'PARENT' => UserRole.parent,
         'STUDENT' => UserRole.student,
         _ => null,

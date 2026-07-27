@@ -32,6 +32,7 @@ class _AbsenceAuthScreenState extends ConsumerState<AbsenceAuthScreen> {
     UserRole.admin,
     UserRole.founder,
     UserRole.director,
+    UserRole.rh,
   };
   String? _listError;
 

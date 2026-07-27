@@ -55,6 +55,7 @@ class UserProfile {
         UserRole.accountant => 'Comptable',
         UserRole.cashier => 'Caissier',
         UserRole.teacher => 'Enseignant',
+        UserRole.rh => 'Ressources humaines',
         UserRole.parent => 'Parent d\'élève',
         UserRole.student => 'Élève',
       };

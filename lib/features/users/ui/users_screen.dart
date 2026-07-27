@@ -15,6 +15,7 @@ const _roleLabels = {
   'CASHIER': 'Caissier',
   'TEACHER': 'Enseignant',
   'EDUCATOR': 'Éducateur',
+  'RH': 'Ressources humaines',
   'PARENT': 'Parent',
   'STUDENT': 'Élève',
 };
@@ -30,6 +31,7 @@ const _roleColors = {
   'CASHIER': Color(0xFF059669),
   'TEACHER': Color(0xFFCA8A04),
   'EDUCATOR': Color(0xFFDB2777),
+  'RH': Color(0xFF0E7490),
   'PARENT': Color(0xFF6B7280),
   'STUDENT': Color(0xFF0284C7),
 };
@@ -374,6 +376,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
     ('SECRETARY', 'Secrétaire Scolarité'),
     ('ACCOUNTANT', 'Comptable'),
     ('CASHIER', 'Caissier'),
+    ('RH', 'Ressources humaines'),
     ('TEACHER', 'Enseignant'),
     ('EDUCATOR', 'Éducateur'),
   ];

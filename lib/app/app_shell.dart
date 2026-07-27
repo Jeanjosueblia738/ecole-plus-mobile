@@ -12,6 +12,7 @@ import '../features/secretary/ui/secretary_dashboard.dart';
 import '../features/teacher/ui/teacher_dashboard.dart';
 import '../features/parent/ui/parent_dashboard.dart';
 import '../features/student/ui/student_dashboard.dart';
+import '../features/rh/ui/rh_dashboard.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key});
@@ -40,6 +41,7 @@ class AppShell extends ConsumerWidget {
       UserRole.accountant => const AccountantDashboard(),
       UserRole.cashier => const AccountantDashboard(),
       UserRole.teacher => const TeacherDashboard(),
+      UserRole.rh => const RhDashboard(),
       UserRole.parent => const ParentDashboard(),
       UserRole.student => const StudentDashboard(),
       null => const LoginScreen(),

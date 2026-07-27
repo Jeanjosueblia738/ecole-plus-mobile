@@ -50,6 +50,7 @@ class AuthState {
   bool get isSecretary => role == UserRole.secretary;
   bool get isAccountant => role == UserRole.accountant;
   bool get isCashier => role == UserRole.cashier;
+  bool get isRh => role == UserRole.rh;
   bool get isFinanceStaff =>
       role == UserRole.accountant || role == UserRole.cashier;
 
@@ -275,6 +276,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         'ACCOUNTANT' => UserRole.accountant,
         'CASHIER' => UserRole.cashier,
         'TEACHER' => UserRole.teacher,
+        'RH' => UserRole.rh,
         'PARENT' => UserRole.parent,
         'STUDENT' => UserRole.student,
         _ => null,
