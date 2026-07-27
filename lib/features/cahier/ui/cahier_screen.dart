@@ -98,15 +98,41 @@ class _CahierScreenState extends ConsumerState<CahierScreen> {
   }
 
   Future<void> _emargement(String id) async {
+    final ctrl = TextEditingController(text: '60');
+    final minutes = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Durée réelle (min)'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Minutes effectuées',
+            hintText: 'Ex. 40',
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(ctx, int.tryParse(ctrl.text.trim()) ?? 0),
+            child: const Text('Émarger'),
+          ),
+        ],
+      ),
+    );
+    if (minutes == null) return;
     try {
-      await CahierApiService.emargement(id);
+      await CahierApiService.emargement(id, actualMinutes: minutes);
       setState(() {
         _entries = _entries.map((e) {
           if (e['id'] == id) {
             return {
               ...e,
               'isEmarge': true,
-              'emargeAt': DateTime.now().toIso8601String()
+              'emargeAt': DateTime.now().toIso8601String(),
+              'actualMinutes': minutes,
             };
           }
           return e;

@@ -121,6 +121,53 @@ class FinanceApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  static Future<Map<String, dynamic>> generatePayrollFromHours(
+      Map<String, dynamic> data) async {
+    final response =
+        await ApiClient.instance.post('/payroll/generate', data: data);
+    return response.data as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> payPayrollWave(String id) async {
+    final response =
+        await ApiClient.instance.post('/payroll/runs/$id/pay-wave');
+    return response.data as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> hoursSummary({
+    required int year,
+    required int month,
+  }) async {
+    final response = await ApiClient.instance.get(
+      '/payroll/hours-summary',
+      params: {'year': year, 'month': month},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  static Future<List<dynamic>> listOccurrences({
+    required int year,
+    required int month,
+  }) async {
+    final response = await ApiClient.instance.get(
+      '/payroll/occurrences',
+      params: {'year': year, 'month': month},
+    );
+    return response.data as List<dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> clockIn(String id) async {
+    final response =
+        await ApiClient.instance.post('/payroll/occurrences/$id/clock-in');
+    return response.data as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> clockOut(String id) async {
+    final response =
+        await ApiClient.instance.post('/payroll/occurrences/$id/clock-out');
+    return response.data as Map<String, dynamic>;
+  }
+
   static Future<List<dynamic>> listBudgets({String? year}) async {
     final response = await ApiClient.instance.get(
       '/finance/budgets',

@@ -250,7 +250,8 @@ class _PayrollScreenState extends State<_PayrollScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      _rows = await FinanceApiService.listPayroll(year: currentSchoolYear());
+      _rows = await FinanceApiService.listPayroll(
+          year: DateTime.now().year.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -284,7 +285,7 @@ class _PayrollScreenState extends State<_PayrollScreen> {
     );
     if (ok != true) return;
     final month = DateTime.now().month;
-    final year = currentSchoolYear();
+    final year = DateTime.now().year.toString();
     await FinanceApiService.createPayroll({
       'label': 'Paie $month/$year',
       'year': year,
@@ -296,10 +297,44 @@ class _PayrollScreenState extends State<_PayrollScreen> {
     await _load();
   }
 
+  Future<void> _generateFromHours() async {
+    final now = DateTime.now();
+    try {
+      await FinanceApiService.generatePayrollFromHours({
+        'year': now.year,
+        'month': now.month,
+        'schoolYear': currentSchoolYear(),
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Brouillon généré depuis les heures')),
+        );
+      }
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Génération impossible: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Paie'), backgroundColor: primaryBlue, foregroundColor: Colors.white),
+      appBar: AppBar(
+        title: const Text('Paie'),
+        backgroundColor: primaryBlue,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            tooltip: 'Générer depuis heures',
+            onPressed: _generateFromHours,
+            icon: const Icon(Icons.auto_awesome),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(onPressed: _add, child: const Icon(Icons.add)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -336,6 +371,31 @@ class _PayrollScreenState extends State<_PayrollScreen> {
                                   await _load();
                                 },
                                 child: const Text('Valider'),
+                              ),
+                            if (status == 'VALIDATED')
+                              TextButton(
+                                onPressed: () async {
+                                  try {
+                                    final res = await FinanceApiService.payPayrollWave(id);
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          res['allPaid'] == true
+                                              ? 'Versements Wave terminés'
+                                              : 'Versements Wave initiés',
+                                        ),
+                                      ),
+                                    );
+                                    await _load();
+                                  } catch (e) {
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Wave: $e')),
+                                    );
+                                  }
+                                },
+                                child: const Text('Payer via Wave'),
                               ),
                             if (status != 'PAID')
                               TextButton(

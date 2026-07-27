@@ -15,6 +15,7 @@ import '../../cahier/ui/cahier_screen.dart';
 import '../../exams/ui/exams_screen.dart';
 import '../../messaging/ui/messaging_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
+import 'teacher_hours_screen.dart';
 
 class TeacherDashboard extends ConsumerStatefulWidget {
   const TeacherDashboard({super.key});
@@ -338,6 +339,16 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                 color: const Color(0xFF0D9488),
                 onTap: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const CahierScreen()))),
+            const SizedBox(height: 10),
+            _ModuleTile(
+                icon: Icons.access_time,
+                title: 'Mes heures',
+                subtitle: 'Pointe début/fin et suivi paie',
+                color: const Color(0xFFEA580C),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const TeacherHoursScreen()))),
             const SizedBox(height: 10),
             _ModuleTile(
                 icon: Icons.class_outlined,

@@ -17,9 +17,17 @@ class CahierApiService {
     return response.data as List<dynamic>;
   }
 
-  // Émarger une entrée
-  static Future<Map<String, dynamic>> emargement(String id) async {
-    final response = await ApiClient.instance.patch('/cahier/$id/emargement');
+  // Émarger une entrée (durée réelle en minutes)
+  static Future<Map<String, dynamic>> emargement(
+    String id, {
+    int? actualMinutes,
+  }) async {
+    final response = await ApiClient.instance.patch(
+      '/cahier/$id/emargement',
+      data: {
+        if (actualMinutes != null) 'actualMinutes': actualMinutes,
+      },
+    );
     return response.data as Map<String, dynamic>;
   }
 
