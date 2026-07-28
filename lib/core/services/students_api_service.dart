@@ -14,6 +14,12 @@ class StudentsApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  static Future<List<dynamic>> getEnrollments(String id) async {
+    final response =
+        await ApiClient.instance.get('/students/$id/enrollments');
+    return response.data as List<dynamic>;
+  }
+
   static Future<Map<String, dynamic>> getStats() async {
     final response = await ApiClient.instance.get('/students/stats');
     return response.data as Map<String, dynamic>;

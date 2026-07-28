@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/auth_provider.dart';
 import '../core/providers/profile_provider.dart';
 import '../core/security/user_role.dart';
+import '../core/utils/school_year.dart';
 import '../features/auth/ui/login_screen.dart';
 import '../features/admin/ui/admin_dashboard.dart';
 import '../features/censor/ui/censor_dashboard.dart';
@@ -22,6 +23,7 @@ class AppShell extends ConsumerWidget {
     final authState = ref.watch(authProvider);
 
     if (authState.role != null) {
+      initSelectedSchoolYear();
       ref.read(profileProvider.notifier).loadForRole(
             authState.role!,
             userId: authState.userId,

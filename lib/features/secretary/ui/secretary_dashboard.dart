@@ -9,9 +9,11 @@ import '../../settings/ui/settings_screen.dart';
 import '../../student/ui/student_form_screen.dart';
 import '../../enrollment/ui/enrollments_list_screen.dart';
 import '../../student/ui/student_list_screen.dart';
+import '../../admin/ui/student_passage_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
 import '../../staff/ui/campus_qr_scan_screen.dart';
 import '../../staff/ui/staff_presence_today_screen.dart';
+import '../../../core/utils/school_year.dart';
 
 class SecretaryDashboard extends ConsumerStatefulWidget {
   const SecretaryDashboard({super.key});
@@ -27,6 +29,7 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
   @override
   void initState() {
     super.initState();
+    initSelectedSchoolYear();
     _loadStats();
   }
 
@@ -200,6 +203,16 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const EnrollmentsListScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.school_outlined,
+                title: 'Passage élèves',
+                subtitle: 'Réinscription vers une nouvelle année',
+                color: const Color(0xFFB45309),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const StudentPassageScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.people_alt_outlined,

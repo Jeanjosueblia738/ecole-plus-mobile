@@ -19,6 +19,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
   final phoneCtrl = TextEditingController();
   final regCtrl = TextEditingController();
   List<dynamic> _classes = [];
+  List<dynamic> _enrollments = [];
   String? _classId;
   bool _saving = false;
   String? _error;
@@ -32,8 +33,20 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
       lastCtrl.text = parts.length > 1 ? parts.sublist(1).join(' ') : '';
       phoneCtrl.text = widget.student!.parentPhone;
       _classId = widget.student!.classId;
+      _loadEnrollments();
     }
     _loadClasses();
+  }
+
+  Future<void> _loadEnrollments() async {
+    final id = widget.student?.id;
+    if (id == null) return;
+    try {
+      final data = await StudentsApiService.getEnrollments(id);
+      if (mounted) setState(() => _enrollments = data);
+    } catch (_) {
+      /* optional */
+    }
   }
 
   Future<void> _loadClasses() async {
@@ -160,6 +173,29 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
                   const InputDecoration(labelText: 'Téléphone du parent'),
               keyboardType: TextInputType.phone,
             ),
+            if (_enrollments.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              const Text(
+                'Historique scolaire',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              ..._enrollments.map((raw) {
+                final e = Map<String, dynamic>.from(raw as Map);
+                final year = (e['academicYear'] as Map?)?['label'] ?? '—';
+                final cls = (e['class'] as Map?)?['name'] ?? 'Sans classe';
+                final status = e['status'] ?? '';
+                final decision = e['decision'];
+                return ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('$year — $cls'),
+                  subtitle: Text(
+                    '$status${decision != null ? ' · $decision' : ''}',
+                  ),
+                );
+              }),
+            ],
             const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,

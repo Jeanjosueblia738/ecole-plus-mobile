@@ -4,11 +4,14 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/students_api_service.dart';
 import '../../../core/services/attendance_api_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/school_year.dart';
 import '../../../shared/widgets/dashboard_tile.dart';
 import '../../../shared/widgets/workspace_hero.dart';
 import 'admin_stats_screen.dart';
 // AdminValidationScreen masqué : API sans endpoint validate pending (voir commentaire écran).
 import 'class_management_screen.dart';
+import 'academic_years_screen.dart';
+import 'student_passage_screen.dart';
 import '../../analytics/ui/dropout_risk_screen.dart';
 import '../../student/ui/student_list_screen.dart';
 import '../../finance/ui/finance_dashboard_screen.dart';
@@ -37,6 +40,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
   @override
   void initState() {
     super.initState();
+    initSelectedSchoolYear();
     Future.delayed(const Duration(milliseconds: 300), _loadRealStats);
   }
 
@@ -291,7 +295,27 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                         builder: (_) => const ClassManagementScreen())),
               ),
               const SizedBox(height: 10),
+              DashboardTile(
+                icon: Icons.calendar_month_outlined,
+                title: 'Années scolaires',
+                color: const Color(0xFF1D4ED8),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const AcademicYearsScreen())),
+              ),
+              const SizedBox(height: 10),
             ],
+            DashboardTile(
+              icon: Icons.school_outlined,
+              title: 'Passage élèves',
+              color: const Color(0xFFB45309),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const StudentPassageScreen())),
+            ),
+            const SizedBox(height: 10),
             DashboardTile(
               icon: Icons.bar_chart_outlined,
               title: 'Statistiques & Rapports',
