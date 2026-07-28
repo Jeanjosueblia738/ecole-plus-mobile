@@ -169,17 +169,18 @@ class FinanceApiService {
     return response.data as Map<String, dynamic>;
   }
 
-  /// Scan QR classe — clientTime = horloge téléphone (ISO8601)
+  /// Scan QR classe — l’heure enregistrée est celle du serveur (GMT CI)
   static Future<Map<String, dynamic>> qrScan({
     required String payload,
-    required DateTime clientTime,
+    DateTime? clientTime,
   }) async {
     try {
       final response = await ApiClient.instance.post(
         '/payroll/qr-scan',
         data: {
           'payload': payload,
-          'clientTime': clientTime.toUtc().toIso8601String(),
+          if (clientTime != null)
+            'clientTime': clientTime.toUtc().toIso8601String(),
         },
       );
       return response.data as Map<String, dynamic>;

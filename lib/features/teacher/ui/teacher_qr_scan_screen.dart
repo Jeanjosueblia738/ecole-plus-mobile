@@ -60,7 +60,6 @@ class _TeacherQrScanScreenState extends State<TeacherQrScanScreen> {
       await _controller.stop();
       final data = await FinanceApiService.qrScan(
         payload: raw.trim(),
-        clientTime: DateTime.now(),
       );
       if (!mounted) return;
       setState(() => _lastResult = data);
@@ -142,7 +141,7 @@ class _TeacherQrScanScreenState extends State<TeacherQrScanScreen> {
                     child: const Text(
                       'Scannez le QR collé sur le bureau.\n'
                       '1er scan = arrivée · 2e scan = fin de cours\n'
-                      'Heures = horloge du téléphone',
+                      'Heures = GMT Côte d’Ivoire (serveur)',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white, fontSize: 13),
                     ),

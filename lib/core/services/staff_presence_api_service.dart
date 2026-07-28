@@ -4,14 +4,15 @@ import 'package:dio/dio.dart';
 class StaffPresenceApiService {
   static Future<Map<String, dynamic>> campusQrScan({
     required String payload,
-    required DateTime clientTime,
+    DateTime? clientTime,
   }) async {
     try {
       final response = await ApiClient.instance.post(
         '/staff-presence/qr-scan',
         data: {
           'payload': payload,
-          'clientTime': clientTime.toUtc().toIso8601String(),
+          if (clientTime != null)
+            'clientTime': clientTime.toUtc().toIso8601String(),
         },
       );
       return Map<String, dynamic>.from(response.data as Map);

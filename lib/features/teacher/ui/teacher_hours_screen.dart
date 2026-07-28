@@ -120,7 +120,7 @@ class _TeacherHoursScreenState extends State<TeacherHoursScreen> {
                     ),
                     child: const Text(
                       'Pointez en scannant le QR collé sur le bureau de la classe. '
-                      '1er scan = arrivée, 2e scan = fin. Les heures viennent de l’horloge du téléphone.',
+                      '1er scan = arrivée, 2e scan = fin. Les heures sont en GMT Côte d’Ivoire (serveur).',
                       style: TextStyle(fontSize: 13, color: textDark),
                     ),
                   ),

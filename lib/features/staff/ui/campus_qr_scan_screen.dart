@@ -61,7 +61,6 @@ class _CampusQrScanScreenState extends State<CampusQrScanScreen> {
         '/staff-presence/qr-scan',
         data: {
           'payload': raw.trim(),
-          'clientTime': DateTime.now().toUtc().toIso8601String(),
         },
       );
       final data = Map<String, dynamic>.from(response.data as Map);
@@ -151,7 +150,7 @@ class _CampusQrScanScreenState extends State<CampusQrScanScreen> {
                     child: const Text(
                       'Scannez le QR entrée campus.\n'
                       '1er scan = entrée · 2e scan = sortie\n'
-                      'Heures = horloge du téléphone',
+                      'Heures = GMT Côte d’Ivoire (serveur)',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white, fontSize: 13),
                     ),
