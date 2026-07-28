@@ -56,10 +56,10 @@ class RhDashboard extends ConsumerWidget {
         children: [
           WorkspaceHero(
             eyebrow: 'Personnel',
-            title: auth.fullName ?? 'Espace RH',
+            title: auth.fullName.isNotEmpty ? auth.fullName : 'Espace RH',
             subtitle:
                 'Absences, présence campus, alertes cours et suivi des heures.',
-            accent: const Color(0xFF0E7490),
+            color: const Color(0xFF0E7490),
             metrics: const [
               WorkspaceHeroMetric(label: 'Focus', value: 'RH'),
             ],
