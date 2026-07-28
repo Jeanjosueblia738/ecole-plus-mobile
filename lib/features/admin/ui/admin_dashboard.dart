@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/school_year.dart';
 import '../../../shared/widgets/dashboard_tile.dart';
 import '../../../shared/widgets/workspace_hero.dart';
+import '../../../shared/widgets/school_year_selector.dart';
 import 'admin_stats_screen.dart';
 // AdminValidationScreen masqué : API sans endpoint validate pending (voir commentaire écran).
 import 'class_management_screen.dart';
@@ -40,7 +41,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
   @override
   void initState() {
     super.initState();
-    initSelectedSchoolYear();
+    syncSchoolYearFromServer();
     Future.delayed(const Duration(milliseconds: 300), _loadRealStats);
   }
 
@@ -115,6 +116,10 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: Center(child: SchoolYearSelector(compact: true)),
+          ),
           if (_isLoadingStats)
             const Padding(
                 padding: EdgeInsets.all(14),

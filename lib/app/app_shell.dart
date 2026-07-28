@@ -23,7 +23,7 @@ class AppShell extends ConsumerWidget {
     final authState = ref.watch(authProvider);
 
     if (authState.role != null) {
-      initSelectedSchoolYear();
+      syncSchoolYearFromServer();
       ref.read(profileProvider.notifier).loadForRole(
             authState.role!,
             userId: authState.userId,

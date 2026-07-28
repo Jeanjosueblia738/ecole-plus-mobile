@@ -16,6 +16,8 @@ class _AcademicYearsScreenState extends State<AcademicYearsScreen> {
   String? _error;
   String? _message;
   final _labelCtrl = TextEditingController();
+  final _startCtrl = TextEditingController();
+  final _endCtrl = TextEditingController();
   String? _busyId;
   final Map<String, String> _cloneSource = {};
 
@@ -28,6 +30,8 @@ class _AcademicYearsScreenState extends State<AcademicYearsScreen> {
   @override
   void dispose() {
     _labelCtrl.dispose();
+    _startCtrl.dispose();
+    _endCtrl.dispose();
     super.dispose();
   }
 
@@ -41,17 +45,7 @@ class _AcademicYearsScreenState extends State<AcademicYearsScreen> {
       final years = list
           .map((e) => Map<String, dynamic>.from(e as Map))
           .toList();
-      Map<String, dynamic>? current;
-      for (final y in years) {
-        if (y['isCurrent'] == true) {
-          current = y;
-          break;
-        }
-      }
-      current ??= years.isNotEmpty ? years.first : null;
-      if (current != null && current['label'] is String) {
-        await setSelectedSchoolYear(current['label'] as String);
-      }
+      await syncSchoolYearFromServer();
       if (!mounted) return;
       setState(() {
         _years = years;
@@ -71,8 +65,14 @@ class _AcademicYearsScreenState extends State<AcademicYearsScreen> {
         ? calendarSchoolYear()
         : _labelCtrl.text.trim();
     try {
-      await AcademicYearApiService.create(label: label);
+      await AcademicYearApiService.create(
+        label: label,
+        startDate: _startCtrl.text.trim().isEmpty ? null : _startCtrl.text.trim(),
+        endDate: _endCtrl.text.trim().isEmpty ? null : _endCtrl.text.trim(),
+      );
       _labelCtrl.clear();
+      _startCtrl.clear();
+      _endCtrl.clear();
       setState(() => _message = 'Année créée');
       await _load();
     } catch (e) {
@@ -198,6 +198,32 @@ class _AcademicYearsScreenState extends State<AcademicYearsScreen> {
                       onPressed: _create,
                       style: FilledButton.styleFrom(backgroundColor: primaryBlue),
                       child: const Text('Créer'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _startCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Début (AAAA-MM-JJ)',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _endCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Fin (AAAA-MM-JJ)',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
                     ),
                   ],
                 ),

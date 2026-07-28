@@ -11,6 +11,7 @@ import '../../enrollment/ui/enrollments_list_screen.dart';
 import '../../student/ui/student_list_screen.dart';
 import '../../admin/ui/student_passage_screen.dart';
 import '../../../shared/widgets/workspace_hero.dart';
+import '../../../shared/widgets/school_year_selector.dart';
 import '../../staff/ui/campus_qr_scan_screen.dart';
 import '../../staff/ui/staff_presence_today_screen.dart';
 import '../../../core/utils/school_year.dart';
@@ -29,7 +30,7 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
   @override
   void initState() {
     super.initState();
-    initSelectedSchoolYear();
+    syncSchoolYearFromServer();
     _loadStats();
   }
 
@@ -115,6 +116,10 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
         backgroundColor: color,
         foregroundColor: Colors.white,
         actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: Center(child: SchoolYearSelector(compact: true)),
+          ),
           if (_loading)
             const Padding(
                 padding: EdgeInsets.all(14),

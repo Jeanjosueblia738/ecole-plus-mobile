@@ -5,6 +5,8 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/profile_provider.dart';
 import '../../../core/providers/onboarding_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/security/user_role.dart';
+import '../../../shared/widgets/school_year_selector.dart';
 import 'profile_screen.dart';
 import 'tenant_group_selector.dart';
 
@@ -14,6 +16,10 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileProvider);
+    final auth = ref.watch(authProvider);
+    final showYear = auth.role != null &&
+        auth.role != UserRole.parent &&
+        auth.role != UserRole.student;
 
     return Scaffold(
       backgroundColor: background,
@@ -31,6 +37,11 @@ class SettingsScreen extends ConsumerWidget {
               padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: TenantGroupSelector(),
             ),
+            if (showYear)
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: SchoolYearSelector(compact: false),
+              ),
             if (profile != null)
               InkWell(
                 onTap: () => Navigator.push(context,
