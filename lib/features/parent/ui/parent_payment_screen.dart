@@ -80,7 +80,7 @@ class _ParentPaymentScreenState extends ConsumerState<ParentPaymentScreen> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [primaryBlue, Color(0xFF2563EB)],
+                          colors: [primaryBlue, primaryLight],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),

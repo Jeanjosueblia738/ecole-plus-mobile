@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../features/notifications/data/notification_model.dart';
+import '../theme/app_colors.dart';
 
 // ─── Service de notifications ECOLE+ ─────────────────────────────────────
 // Architecture :
@@ -81,7 +82,7 @@ class NotificationService {
           importance: Importance.high,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
-          color: const Color(0xFF1E3A8A),
+          color: primaryBlue,
           styleInformation: BigTextStyleInformation(body),
         ),
         iOS: const DarwinNotificationDetails(

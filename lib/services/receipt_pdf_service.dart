@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import '../core/models/tenant_brand.dart';
 import '../features/finance/data/finance_model.dart';
 
+/// Bleu marque ECOLE+ (= web `#1B3A6B` / `primaryBlue`).
+final PdfColor _brandBlue = PdfColor.fromInt(0xFF1B3A6B);
+
 class ReceiptPdfService {
   static Future<Uint8List> generate(
     Payment payment, {
@@ -42,7 +45,7 @@ class ReceiptPdfService {
                             style: pw.TextStyle(
                                 fontSize: 16,
                                 fontWeight: pw.FontWeight.bold,
-                                color: PdfColors.blue800)),
+                                color: _brandBlue)),
                         if (school.city.isNotEmpty)
                           pw.Text(school.city,
                               style: const pw.TextStyle(
@@ -76,7 +79,7 @@ class ReceiptPdfService {
             ),
 
             pw.SizedBox(height: 6),
-            pw.Divider(color: PdfColors.blue800, thickness: 1.5),
+            pw.Divider(color: _brandBlue, thickness: 1.5),
             pw.SizedBox(height: 4),
 
             pw.Center(
@@ -158,7 +161,7 @@ class ReceiptPdfService {
           style: pw.TextStyle(
               fontSize: 9,
               fontWeight: pw.FontWeight.bold,
-              color: PdfColors.blue800)),
+              color: _brandBlue)),
     );
   }
 

@@ -229,7 +229,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
               const SizedBox(width: 8),
               _ActionBtn(
                 label: 'Messagerie',
-                color: const Color(0xFF1B3A6B),
+                color: primaryBlue,
                 onTap: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const MessagingScreen())),
               ),
@@ -352,7 +352,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
             DashboardTile(
               icon: Icons.chat_outlined,
               title: 'Messagerie',
-              color: const Color(0xFF1B3A6B),
+              color: primaryBlue,
               onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const MessagingScreen())),
             ),

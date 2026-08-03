@@ -69,7 +69,7 @@ class _ParentChildScreenState extends ConsumerState<ParentChildScreen> {
               background: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [primaryBlue, Color(0xFF3B6FD4)],
+                    colors: [primaryBlue, primaryLight],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),

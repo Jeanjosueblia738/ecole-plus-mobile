@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
+import '../../../core/theme/app_colors.dart';
 
 class DocumentPreviewScreen extends StatelessWidget {
   final String filePath;
@@ -17,7 +18,7 @@ class DocumentPreviewScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Document justificatif'),
-        backgroundColor: const Color(0xFF1E3A8A),
+        backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         centerTitle: true,
       ),

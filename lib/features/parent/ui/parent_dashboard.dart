@@ -634,7 +634,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                   icon: Icons.chat_outlined,
                   title: 'Messagerie',
                   subtitle: 'Contacter l\'école directement',
-                  color: const Color(0xFF1B3A6B),
+                  color: primaryBlue,
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -658,7 +658,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-            colors: [primaryBlue, Color(0xFF2563EB)],
+            colors: [primaryBlue, primaryLight],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(16),

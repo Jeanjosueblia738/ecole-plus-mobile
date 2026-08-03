@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/student_provider.dart';
+import '../../../core/theme/app_colors.dart';
 import 'student_form_screen.dart';
 
 class StudentListScreen extends ConsumerStatefulWidget {
@@ -62,7 +63,7 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gestion des élèves'),
-        backgroundColor: const Color(0xFF1E3A8A),
+        backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh),
@@ -77,7 +78,7 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
                 );
                 _refresh();
               },
-              backgroundColor: const Color(0xFF1E3A8A),
+              backgroundColor: primaryBlue,
               child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
@@ -141,14 +142,14 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
                             final s = filtered[index];
                             return ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: const Color(0xFF1E3A8A)
+                                backgroundColor: primaryBlue
                                     .withValues(alpha: 0.1),
                                 child: Text(
                                   s.fullName.isNotEmpty
                                       ? s.fullName[0].toUpperCase()
                                       : '?',
                                   style: const TextStyle(
-                                      color: Color(0xFF1E3A8A),
+                                      color: primaryBlue,
                                       fontWeight: FontWeight.bold),
                                 ),
                               ),

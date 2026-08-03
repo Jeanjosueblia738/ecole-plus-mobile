@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/students_api_service.dart';
 import '../../../core/services/classes_api_service.dart';
+import '../../../core/theme/app_colors.dart';
 import '../data/student.dart';
 
 class StudentFormScreen extends ConsumerStatefulWidget {
@@ -125,7 +126,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
         title: Text(
           widget.student == null ? 'Ajouter élève' : 'Modifier élève',
         ),
-        backgroundColor: const Color(0xFF1E3A8A),
+        backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
       ),
       body: Padding(

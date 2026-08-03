@@ -355,7 +355,7 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
                 Icons.chat_outlined,
                 'Messagerie',
                 'Communication interne',
-                const Color(0xFF1B3A6B),
+                primaryBlue,
                 () => Navigator.push(
                     context,
                     MaterialPageRoute(

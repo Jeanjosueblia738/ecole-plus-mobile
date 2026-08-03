@@ -431,7 +431,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                 icon: Icons.chat_outlined,
                 title: 'Messagerie',
                 subtitle: 'Communication interne',
-                color: const Color(0xFF1B3A6B),
+                color: primaryBlue,
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(

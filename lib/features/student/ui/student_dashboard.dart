@@ -17,7 +17,7 @@ import '../../exams/ui/exams_screen.dart';
 import '../../absence/ui/absence_auth_screen.dart';
 
 Color _subjectColor(String s) => switch (s) {
-      'Mathématiques' => const Color(0xFF1E3A8A),
+      'Mathématiques' => primaryBlue,
       'Français' => const Color(0xFF7C3AED),
       'Anglais' => const Color(0xFF059669),
       'SVT' => const Color(0xFF16A34A),

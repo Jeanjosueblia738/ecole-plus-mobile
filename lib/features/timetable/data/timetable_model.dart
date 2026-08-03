@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_colors.dart';
 
 // ─── Jours de la semaine (système CI : Lun→Sam) ───────────────────────────
 enum WeekDay { lundi, mardi, mercredi, jeudi, vendredi, samedi }
@@ -87,7 +88,7 @@ class TimetableEntry {
 
   // Couleur par matière (identique entre tous les rôles)
   Color get color => switch (subject) {
-        'Mathématiques' => const Color(0xFF1E3A8A),
+        'Mathématiques' => primaryBlue,
         'Français' => const Color(0xFF7C3AED),
         'Anglais' => const Color(0xFF059669),
         'SVT' => const Color(0xFF16A34A),

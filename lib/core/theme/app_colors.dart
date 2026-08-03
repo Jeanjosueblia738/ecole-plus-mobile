@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
 
-// ─── Palette principale ECOLE+ ────────────────────────────────────────────
-const Color primaryBlue = Color(0xFF1E3A8A); // Confiance, institution
-const Color primaryLight = Color(0xFF3B6FD4); // Variante claire
-const Color primaryDark = Color(0xFF152A6E); // Variante sombre
+/// Palette ECOLE+ — alignée Web (`#1B3A6B` et neutres Tailwind gray).
+/// Ne pas diverger : toute couleur produit doit venir d’ici.
 
-const Color successGreen = Color(0xFF16A34A); // Validation, admis
-const Color successLight = Color(0xFFDCFCE7); // Fond succès
+// ─── Marque ───────────────────────────────────────────────────────────────
+const Color primaryBlue = Color(0xFF1B3A6B);
+const Color primaryLight = Color(0xFF2E5A9E);
+const Color primaryDark = Color(0xFF152D54);
 
-const Color dangerRed = Color(0xFFDC2626); // Absence, alerte
-const Color dangerLight = Color(0xFFFEE2E2); // Fond danger
+const Color successGreen = Color(0xFF16A34A);
+const Color successLight = Color(0xFFDCFCE7);
 
-const Color warningYellow = Color(0xFFF59E0B); // Attention (mis à jour)
-const Color warningLight = Color(0xFFFEF3C7); // Fond warning
+const Color dangerRed = Color(0xFFDC2626);
+const Color dangerLight = Color(0xFFFEE2E2);
 
-const Color infoBlue = Color(0xFF2563EB); // Info, SMS
-const Color infoLight = Color(0xFFEFF6FF); // Fond info
+const Color warningYellow = Color(0xFFF59E0B);
+const Color warningLight = Color(0xFFFEF3C7);
 
-// ─── Neutrals ─────────────────────────────────────────────────────────────
+const Color infoBlue = Color(0xFF2563EB);
+const Color infoLight = Color(0xFFEFF6FF);
+
+// ─── Neutrals (Tailwind gray) ─────────────────────────────────────────────
 const Color textDark = Color(0xFF111827);
 const Color textMedium = Color(0xFF374151);
 const Color textGrey = Color(0xFF6B7280);
