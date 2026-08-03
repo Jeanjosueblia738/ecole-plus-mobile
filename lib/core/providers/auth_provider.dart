@@ -5,6 +5,7 @@ import '../security/user_role.dart';
 import '../session/user_session.dart';
 import '../services/auth_api_service.dart';
 import '../services/auth_storage_service.dart';
+import '../services/tenants_api_service.dart';
 
 class AuthState {
   final UserRole? role;
@@ -144,6 +145,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
       lastName: lastName,
       className: className,
     );
+    // Refresh branding depuis l’API (tous rôles) — ignore les erreurs réseau
+    // ignore: unawaited_futures
+    _refreshBrandFromApi();
+  }
+
+  Future<void> _refreshBrandFromApi() async {
+    try {
+      final fresh = await TenantsApiService.getMe();
+      await updateBrand(fresh);
+    } catch (_) {
+      /* conserver brand local */
+    }
   }
 
   Future<void> updateBrand(TenantBrand brand) async {
@@ -189,6 +202,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
           lastName: teacher['lastName'],
           isLoading: false,
         );
+        // ignore: unawaited_futures
+        _refreshBrandFromApi();
       } else {
         data = await AuthApiService.login(
           tenantCode: tenantCode,
@@ -239,6 +254,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
           className: user['class']?['name'],
           isLoading: false,
         );
+        // ignore: unawaited_futures
+        _refreshBrandFromApi();
       }
     } on DioException catch (e) {
       final message = e.response?.data?['message'] ?? 'Erreur de connexion';
