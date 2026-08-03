@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/finance_provider.dart';
 import '../../../core/providers/student_provider.dart';
 import '../../../core/theme/app_colors.dart';
@@ -98,7 +99,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   }
 
   Future<void> _printAndClose(BuildContext ctx, dynamic payment) async {
-    final bytes = await ReceiptPdfService.generate(payment);
+    final brand = ref.read(authProvider).schoolBrand;
+    final bytes = await ReceiptPdfService.generate(payment, brand: brand);
     if (!ctx.mounted) return;
     Navigator.pop(ctx);
     await Printing.layoutPdf(

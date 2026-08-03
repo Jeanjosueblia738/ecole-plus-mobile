@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import '../core/models/tenant_brand.dart';
 import '../features/grades/data/grade_model.dart';
 
 /// Options établissement / classe pour le format MEN.
@@ -9,7 +10,14 @@ class BulletinPdfOptions {
   final String schoolName;
   final String schoolCode;
   final String schoolCity;
+  final String? schoolPhone;
+  final String? schoolAddress;
+  final String? logoUrl;
+  final String? docHeaderLine;
+  final String? docFooterLine;
   final String? drena;
+  final String? schoolStatus;
+  final String? directorName;
   final String year;
   final String? registrationNo;
   final double? classAverage;
@@ -21,7 +29,14 @@ class BulletinPdfOptions {
     this.schoolName = 'ÉTABLISSEMENT',
     this.schoolCode = '',
     this.schoolCity = '',
+    this.schoolPhone,
+    this.schoolAddress,
+    this.logoUrl,
+    this.docHeaderLine,
+    this.docFooterLine,
     this.drena,
+    this.schoolStatus,
+    this.directorName,
     this.year = '2025-2026',
     this.registrationNo,
     this.classAverage,
@@ -29,6 +44,34 @@ class BulletinPdfOptions {
     this.classMax,
     this.motto,
   });
+
+  factory BulletinPdfOptions.fromBrand(
+    TenantBrand brand, {
+    String year = '2025-2026',
+    String? registrationNo,
+    double? classAverage,
+    double? classMin,
+    double? classMax,
+  }) =>
+      BulletinPdfOptions(
+        schoolName: brand.name,
+        schoolCode: brand.code,
+        schoolCity: brand.city,
+        schoolPhone: brand.phone,
+        schoolAddress: brand.address,
+        logoUrl: brand.logoUrl,
+        docHeaderLine: brand.docHeaderLine,
+        docFooterLine: brand.docFooterLine,
+        drena: brand.drena,
+        schoolStatus: brand.schoolStatus,
+        directorName: brand.directorName,
+        motto: brand.motto,
+        year: year,
+        registrationNo: registrationNo,
+        classAverage: classAverage,
+        classMin: classMin,
+        classMax: classMax,
+      );
 }
 
 class BulletinPdfService {
@@ -129,28 +172,46 @@ class BulletinPdfService {
     final totPoints =
         bulletin.results.fold<double>(0, (s, r) => s + r.moyennePonderee);
 
+    final logo = await SchoolBrandPdf.loadLogo(options.logoUrl);
+    final headerLine = (options.docHeaderLine != null &&
+            options.docHeaderLine!.trim().isNotEmpty)
+        ? options.docHeaderLine!
+        : 'MINISTÈRE DE L\'ÉDUCATION NATIONALE ET DE L\'ALPHABÉTISATION';
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.fromLTRB(28, 24, 28, 28),
         build: (context) => [
           // ── En-tête MEN ─────────────────────────────────────
-          pw.Center(
-            child: pw.Column(children: [
-              pw.Text(
-                'MINISTÈRE DE L\'ÉDUCATION NATIONALE ET DE L\'ALPHABÉTISATION',
-                style: pw.TextStyle(
-                    fontSize: 8, fontWeight: pw.FontWeight.bold),
-                textAlign: pw.TextAlign.center,
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              if (logo != null)
+                pw.Container(
+                  width: 42,
+                  height: 42,
+                  margin: const pw.EdgeInsets.only(right: 8),
+                  child: pw.Image(logo, fit: pw.BoxFit.contain),
+                ),
+              pw.Expanded(
+                child: pw.Column(children: [
+                  pw.Text(
+                    headerLine,
+                    style: pw.TextStyle(
+                        fontSize: 8, fontWeight: pw.FontWeight.bold),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    options.drena ??
+                        'DRENA DE ${options.schoolCity.toUpperCase().isEmpty ? '—' : options.schoolCity.toUpperCase()}',
+                    style: const pw.TextStyle(fontSize: 7.5),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                ]),
               ),
-              pw.SizedBox(height: 2),
-              pw.Text(
-                options.drena ??
-                    'DRENA DE ${options.schoolCity.toUpperCase().isEmpty ? '—' : options.schoolCity.toUpperCase()}',
-                style: const pw.TextStyle(fontSize: 7.5),
-                textAlign: pw.TextAlign.center,
-              ),
-            ]),
+            ],
           ),
           pw.SizedBox(height: 8),
           pw.Row(
@@ -165,10 +226,32 @@ class BulletinPdfService {
                       style: pw.TextStyle(
                           fontSize: 11, fontWeight: pw.FontWeight.bold),
                     ),
-                    if (options.schoolCity.isNotEmpty)
-                      pw.Text(options.schoolCity,
+                    if (options.motto != null && options.motto!.isNotEmpty)
+                      pw.Text(options.motto!,
+                          style: pw.TextStyle(
+                              fontSize: 7.5, fontStyle: pw.FontStyle.italic)),
+                    if (options.schoolAddress != null &&
+                        options.schoolAddress!.isNotEmpty)
+                      pw.Text(options.schoolAddress!,
                           style: const pw.TextStyle(
                               fontSize: 7.5, color: PdfColors.grey700)),
+                    if (options.schoolCity.isNotEmpty ||
+                        (options.schoolPhone != null &&
+                            options.schoolPhone!.isNotEmpty))
+                      pw.Text(
+                        [
+                          if (options.schoolCity.isNotEmpty) options.schoolCity,
+                          if (options.schoolPhone != null &&
+                              options.schoolPhone!.isNotEmpty)
+                            'Tél. ${options.schoolPhone}',
+                        ].join(' — '),
+                        style: const pw.TextStyle(
+                            fontSize: 7.5, color: PdfColors.grey700),
+                      ),
+                    if (options.schoolStatus != null &&
+                        options.schoolStatus!.isNotEmpty)
+                      pw.Text('Statut : ${options.schoolStatus}',
+                          style: const pw.TextStyle(fontSize: 7.5)),
                   ],
                 ),
               ),
@@ -411,6 +494,14 @@ class BulletinPdfService {
                       'Fait à ${options.schoolCity.isEmpty ? '—' : options.schoolCity}, le $today',
                       style: const pw.TextStyle(fontSize: 7),
                     ),
+                    if (options.directorName != null &&
+                        options.directorName!.isNotEmpty)
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.only(top: 8),
+                        child: pw.Text(options.directorName!,
+                            style: pw.TextStyle(
+                                fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                      ),
                     pw.Spacer(),
                     pw.Text('Signature et cachet',
                         style: const pw.TextStyle(fontSize: 7)),
@@ -422,7 +513,8 @@ class BulletinPdfService {
           pw.SizedBox(height: 12),
           pw.Center(
             child: pw.Text(
-              options.motto ??
+              options.docFooterLine ??
+                  options.motto ??
                   'L\'excellence, notre ambition — Document généré par ECOLE+',
               style: const pw.TextStyle(
                   fontSize: 7, color: PdfColors.grey600),

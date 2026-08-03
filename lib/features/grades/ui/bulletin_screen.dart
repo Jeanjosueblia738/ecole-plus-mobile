@@ -84,10 +84,8 @@ class _BulletinScreenState extends ConsumerState<BulletinScreen> {
     }
     final pdfBytes = await BulletinPdfService.generate(
       bulletin,
-      options: BulletinPdfOptions(
-        schoolName: auth.tenantName ?? 'ÉTABLISSEMENT',
-        schoolCode: auth.tenantCode ?? '',
-        schoolCity: '',
+      options: BulletinPdfOptions.fromBrand(
+        auth.schoolBrand,
         year: currentSchoolYear(),
         classAverage: averages.isEmpty
             ? null

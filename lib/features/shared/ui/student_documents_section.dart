@@ -51,7 +51,7 @@ class _StudentDocumentsSectionState
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
-    final schoolName = auth.tenantName ?? 'Établissement';
+    final brand = auth.schoolBrand;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,7 +72,7 @@ class _StudentDocumentsSectionState
               enabled: !_generating,
               onTap: () => _generate(
                 () => DocumentPdfService.generateAttestation(
-                  schoolName: schoolName,
+                  brand: brand,
                   studentName: widget.studentName,
                   className: widget.className,
                   registrationNo: widget.registrationNo,
@@ -86,7 +86,7 @@ class _StudentDocumentsSectionState
               enabled: !_generating,
               onTap: () => _generate(
                 () => DocumentPdfService.generateCertificat(
-                  schoolName: schoolName,
+                  brand: brand,
                   studentName: widget.studentName,
                   className: widget.className,
                   registrationNo: widget.registrationNo,
@@ -101,7 +101,7 @@ class _StudentDocumentsSectionState
                 enabled: !_generating,
                 onTap: () => _generate(
                   () => DocumentPdfService.generateReleveNotes(
-                    schoolName: schoolName,
+                    brand: brand,
                     studentName: widget.studentName,
                     className: widget.className,
                     trimestre: widget.trimestre,

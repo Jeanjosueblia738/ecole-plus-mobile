@@ -2,13 +2,19 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
+import '../core/models/tenant_brand.dart';
 import '../features/finance/data/finance_model.dart';
 
 class ReceiptPdfService {
-  static Future<Uint8List> generate(Payment payment) async {
+  static Future<Uint8List> generate(
+    Payment payment, {
+    TenantBrand? brand,
+  }) async {
+    final school = brand ?? const TenantBrand(name: 'Établissement');
     final pdf = pw.Document();
     final dateStr = DateFormat('dd/MM/yyyy à HH:mm').format(payment.date);
     final isSuccess = payment.status == PaymentStatus.valide;
+    final logo = await SchoolBrandPdf.loadLogo(school.logoUrl);
 
     pdf.addPage(
       pw.Page(
@@ -17,21 +23,36 @@ class ReceiptPdfService {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            // ── En-tête ──────────────────────────────────────────
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                pw.Row(
                   children: [
-                    pw.Text('ECOLE+',
-                        style: pw.TextStyle(
-                            fontSize: 18,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.blue800)),
-                    pw.Text('Plateforme Éducative',
-                        style: const pw.TextStyle(
-                            fontSize: 9, color: PdfColors.grey600)),
+                    if (logo != null)
+                      pw.Container(
+                        width: 36,
+                        height: 36,
+                        margin: const pw.EdgeInsets.only(right: 8),
+                        child: pw.Image(logo, fit: pw.BoxFit.contain),
+                      ),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(school.name,
+                            style: pw.TextStyle(
+                                fontSize: 16,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.blue800)),
+                        if (school.city.isNotEmpty)
+                          pw.Text(school.city,
+                              style: const pw.TextStyle(
+                                  fontSize: 9, color: PdfColors.grey600)),
+                        if (school.phone != null && school.phone!.isNotEmpty)
+                          pw.Text('Tél. ${school.phone}',
+                              style: const pw.TextStyle(
+                                  fontSize: 8, color: PdfColors.grey600)),
+                      ],
+                    ),
                   ],
                 ),
                 pw.Container(
@@ -71,14 +92,12 @@ class ReceiptPdfService {
 
             pw.SizedBox(height: 14),
 
-            // ── Infos élève ───────────────────────────────────────
             _section('INFORMATIONS ÉLÈVE'),
             _row('Nom', payment.studentName),
             _row('Classe', payment.className),
 
             pw.SizedBox(height: 10),
 
-            // ── Détail paiement ───────────────────────────────────
             _section('DÉTAIL DU PAIEMENT'),
             _row('Libellé', payment.feeLabel),
             _row('Méthode', payment.method.label),
@@ -94,7 +113,6 @@ class ReceiptPdfService {
 
             pw.SizedBox(height: 14),
 
-            // ── Montant ───────────────────────────────────────────
             pw.Container(
               width: double.infinity,
               padding: const pw.EdgeInsets.all(12),
@@ -124,12 +142,7 @@ class ReceiptPdfService {
             ),
 
             pw.Spacer(),
-            pw.Divider(color: PdfColors.grey300),
-            pw.Text(
-              'Document officiel ECOLE+ — Conservez ce reçu',
-              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
-              textAlign: pw.TextAlign.center,
-            ),
+            SchoolBrandPdf.footer(school),
           ],
         ),
       ),

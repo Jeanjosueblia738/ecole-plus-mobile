@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/tenant_brand.dart';
 import '../security/user_role.dart';
 import '../session/user_session.dart';
 import '../services/auth_api_service.dart';
@@ -11,6 +12,7 @@ class AuthState {
   final String? error;
   final String? tenantCode;
   final String? tenantName;
+  final TenantBrand? brand;
   final String? userId;
   final String? email;
   final String? firstName;
@@ -23,12 +25,20 @@ class AuthState {
     this.error,
     this.tenantCode,
     this.tenantName,
+    this.brand,
     this.userId,
     this.email,
     this.firstName,
     this.lastName,
     this.className,
   });
+
+  TenantBrand get schoolBrand =>
+      brand ??
+      TenantBrand(
+        name: tenantName ?? 'Établissement',
+        code: tenantCode ?? '',
+      );
 
   bool get isLoggedIn => role != null;
   bool get isAdmin => role == UserRole.admin;
@@ -73,6 +83,7 @@ class AuthState {
     String? error,
     String? tenantCode,
     String? tenantName,
+    TenantBrand? brand,
     String? userId,
     String? email,
     String? firstName,
@@ -85,6 +96,7 @@ class AuthState {
         error: error,
         tenantCode: tenantCode ?? this.tenantCode,
         tenantName: tenantName ?? this.tenantName,
+        brand: brand ?? this.brand,
         userId: userId ?? this.userId,
         email: email ?? this.email,
         firstName: firstName ?? this.firstName,
@@ -111,6 +123,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final role = await AuthStorageService.getUserRole();
     final tenantCode = await AuthStorageService.getTenantCode();
     final tenantName = await AuthStorageService.getTenantName();
+    final brand = await AuthStorageService.getTenantBrand();
     final userId = await AuthStorageService.getUserId();
     final email = await AuthStorageService.getUserEmail();
     final firstName = await AuthStorageService.read('first_name');
@@ -124,11 +137,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
       role: parsed,
       tenantCode: tenantCode,
       tenantName: tenantName,
+      brand: brand,
       userId: userId,
       email: email,
       firstName: firstName,
       lastName: lastName,
       className: className,
+    );
+  }
+
+  Future<void> updateBrand(TenantBrand brand) async {
+    await AuthStorageService.saveTenantBrand(brand);
+    state = state.copyWith(
+      tenantCode: brand.code,
+      tenantName: brand.name,
+      brand: brand,
     );
   }
 
@@ -154,10 +177,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
             'first_name', teacher['firstName'] ?? '');
         await AuthStorageService.write('last_name', teacher['lastName'] ?? '');
         UserSession.setRole(UserRole.teacher);
+        final brand = TenantBrand.fromTenantMap(tenant);
         state = state.copyWith(
           role: UserRole.teacher,
           tenantCode: tenant?['code'] ?? tenantCode,
           tenantName: tenant?['name'] ?? tenantCode,
+          brand: brand,
           userId: teacher['id'],
           email: teacher['email'],
           firstName: teacher['firstName'],
@@ -201,10 +226,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
               'class_name', user['class']['name'] ?? '');
         }
         UserSession.setRole(actual);
+        final brand = TenantBrand.fromTenantMap(tenant);
         state = state.copyWith(
           role: actual,
           tenantCode: tenant['code'],
           tenantName: tenant['name'],
+          brand: brand,
           userId: user['id'],
           email: user['email'],
           firstName: user['firstName'],

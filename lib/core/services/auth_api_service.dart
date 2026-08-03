@@ -24,6 +24,9 @@ class AuthApiService {
       role: data['user']['role'],
       email: data['user']['email'],
       userId: data['user']['id'],
+      tenant: data['tenant'] is Map
+          ? Map<String, dynamic>.from(data['tenant'] as Map)
+          : null,
     );
 
     return data;
@@ -56,6 +59,9 @@ class AuthApiService {
       userId: data['teacher']?['id']?.toString() ??
           data['user']?['id']?.toString() ??
           '',
+      tenant: data['tenant'] is Map
+          ? Map<String, dynamic>.from(data['tenant'] as Map)
+          : null,
     );
 
     return data;

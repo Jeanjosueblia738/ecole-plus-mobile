@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/parent_provider.dart';
 import '../../../core/providers/grade_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/school_year.dart';
 import '../../../services/bulletin_pdf_service.dart';
 import '../../grades/data/grade_model.dart';
 import '../../conseil/ui/conseil_summary_card.dart';
@@ -72,7 +74,14 @@ class _ParentGradesScreenState extends ConsumerState<ParentGradesScreen> {
 
   Future<void> _downloadBulletin(Bulletin bulletin) async {
     setState(() => _isGenerating = true);
-    final bytes = await BulletinPdfService.generate(bulletin);
+    final auth = ref.read(authProvider);
+    final bytes = await BulletinPdfService.generate(
+      bulletin,
+      options: BulletinPdfOptions.fromBrand(
+        auth.schoolBrand,
+        year: currentSchoolYear(),
+      ),
+    );
     setState(() => _isGenerating = false);
     if (!mounted) return;
     await Printing.layoutPdf(

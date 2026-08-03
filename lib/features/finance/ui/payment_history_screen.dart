@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/finance_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/school_year.dart';
@@ -210,7 +211,9 @@ class _PaymentCard extends ConsumerWidget {
               const Spacer(),
               GestureDetector(
                 onTap: () async {
-                  final bytes = await ReceiptPdfService.generate(payment);
+                  final brand = ref.read(authProvider).schoolBrand;
+                  final bytes =
+                      await ReceiptPdfService.generate(payment, brand: brand);
                   if (!context.mounted) return;
                   await Printing.layoutPdf(
                     onLayout: (_) async => bytes,

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/tenant_brand.dart';
 import '../sync/offline_outbox.dart';
 
 class AuthStorageService {
@@ -10,6 +11,7 @@ class AuthStorageService {
   static const _keyToken = 'jwt_token';
   static const _keyTenantCode = 'tenant_code';
   static const _keyTenantName = 'tenant_name';
+  static const _keyTenantBrand = 'tenant_brand';
   static const _keyUserRole = 'user_role';
   static const _keyUserEmail = 'user_email';
   static const _keyUserId = 'user_id';
@@ -19,6 +21,7 @@ class AuthStorageService {
     _keyToken,
     _keyTenantCode,
     _keyTenantName,
+    _keyTenantBrand,
     _keyUserRole,
     _keyUserEmail,
     _keyUserId,
@@ -67,20 +70,49 @@ class AuthStorageService {
     required String role,
     required String email,
     required String userId,
+    Map<String, dynamic>? tenant,
   }) async {
+    final brand = TenantBrand.fromTenantMap(
+      tenant ??
+          {
+            'code': tenantCode,
+            'name': tenantName,
+          },
+    );
     await Future.wait([
       _write(_keyToken, token),
       _write(_keyTenantCode, tenantCode),
       _write(_keyTenantName, tenantName),
+      _write(_keyTenantBrand, brand.toJsonString()),
       _write(_keyUserRole, role),
       _write(_keyUserEmail, email),
       _write(_keyUserId, userId),
     ]);
   }
 
+  static Future<void> saveTenantBrand(TenantBrand brand) async {
+    await Future.wait([
+      _write(_keyTenantCode, brand.code),
+      _write(_keyTenantName, brand.name),
+      _write(_keyTenantBrand, brand.toJsonString()),
+    ]);
+  }
+
   static Future<String?> getToken() => _read(_keyToken);
   static Future<String?> getTenantCode() => _read(_keyTenantCode);
   static Future<String?> getTenantName() => _read(_keyTenantName);
+  static Future<TenantBrand> getTenantBrand() async {
+    final raw = await _read(_keyTenantBrand);
+    final brand = TenantBrand.fromJsonString(raw);
+    if (brand.name.isNotEmpty && brand.name != 'Établissement') return brand;
+    final code = await getTenantCode();
+    final name = await getTenantName();
+    return TenantBrand(
+      name: name ?? 'Établissement',
+      code: code ?? '',
+    );
+  }
+
   static Future<String?> getUserRole() => _read(_keyUserRole);
   static Future<String?> getUserEmail() => _read(_keyUserEmail);
   static Future<String?> getUserId() => _read(_keyUserId);

@@ -9,6 +9,7 @@ import '../../../core/security/user_role.dart';
 import '../../../shared/widgets/school_year_selector.dart';
 import 'profile_screen.dart';
 import 'tenant_group_selector.dart';
+import 'branding_settings_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -201,6 +202,33 @@ class SettingsScreen extends ConsumerWidget {
                     MaterialPageRoute(builder: (_) => const ProfileScreen())),
               ),
             ),
+            if (auth.isOwner)
+              Container(
+                color: Colors.white,
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: primaryBlue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.badge_outlined,
+                        color: primaryBlue, size: 20),
+                  ),
+                  title: const Text('Identité & documents',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14)),
+                  subtitle: const Text(
+                      'Logo, en-tête et pied de page PDF',
+                      style: TextStyle(color: textGrey, fontSize: 12)),
+                  trailing: const Icon(Icons.chevron_right, color: textGrey),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const BrandingSettingsScreen()),
+                  ),
+                ),
+              ),
             Container(
               color: Colors.white,
               child: ListTile(
