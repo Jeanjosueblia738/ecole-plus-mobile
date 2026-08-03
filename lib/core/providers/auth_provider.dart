@@ -81,7 +81,7 @@ class AuthState {
   AuthState copyWith({
     UserRole? role,
     bool? isLoading,
-    String? error,
+    Object? error = _unset,
     String? tenantCode,
     String? tenantName,
     TenantBrand? brand,
@@ -94,7 +94,7 @@ class AuthState {
       AuthState(
         role: role ?? this.role,
         isLoading: isLoading ?? this.isLoading,
-        error: error,
+        error: identical(error, _unset) ? this.error : error as String?,
         tenantCode: tenantCode ?? this.tenantCode,
         tenantName: tenantName ?? this.tenantName,
         brand: brand ?? this.brand,
@@ -105,6 +105,8 @@ class AuthState {
         className: className ?? this.className,
       );
 }
+
+const _unset = Object();
 
 /// Incrémenté à chaque logout / 401 pour que les providers async se rafraîchissent.
 final logoutEpochProvider = StateProvider<int>((ref) => 0);
@@ -152,7 +154,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> _refreshBrandFromApi() async {
     try {
+      if (!state.isLoggedIn) return;
       final fresh = await TenantsApiService.getMe();
+      if (!state.isLoggedIn) return;
       await updateBrand(fresh);
     } catch (_) {
       /* conserver brand local */
@@ -160,7 +164,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> updateBrand(TenantBrand brand) async {
+    if (!state.isLoggedIn) return;
     await AuthStorageService.saveTenantBrand(brand);
+    if (!state.isLoggedIn) return;
     state = state.copyWith(
       tenantCode: brand.code,
       tenantName: brand.name,
@@ -174,7 +180,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String password,
     required String role,
   }) async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, error: null);
     try {
       Map<String, dynamic> data;
 

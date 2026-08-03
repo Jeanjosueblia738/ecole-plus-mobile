@@ -62,32 +62,48 @@ class _ParentGradesScreenState extends ConsumerState<ParentGradesScreen> {
     setState(() => _trimestre = t);
     final child = ref.read(parentChildProvider);
     if (child == null) return;
-    setState(() => _loading = true);
-    await ref.read(gradeProvider.notifier).loadForStudent(
-          child.id,
-          trimestre: t,
-          studentName: child.fullName,
-          className: child.className,
-        );
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await ref.read(gradeProvider.notifier).loadForStudent(
+            child.id,
+            trimestre: t,
+            studentName: child.fullName,
+            className: child.className,
+          );
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Impossible de charger les notes');
+    }
     if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _downloadBulletin(Bulletin bulletin) async {
     setState(() => _isGenerating = true);
-    final auth = ref.read(authProvider);
-    final bytes = await BulletinPdfService.generate(
-      bulletin,
-      options: BulletinPdfOptions.fromBrand(
-        auth.schoolBrand,
-        year: currentSchoolYear(),
-      ),
-    );
-    setState(() => _isGenerating = false);
-    if (!mounted) return;
-    await Printing.layoutPdf(
-      onLayout: (_) async => bytes,
-      name: 'Bulletin_${bulletin.studentName}_${bulletin.trimestre}',
-    );
+    try {
+      final auth = ref.read(authProvider);
+      final bytes = await BulletinPdfService.generate(
+        bulletin,
+        options: BulletinPdfOptions.fromBrand(
+          auth.schoolBrand,
+          year: currentSchoolYear(),
+        ),
+      );
+      if (!mounted) return;
+      await Printing.layoutPdf(
+        onLayout: (_) async => bytes,
+        name: 'Bulletin_${bulletin.studentName}_${bulletin.trimestre}',
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossible de générer le bulletin')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
   }
 
   @override

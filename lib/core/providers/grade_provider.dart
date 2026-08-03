@@ -44,6 +44,10 @@ class GradeNotifier extends StateNotifier<List<Grade>> {
       ];
     } catch (e) {
       error = 'Impossible de charger les notes';
+      // Vider les notes de cet élève pour ne pas afficher d’anciennes données
+      // comme si le trimestre était vide.
+      state = state.where((g) => g.studentId != studentId).toList();
+      rethrow;
     } finally {
       loading = false;
     }
