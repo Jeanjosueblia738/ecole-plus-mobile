@@ -147,6 +147,9 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
   static const _key = 'user_profile';
   ProfileNotifier() : super(null);
 
+  String? _apiSyncedForUserId;
+  bool _apiRefreshInFlight = false;
+
   Future<void> loadForRole(
     UserRole role, {
     String? userId,
@@ -156,6 +159,7 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString('${_key}_${role.name}');
+    UserProfile provisional;
     if (data != null) {
       try {
         final saved = UserProfile.fromJson(jsonDecode(data));
@@ -166,26 +170,54 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
             saved.fullName.contains('Kouassi') ||
             (saved.etablissement ?? '') == 'Lycée Excellence Abidjan';
         if (looksPlaceholder && sessionName.isNotEmpty) {
-          state = saved.copyWith(
+          provisional = saved.copyWith(
             fullName: sessionName,
             email: (email ?? '').trim().isNotEmpty ? email!.trim() : saved.email,
             etablissement: etablissement ?? saved.etablissement,
           );
         } else {
-          state = saved;
+          provisional = saved;
         }
-        return;
       } catch (_) {
-        // fall through to session / placeholder
+        provisional = UserProfile.defaultForRole(
+          role,
+          id: userId,
+          fullName: fullName,
+          email: email,
+          etablissement: etablissement,
+        );
+      }
+    } else {
+      provisional = UserProfile.defaultForRole(
+        role,
+        id: userId,
+        fullName: fullName,
+        email: email,
+        etablissement: etablissement,
+      );
+    }
+
+    // Affichage immédiat (cache), puis API prioritaire si session.
+    final alreadySameUser = state != null &&
+        state!.role == role &&
+        userId != null &&
+        _apiSyncedForUserId == userId;
+    if (!alreadySameUser) {
+      state = provisional;
+    }
+
+    if (userId != null &&
+        userId.isNotEmpty &&
+        _apiSyncedForUserId != userId &&
+        !_apiRefreshInFlight) {
+      _apiRefreshInFlight = true;
+      try {
+        final ok = await refreshFromApi();
+        if (ok) _apiSyncedForUserId = userId;
+      } finally {
+        _apiRefreshInFlight = false;
       }
     }
-    state = UserProfile.defaultForRole(
-      role,
-      id: userId,
-      fullName: fullName,
-      email: email,
-      etablissement: etablissement,
-    );
   }
 
   Future<void> update(UserProfile profile) async {
@@ -228,6 +260,7 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
         email: email,
         phone: phone,
       ));
+      _apiSyncedForUserId = id;
       return true;
     } catch (_) {
       return false;

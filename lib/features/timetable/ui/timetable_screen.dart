@@ -138,9 +138,22 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
                         isNow: isNow,
                         canEdit: widget.canEdit,
                         onDelete: widget.canEdit
-                            ? () => ref
-                                .read(timetableProvider.notifier)
-                                .removeEntry(entry.id)
+                            ? () async {
+                                final synced = await ref
+                                    .read(timetableProvider.notifier)
+                                    .removeEntry(entry.id);
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(synced
+                                        ? 'Créneau supprimé'
+                                        : 'Suppression locale uniquement (sync serveur échouée)'),
+                                    backgroundColor: synced
+                                        ? const Color(0xFF16A34A)
+                                        : const Color(0xFFB45309),
+                                  ),
+                                );
+                              }
                             : null,
                       );
                     },
@@ -185,7 +198,7 @@ class _EntryCard extends StatelessWidget {
   final TimetableEntry entry;
   final bool isNow;
   final bool canEdit;
-  final VoidCallback? onDelete;
+  final Future<void> Function()? onDelete;
 
   const _EntryCard({
     required this.entry,
@@ -330,9 +343,9 @@ class _EntryCard extends StatelessWidget {
               child: const Text('Annuler')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: dangerRed),
-            onPressed: () {
-              onDelete?.call();
+            onPressed: () async {
               Navigator.pop(context);
+              await onDelete?.call();
             },
             child:
                 const Text('Supprimer', style: TextStyle(color: Colors.white)),

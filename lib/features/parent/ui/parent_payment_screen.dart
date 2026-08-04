@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../finance/data/finance_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../finance/data/finance_model.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/parent_api_service.dart';
 import '../../../services/payment_gateway_service.dart';
@@ -23,6 +23,7 @@ class ParentPaymentScreen extends ConsumerStatefulWidget {
 class _ParentPaymentScreenState extends ConsumerState<ParentPaymentScreen> {
   Map<String, dynamic>? _finance;
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -31,6 +32,10 @@ class _ParentPaymentScreenState extends ConsumerState<ParentPaymentScreen> {
   }
 
   Future<void> _loadFinance() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final data = await ParentApiService.getChildFinance(widget.studentId)
           .timeout(const Duration(seconds: 15));
@@ -38,10 +43,18 @@ class _ParentPaymentScreenState extends ConsumerState<ParentPaymentScreen> {
         setState(() {
           _finance = data;
           _loading = false;
+          _error = null;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _finance = null;
+          _loading = false;
+          _error =
+              'Impossible de charger la situation financière. Vérifiez votre connexion.';
+        });
+      }
     }
   }
 
@@ -70,6 +83,32 @@ class _ParentPaymentScreenState extends ConsumerState<ParentPaymentScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline,
+                            color: dangerRed, size: 48),
+                        const SizedBox(height: 12),
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: Color(0xFF1F2937), fontSize: 14),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton.icon(
+                          onPressed: _loadFinance,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(

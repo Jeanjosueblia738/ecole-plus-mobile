@@ -44,6 +44,7 @@ class _OfflineBannerInline extends ConsumerWidget {
         : switch (syncState.status) {
             SyncStatus.syncing => const Color(0xFF2563EB),
             SyncStatus.success => const Color(0xFF16A34A),
+            SyncStatus.localOnly => const Color(0xFFB45309),
             SyncStatus.error => const Color(0xFFDC2626),
             SyncStatus.idle => const Color(0xFF16A34A),
           };
@@ -53,7 +54,10 @@ class _OfflineBannerInline extends ConsumerWidget {
         : switch (syncState.status) {
             SyncStatus.syncing => 'Synchronisation en cours...',
             SyncStatus.success =>
-              'Synchronisé — ${syncState.itemsSynced} élément${syncState.itemsSynced > 1 ? 's' : ''}',
+              syncState.message ?? 'Synchronisé avec le serveur',
+            SyncStatus.localOnly =>
+              syncState.message ??
+                  'Cache local mis à jour (pas de sync serveur)',
             SyncStatus.error =>
               syncState.message ?? 'Erreur de synchronisation',
             SyncStatus.idle => 'Connecté',
@@ -75,6 +79,10 @@ class _OfflineBannerInline extends ConsumerWidget {
               child: CircularProgressIndicator(
                   color: Colors.white, strokeWidth: 2),
             )
+          else if (syncState.status == SyncStatus.localOnly)
+            const Icon(Icons.sd_storage_outlined, color: Colors.white, size: 16)
+          else if (syncState.status == SyncStatus.error)
+            const Icon(Icons.error_outline, color: Colors.white, size: 16)
           else
             const Icon(Icons.check_circle, color: Colors.white, size: 16),
           const SizedBox(width: 8),

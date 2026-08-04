@@ -10,12 +10,16 @@ class SyncState {
   final SyncStatus status;
   final String? message;
   final int itemsSynced;
+  final int serverSynced;
+  final int localCached;
   final DateTime? lastSync;
 
   const SyncState({
     this.status = SyncStatus.idle,
     this.message,
     this.itemsSynced = 0,
+    this.serverSynced = 0,
+    this.localCached = 0,
     this.lastSync,
   });
 
@@ -23,12 +27,16 @@ class SyncState {
     SyncStatus? status,
     String? message,
     int? itemsSynced,
+    int? serverSynced,
+    int? localCached,
     DateTime? lastSync,
   }) =>
       SyncState(
         status: status ?? this.status,
         message: message ?? this.message,
         itemsSynced: itemsSynced ?? this.itemsSynced,
+        serverSynced: serverSynced ?? this.serverSynced,
+        localCached: localCached ?? this.localCached,
         lastSync: lastSync ?? this.lastSync,
       );
 
@@ -62,6 +70,8 @@ class SyncNotifier extends StateNotifier<SyncState> {
       status: result.status,
       message: result.message,
       itemsSynced: result.itemsSynced,
+      serverSynced: result.serverSynced,
+      localCached: result.localCached,
       lastSync: DateTime.now(),
     );
 

@@ -4,39 +4,70 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../database/app_database.dart';
 import 'offline_outbox.dart';
 
-enum SyncStatus { idle, syncing, success, error }
+enum SyncStatus { idle, syncing, success, localOnly, error }
 
 class SyncResult {
   final SyncStatus status;
   final String? message;
-  final int itemsSynced;
+  /// Ops outbox poussées vers le serveur.
+  final int serverSynced;
+  /// Entrées prefs → SQLite (cache local, pas serveur).
+  final int localCached;
 
   const SyncResult({
     required this.status,
     this.message,
-    this.itemsSynced = 0,
+    this.serverSynced = 0,
+    this.localCached = 0,
   });
+
+  /// Compat bandeaux : total traité (serveur prioritaire, sinon local).
+  int get itemsSynced =>
+      serverSynced > 0 ? serverSynced : localCached;
 }
 
 // ─── Service de synchronisation SharedPreferences → SQLite + outbox API ───
 class SyncService {
   Future<SyncResult> syncAll() async {
     debugPrint('🔄 Sync démarrée...');
-    int total = 0;
     try {
-      total += await OfflineOutbox.flush();
-      total += await _syncStudents();
-      total += await _syncAttendance();
-      total += await _syncGrades();
-      total += await _syncClasses();
-      total += await _syncFees();
-      total += await _syncPayments();
-      debugPrint('✅ Sync terminée — $total éléments');
-      return SyncResult(
+      final serverSynced = await OfflineOutbox.flush();
+      var localCached = 0;
+      localCached += await _syncStudents();
+      localCached += await _syncAttendance();
+      localCached += await _syncGrades();
+      localCached += await _syncClasses();
+      localCached += await _syncFees();
+      localCached += await _syncPayments();
+      debugPrint(
+          '✅ Sync terminée — serveur=$serverSynced, cache local=$localCached');
+
+      if (serverSynced > 0) {
+        final localNote = localCached > 0
+            ? ' (+ $localCached en cache local)'
+            : '';
+        return SyncResult(
+          status: SyncStatus.success,
+          serverSynced: serverSynced,
+          localCached: localCached,
+          message:
+              '$serverSynced opération${serverSynced > 1 ? 's' : ''} synchronisée${serverSynced > 1 ? 's' : ''} avec le serveur$localNote',
+        );
+      }
+
+      if (localCached > 0) {
+        return SyncResult(
+          status: SyncStatus.localOnly,
+          serverSynced: 0,
+          localCached: localCached,
+          message:
+              '$localCached élément${localCached > 1 ? 's' : ''} enregistré${localCached > 1 ? 's' : ''} en cache local (pas de sync serveur)',
+        );
+      }
+
+      return const SyncResult(
         status: SyncStatus.success,
-        itemsSynced: total,
-        message:
-            '$total élément${total > 1 ? 's' : ''} synchronisé${total > 1 ? 's' : ''}',
+        message: 'Rien à synchroniser',
       );
     } catch (e) {
       debugPrint('❌ Erreur sync : $e');

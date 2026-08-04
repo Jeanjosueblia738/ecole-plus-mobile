@@ -167,9 +167,19 @@ class TimetableNotifier extends StateNotifier<List<TimetableEntry>> {
     return false;
   }
 
-  Future<void> removeEntry(String id) async {
-    state = state.where((e) => e.id != id).toList();
-    await _save();
+  /// Supprime un créneau. Tente DELETE `/timetable/:id`.
+  /// Retourne `true` si synchronisé serveur, `false` si local seulement.
+  Future<bool> removeEntry(String id) async {
+    try {
+      await TimetableApiService.delete(id);
+      state = state.where((e) => e.id != id).toList();
+      await _save();
+      return true;
+    } catch (_) {
+      state = state.where((e) => e.id != id).toList();
+      await _save();
+      return false;
+    }
   }
 
   Future<void> _save() async {

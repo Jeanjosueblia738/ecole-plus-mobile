@@ -3,27 +3,25 @@ import '../features/notifications/data/sms_store.dart';
 import '../features/notifications/data/sms_record.dart';
 
 class SmsService {
-  static Future<String> sendSms({
+  /// Aucune passerelle SMS configurée — n'enregistre jamais comme « Envoyé ».
+  /// Retourne `null` et journalise un échec local honnête.
+  static Future<String?> sendSms({
     required String recipient,
     required String message,
   }) async {
     final now = DateTime.now();
-    final smsId = now.millisecondsSinceEpoch.toString();
 
-    // 1️⃣ Enregistrement dans l'historique local
     await SmsStore.add(
       SmsRecord(
         recipient: recipient,
         message: message,
         date: now,
-        status: 'Envoyé',
+        status: 'Échoué',
       ),
     );
 
-    // 2️⃣ Log de debug uniquement en mode développement
-    // ✅ debugPrint est autorisé en production contrairement à print()
-    debugPrint('📨 SMS simulé → $recipient : $message');
-
-    return smsId;
+    debugPrint(
+        '📨 SMS non envoyé (passerelle absente) → $recipient : $message');
+    return null;
   }
 }

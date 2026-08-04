@@ -15,6 +15,7 @@ class DropoutRiskScreen extends StatefulWidget {
 class _DropoutRiskScreenState extends State<DropoutRiskScreen> {
   bool _loading = true;
   String? _error;
+  String? _classesError;
   Map<String, dynamic>? _data;
   Map<String, dynamic>? _selected;
   List<dynamic> _classes = [];
@@ -29,10 +30,19 @@ class _DropoutRiskScreenState extends State<DropoutRiskScreen> {
 
   Future<void> _bootstrap() async {
     try {
-      final classes = await ClassesApiService.getAll()
-          .catchError((_) => <dynamic>[]);
-      if (mounted) setState(() => _classes = classes);
-    } catch (_) {}
+      final classes = await ClassesApiService.getAll();
+      if (mounted) {
+        setState(() {
+          _classes = classes;
+          _classesError = null;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _classesError =
+            'Impossible de charger les classes. Vérifiez votre connexion.');
+      }
+    }
     await _load();
   }
 
@@ -199,6 +209,21 @@ class _DropoutRiskScreenState extends State<DropoutRiskScreen> {
               ),
             ]),
             const SizedBox(height: 16),
+
+            if (_classesError != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: warningYellow.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: warningYellow.withValues(alpha: 0.5)),
+                ),
+                child: Text(_classesError!,
+                    style: const TextStyle(
+                        color: Color(0xFF92400E), fontSize: 13)),
+              ),
 
             if (_error != null)
               Container(

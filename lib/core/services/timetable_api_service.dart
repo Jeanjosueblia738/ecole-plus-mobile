@@ -35,4 +35,8 @@ class TimetableApiService {
     final response = await ApiClient.instance.post('/timetable', data: data);
     return response.data as Map<String, dynamic>;
   }
+
+  static Future<void> delete(String id) async {
+    await ApiClient.instance.delete('/timetable/$id');
+  }
 }

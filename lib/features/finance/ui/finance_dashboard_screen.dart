@@ -365,9 +365,9 @@ class _PendingPaymentCard extends ConsumerWidget {
                 SnackBar(
                   content: Text(ok
                       ? 'Paiement validé ✓'
-                      : 'Validation serveur non disponible'),
+                      : 'Validation impossible — opération non disponible sur le serveur'),
                   backgroundColor:
-                      ok ? const Color(0xFF16A34A) : const Color(0xFFB45309),
+                      ok ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
                 ),
               );
             },
