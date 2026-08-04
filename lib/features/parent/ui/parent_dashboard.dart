@@ -18,6 +18,7 @@ import '../../cahier/ui/homework_screen.dart';
 import '../../analytics/ui/progress_screen.dart';
 import '../../exams/ui/exams_screen.dart';
 import '../../absence/ui/absence_auth_screen.dart';
+import '../../discipline/ui/discipline_screen.dart';
 
 class ParentDashboard extends ConsumerStatefulWidget {
   const ParentDashboard({super.key});
@@ -529,6 +530,20 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                       context,
                       MaterialPageRoute(
                           builder: (_) => const AbsenceAuthScreen()))),
+              const SizedBox(height: 10),
+              _NavTile(
+                  icon: Icons.gavel_outlined,
+                  title: 'Discipline',
+                  subtitle: 'Sanctions de votre enfant',
+                  color: const Color(0xFFBE123C),
+                  onTap: () {
+                    final id = _selectedChildId ?? _child?['id'] as String?;
+                    if (id == null) return;
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => DisciplineScreen(studentId: id)));
+                  }),
               const SizedBox(height: 10),
               _NavTile(
                   icon: Icons.grade_outlined,

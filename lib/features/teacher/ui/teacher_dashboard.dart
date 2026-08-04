@@ -19,6 +19,7 @@ import 'teacher_hours_screen.dart';
 import 'teacher_qr_scan_screen.dart';
 import '../../staff/ui/campus_qr_scan_screen.dart';
 import '../../absence/ui/absence_auth_screen.dart';
+import '../../conseil/ui/conseil_board_screen.dart';
 
 class TeacherDashboard extends ConsumerStatefulWidget {
   const TeacherDashboard({super.key});
@@ -426,6 +427,16 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => ExamsScreen.forTeacher()))),
+            const SizedBox(height: 10),
+            _ModuleTile(
+                icon: Icons.groups_3_outlined,
+                title: 'Conseil de classe',
+                subtitle: 'Consulter mentions et décisions',
+                color: const Color(0xFF7C3AED),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ConseilBoardScreen()))),
             const SizedBox(height: 10),
             _ModuleTile(
                 icon: Icons.chat_outlined,

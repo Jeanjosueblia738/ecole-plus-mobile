@@ -20,6 +20,9 @@ import '../../absence/ui/absence_auth_screen.dart';
 import '../../staff/ui/campus_qr_scan_screen.dart';
 import '../../staff/ui/presence_alerts_screen.dart';
 import '../../staff/ui/staff_presence_today_screen.dart';
+import '../../discipline/ui/discipline_screen.dart';
+import '../../conseil/ui/conseil_board_screen.dart';
+import '../../campus/ui/campus_hub_screen.dart';
 
 class CensorDashboard extends ConsumerStatefulWidget {
   const CensorDashboard({super.key});
@@ -326,6 +329,36 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const DropoutRiskScreen()))),
+            const SizedBox(height: 10),
+            _buildAction(
+                Icons.gavel_outlined,
+                'Discipline',
+                'Sanctions, filtres et suivi',
+                const Color(0xFFBE123C),
+                () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const DisciplineScreen()))),
+            const SizedBox(height: 10),
+            _buildAction(
+                Icons.groups_3_outlined,
+                'Conseil de classe',
+                'Mentions, décisions et appréciations',
+                const Color(0xFF7C3AED),
+                () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ConseilBoardScreen()))),
+            const SizedBox(height: 10),
+            _buildAction(
+                Icons.apartment_outlined,
+                'Campus',
+                'Bibliothèque, transport et cantine',
+                const Color(0xFF0D9488),
+                () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CampusHubScreen()))),
             const SizedBox(height: 10),
             _buildAction(
                 Icons.grade_outlined,

@@ -14,6 +14,8 @@ import '../../../shared/widgets/workspace_hero.dart';
 import '../../../shared/widgets/school_year_selector.dart';
 import '../../staff/ui/campus_qr_scan_screen.dart';
 import '../../staff/ui/staff_presence_today_screen.dart';
+import '../../campus/ui/campus_hub_screen.dart';
+import '../../conseil/ui/conseil_board_screen.dart';
 import '../../../core/utils/school_year.dart';
 
 class SecretaryDashboard extends ConsumerStatefulWidget {
@@ -228,6 +230,26 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const StudentListScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.apartment_outlined,
+                title: 'Campus',
+                subtitle: 'Bibliothèque, transport et cantine',
+                color: const Color(0xFF0D9488),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CampusHubScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.groups_3_outlined,
+                title: 'Conseil de classe',
+                subtitle: 'Consultation des décisions de classe',
+                color: const Color(0xFF7C3AED),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ConseilBoardScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.badge_outlined,

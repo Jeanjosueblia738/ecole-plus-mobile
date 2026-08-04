@@ -15,6 +15,8 @@ import '../../absence/ui/absence_auth_screen.dart';
 import '../../staff/ui/campus_qr_scan_screen.dart';
 import '../../staff/ui/presence_alerts_screen.dart';
 import '../../staff/ui/staff_presence_today_screen.dart';
+import '../../discipline/ui/discipline_screen.dart';
+import '../../campus/ui/campus_hub_screen.dart';
 
 class SurveillantDashboard extends ConsumerStatefulWidget {
   const SurveillantDashboard({super.key});
@@ -205,6 +207,26 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
                 subtitle: 'Enregistrer les présences',
                 color: color,
                 onTap: _openAppel),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.gavel_outlined,
+                title: 'Discipline',
+                subtitle: 'Sanctions et suivi des élèves',
+                color: const Color(0xFFBE123C),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const DisciplineScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.apartment_outlined,
+                title: 'Campus',
+                subtitle: 'Bibliothèque, transport et cantine',
+                color: const Color(0xFF0D9488),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CampusHubScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.event_busy_outlined,

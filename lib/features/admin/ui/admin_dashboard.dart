@@ -23,6 +23,10 @@ import '../../absence/ui/absence_auth_screen.dart';
 import '../../staff/ui/campus_qr_scan_screen.dart';
 import '../../staff/ui/presence_alerts_screen.dart';
 import '../../staff/ui/staff_presence_today_screen.dart';
+import '../../discipline/ui/discipline_screen.dart';
+import '../../conseil/ui/conseil_board_screen.dart';
+import '../../campus/ui/campus_hub_screen.dart';
+import '../../sms/ui/sms_credits_screen.dart';
 
 class AdminDashboard extends ConsumerStatefulWidget {
   const AdminDashboard({super.key});
@@ -349,6 +353,48 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                       builder: (_) => const FinanceDashboardScreen())),
             ),
             const SizedBox(height: 10),
+            DashboardTile(
+              icon: Icons.gavel_outlined,
+              title: 'Discipline',
+              color: const Color(0xFFBE123C),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const DisciplineScreen())),
+            ),
+            const SizedBox(height: 10),
+            DashboardTile(
+              icon: Icons.groups_3_outlined,
+              title: 'Conseil de classe',
+              color: const Color(0xFF7C3AED),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const ConseilBoardScreen())),
+            ),
+            const SizedBox(height: 10),
+            DashboardTile(
+              icon: Icons.apartment_outlined,
+              title: 'Campus',
+              color: const Color(0xFF0D9488),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const CampusHubScreen())),
+            ),
+            const SizedBox(height: 10),
+            if (auth.isOwner || auth.isDirector || auth.isAccountant) ...[
+              DashboardTile(
+                icon: Icons.sms_outlined,
+                title: 'SMS & crédits',
+                color: primaryBlue,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const SmsCreditsScreen())),
+              ),
+              const SizedBox(height: 10),
+            ],
             DashboardTile(
               icon: Icons.chat_outlined,
               title: 'Messagerie',

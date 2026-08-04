@@ -18,6 +18,8 @@ import '../../absence/ui/absence_auth_screen.dart';
 import '../../staff/ui/campus_qr_scan_screen.dart';
 import '../../staff/ui/presence_alerts_screen.dart';
 import '../../staff/ui/staff_presence_today_screen.dart';
+import '../../campus/ui/campus_hub_screen.dart';
+import '../../sms/ui/sms_credits_screen.dart';
 
 class AccountantDashboard extends ConsumerStatefulWidget {
   const AccountantDashboard({super.key});
@@ -318,6 +320,26 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                       context,
                       MaterialPageRoute(
                           builder: (_) => const FinanceOpsHubScreen()))),
+              const SizedBox(height: 10),
+              _ActionTile(
+                  icon: Icons.sms_outlined,
+                  title: 'SMS & crédits',
+                  subtitle: 'Solde, forfaits et historique',
+                  color: primaryBlue,
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SmsCreditsScreen()))),
+              const SizedBox(height: 10),
+              _ActionTile(
+                  icon: Icons.apartment_outlined,
+                  title: 'Campus',
+                  subtitle: 'Cantine, transport et bibliothèque',
+                  color: const Color(0xFF0D9488),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const CampusHubScreen()))),
             ],
             if (isCashier) ...[
               const SizedBox(height: 16),

@@ -15,6 +15,7 @@ import '../../cahier/ui/homework_screen.dart';
 import '../../analytics/ui/progress_screen.dart';
 import '../../exams/ui/exams_screen.dart';
 import '../../absence/ui/absence_auth_screen.dart';
+import '../../discipline/ui/discipline_screen.dart';
 
 Color _subjectColor(String s) => switch (s) {
       'Mathématiques' => primaryBlue,
@@ -447,6 +448,24 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
                       context,
                       MaterialPageRoute(
                           builder: (_) => const AbsenceAuthScreen()))),
+            ]),
+
+            const SizedBox(height: 12),
+            Row(children: [
+              _ActionBtn(
+                  icon: Icons.gavel_outlined,
+                  label: 'Discipline',
+                  color: const Color(0xFFBE123C),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const DisciplineScreen()))),
+              const SizedBox(width: 12),
+              const Expanded(child: SizedBox()),
+              const SizedBox(width: 12),
+              const Expanded(child: SizedBox()),
+              const SizedBox(width: 12),
+              const Expanded(child: SizedBox()),
             ]),
 
             const SizedBox(height: 20),

@@ -1,27 +1,14 @@
 import 'package:flutter/foundation.dart';
-import '../features/notifications/data/sms_store.dart';
-import '../features/notifications/data/sms_record.dart';
 
+/// Stub local — ne simule plus d’envoi réussi.
+/// L’envoi SMS réel est côté serveur ; le mobile gère packs/crédits via [SmsApiService].
 class SmsService {
-  /// Aucune passerelle SMS configurée — n'enregistre jamais comme « Envoyé ».
-  /// Retourne `null` et journalise un échec local honnête.
   static Future<String?> sendSms({
     required String recipient,
     required String message,
   }) async {
-    final now = DateTime.now();
-
-    await SmsStore.add(
-      SmsRecord(
-        recipient: recipient,
-        message: message,
-        date: now,
-        status: 'Échoué',
-      ),
-    );
-
     debugPrint(
-        '📨 SMS non envoyé (passerelle absente) → $recipient : $message');
+        'SMS local désactivé (passerelle absente) → $recipient : $message');
     return null;
   }
 }
