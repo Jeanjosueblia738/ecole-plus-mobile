@@ -23,7 +23,7 @@ const _roleLabels = {
 const _roleColors = {
   'ADMIN': Color(0xFFDC2626),
   'FOUNDER': Color(0xFF7C3AED),
-  'DIRECTOR': Color(0xFF1D4ED8),
+  'DIRECTOR': primaryBlue,
   'CENSOR': Color(0xFF4338CA),
   'SURVEILLANT': Color(0xFFEA580C),
   'SECRETARY': Color(0xFF0D9488),

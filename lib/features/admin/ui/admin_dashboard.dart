@@ -303,7 +303,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
               DashboardTile(
                 icon: Icons.calendar_month_outlined,
                 title: 'Années scolaires',
-                color: const Color(0xFF1D4ED8),
+                color: primaryBlue,
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(

@@ -442,6 +442,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => ParentPaymentScreen(
+                              key: ValueKey(_child!['id'] as String),
                               studentId: _child!['id'] as String,
                               studentName:
                                   '${_child!['firstName']} ${_child!['lastName']}',
@@ -491,6 +492,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                         context,
                         MaterialPageRoute(
                             builder: (_) => ParentPaymentScreen(
+                                  key: ValueKey(_child!['id'] as String),
                                   studentId: _child!['id'] as String,
                                   studentName:
                                       '${_child!['firstName']} ${_child!['lastName']}',
@@ -547,6 +549,7 @@ class _ParentDashboardState extends ConsumerState<ParentDashboard> {
                       context,
                       MaterialPageRoute(
                           builder: (_) => ParentPaymentScreen(
+                                key: ValueKey(_child!['id'] as String),
                                 studentId: _child!['id'] as String,
                                 studentName:
                                     '${_child!['firstName']} ${_child!['lastName']}',

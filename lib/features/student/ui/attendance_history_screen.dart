@@ -63,10 +63,20 @@ class _AttendanceHistoryScreenState
             studentName: studentName,
             className: className,
           );
+      if (!mounted) return;
+      final providerError = ref.read(attendanceProvider.notifier).error;
+      setState(() {
+        _loading = false;
+        _error = providerError;
+      });
     } catch (_) {
-      _error = 'Impossible de charger les absences';
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = ref.read(attendanceProvider.notifier).error ??
+            'Impossible de charger les absences';
+      });
     }
-    if (mounted) setState(() => _loading = false);
   }
 
   @override

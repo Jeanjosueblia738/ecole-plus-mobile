@@ -139,20 +139,36 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
                         canEdit: widget.canEdit,
                         onDelete: widget.canEdit
                             ? () async {
-                                final synced = await ref
-                                    .read(timetableProvider.notifier)
-                                    .removeEntry(entry.id);
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(synced
-                                        ? 'Créneau supprimé'
-                                        : 'Suppression locale uniquement (sync serveur échouée)'),
-                                    backgroundColor: synced
-                                        ? const Color(0xFF16A34A)
-                                        : const Color(0xFFB45309),
-                                  ),
-                                );
+                                try {
+                                  final synced = await ref
+                                      .read(timetableProvider.notifier)
+                                      .removeEntry(entry.id);
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(synced
+                                          ? 'Créneau supprimé'
+                                          : 'Hors ligne : créneau retiré localement (non synchronisé)'),
+                                      backgroundColor: synced
+                                          ? const Color(0xFF16A34A)
+                                          : const Color(0xFFB45309),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  final raw = e
+                                      .toString()
+                                      .replaceFirst(RegExp(r'^Exception:\s*'), '')
+                                      .trim();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(raw.isEmpty
+                                          ? 'Impossible de supprimer le créneau'
+                                          : raw),
+                                      backgroundColor: const Color(0xFFDC2626),
+                                    ),
+                                  );
+                                }
                               }
                             : null,
                       );

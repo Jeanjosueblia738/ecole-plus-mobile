@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/timetable/data/timetable_model.dart';
 import '../services/timetable_api_service.dart';
+import '../utils/dio_error_message.dart';
 import '../utils/school_year.dart';
 
 WeekDay _dayFromApi(dynamic raw) {
@@ -168,17 +170,29 @@ class TimetableNotifier extends StateNotifier<List<TimetableEntry>> {
   }
 
   /// Supprime un créneau. Tente DELETE `/timetable/:id`.
-  /// Retourne `true` si synchronisé serveur, `false` si local seulement.
+  /// Retourne `true` si synchronisé serveur, `false` si suppression locale
+  /// (hors-ligne / erreur réseau uniquement).
+  /// Sur 403/4xx validation : ne touche pas l’état local et relance l’erreur.
   Future<bool> removeEntry(String id) async {
     try {
       await TimetableApiService.delete(id);
       state = state.where((e) => e.id != id).toList();
       await _save();
       return true;
-    } catch (_) {
-      state = state.where((e) => e.id != id).toList();
-      await _save();
-      return false;
+    } catch (e) {
+      if (isOfflineEnqueueableError(e)) {
+        state = state.where((e) => e.id != id).toList();
+        await _save();
+        return false;
+      }
+      // 403 / 4xx / autres erreurs serveur : conserver le créneau localement.
+      if (e is DioException) {
+        throw Exception(dioErrorMessage(
+          e,
+          fallback: 'Impossible de supprimer le créneau',
+        ));
+      }
+      rethrow;
     }
   }
 

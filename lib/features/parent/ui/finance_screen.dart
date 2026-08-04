@@ -23,7 +23,9 @@ class ParentFinanceScreen extends ConsumerWidget {
             body: Center(child: Text('Aucun enfant lié')),
           );
         }
+        // Remonte quand l’enfant sélectionné change (multi-enfants).
         return ParentPaymentScreen(
+          key: ValueKey(child.id),
           studentId: child.id,
           studentName: child.fullName,
         );

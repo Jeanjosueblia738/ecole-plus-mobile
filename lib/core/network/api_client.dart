@@ -58,8 +58,15 @@ class _AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
-      await AuthStorageService.clearAll();
-      AuthSessionBridge.notifyUnauthorized();
+      // Miroir web : un 401 sur le refresh branding `/tenants/me` ne doit
+      // pas déconnecter (token encore valide pour le reste de l’app).
+      final path = err.requestOptions.path;
+      final isTenantsMe =
+          path == '/tenants/me' || path.endsWith('/tenants/me');
+      if (!isTenantsMe) {
+        await AuthStorageService.clearAll();
+        AuthSessionBridge.notifyUnauthorized();
+      }
     }
     handler.next(err);
   }

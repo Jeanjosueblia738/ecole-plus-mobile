@@ -24,18 +24,28 @@ class _ParentChildScreenState extends ConsumerState<ParentChildScreen> {
   Future<void> _prime() async {
     final child = await ref.read(parentChildAsyncProvider.future);
     if (child == null) return;
+    // Isoler les erreurs : un échec absences ne doit pas bloquer les notes
+    // (l’écran historique gère l’erreur au chargement).
     await Future.wait([
-      ref.read(gradeProvider.notifier).loadForStudent(
-            child.id,
-            trimestre: '1er',
-            studentName: child.fullName,
-            className: child.className,
-          ),
-      ref.read(attendanceProvider.notifier).loadForStudent(
-            child.id,
-            studentName: child.fullName,
-            className: child.className,
-          ),
+      () async {
+        try {
+          await ref.read(gradeProvider.notifier).loadForStudent(
+                child.id,
+                trimestre: '1er',
+                studentName: child.fullName,
+                className: child.className,
+              );
+        } catch (_) {}
+      }(),
+      () async {
+        try {
+          await ref.read(attendanceProvider.notifier).loadForStudent(
+                child.id,
+                studentName: child.fullName,
+                className: child.className,
+              );
+        } catch (_) {}
+      }(),
     ]);
   }
 

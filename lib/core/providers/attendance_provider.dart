@@ -38,6 +38,9 @@ class AttendanceNotifier extends StateNotifier<List<AttendanceRecord>> {
       ];
     } catch (e) {
       error = 'Impossible de charger les absences';
+      // Ne pas laisser l’UI afficher un succès vide (« Aucune absence »).
+      state = state.where((r) => r.studentId != studentId).toList();
+      rethrow;
     } finally {
       loading = false;
     }

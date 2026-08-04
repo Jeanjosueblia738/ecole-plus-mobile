@@ -31,6 +31,14 @@ class _ParentPaymentScreenState extends ConsumerState<ParentPaymentScreen> {
     _loadFinance();
   }
 
+  @override
+  void didUpdateWidget(covariant ParentPaymentScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.studentId != widget.studentId) {
+      _loadFinance();
+    }
+  }
+
   Future<void> _loadFinance() async {
     setState(() {
       _loading = true;
