@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/finance_provider.dart';
 import '../../../core/providers/student_provider.dart';
+import '../../../core/services/finance_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/receipt_pdf_service.dart';
 import '../data/finance_model.dart';
@@ -21,7 +22,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   String? _selectedFeeId;
   PaymentMethod _method = PaymentMethod.especes;
   final _chequeCtrl = TextEditingController();
+  final _amountCtrl = TextEditingController();
   bool _isProcessing = false;
+  bool _loadingRemaining = false;
+  double? _remaining;
 
   @override
   void initState() {
@@ -39,7 +43,73 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   @override
   void dispose() {
     _chequeCtrl.dispose();
+    _amountCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _refreshRemaining() async {
+    final studentId = _selectedStudentId;
+    final feeId = _selectedFeeId;
+    if (studentId == null || feeId == null) {
+      setState(() {
+        _remaining = null;
+        _amountCtrl.clear();
+      });
+      return;
+    }
+
+    setState(() => _loadingRemaining = true);
+    try {
+      final data = await FinanceApiService.getStudentFinance(studentId);
+      final rows = (data['fees'] as List?) ?? [];
+      double? remaining;
+      for (final row in rows) {
+        final map = Map<String, dynamic>.from(row as Map);
+        final feeInfo = map['fee'] is Map
+            ? Map<String, dynamic>.from(map['fee'] as Map)
+            : <String, dynamic>{};
+        final id = feeInfo['id']?.toString() ??
+            map['feeId']?.toString() ??
+            '';
+        if (id != feeId) continue;
+        final amountXof = (feeInfo['amountXof'] as num?)?.toDouble() ??
+            (map['amountXof'] as num?)?.toDouble() ??
+            0;
+        final amountPaid = (map['amountPaid'] as num?)?.toDouble() ?? 0;
+        remaining = (amountXof - amountPaid).clamp(0, double.infinity);
+        break;
+      }
+      // Frais catalogue non encore affecté à l'élève → reste = montant catalogue
+      if (remaining == null) {
+        remaining = _catalogFeeMontant(feeId);
+      }
+      if (!mounted) return;
+      setState(() {
+        _remaining = remaining;
+        _amountCtrl.text = remaining! > 0 ? remaining.toStringAsFixed(0) : '0';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      final fallback = _catalogFeeMontant(feeId);
+      setState(() {
+        _remaining = fallback;
+        _amountCtrl.text = fallback > 0 ? fallback.toStringAsFixed(0) : '0';
+      });
+    } finally {
+      if (mounted) setState(() => _loadingRemaining = false);
+    }
+  }
+
+  double _catalogFeeMontant(String feeId) {
+    for (final f in ref.read(feeProvider)) {
+      if (f.id == feeId) return f.montant;
+    }
+    return 0;
+  }
+
+  double? _parsedAmount() {
+    final raw = _amountCtrl.text.replaceAll(RegExp(r'\s'), '');
+    return double.tryParse(raw);
   }
 
   Future<void> _process() async {
@@ -55,8 +125,42 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     final student = students.firstWhere((s) => s.id == _selectedStudentId);
     final fee = fees.firstWhere((f) => f.id == _selectedFeeId);
 
+    final remaining = _remaining;
+    if (remaining == null) {
+      await _refreshRemaining();
+    }
+    if (!mounted) return;
+    final rem = _remaining ?? 0;
+    if (rem <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ce frais est déjà soldé — rien à encaisser'),
+          backgroundColor: warningYellow,
+        ),
+      );
+      return;
+    }
+
+    final amount = _parsedAmount();
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Montant invalide')),
+      );
+      return;
+    }
+    if (amount > rem) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Montant plafonné au reste dû (${rem.toStringAsFixed(0)} FCFA)',
+          ),
+          backgroundColor: warningYellow,
+        ),
+      );
+      return;
+    }
+
     if (_method == PaymentMethod.mobileMoney) {
-      // Naviguer vers écran Mobile Money
       if (!mounted) return;
       final result = await Navigator.push<bool>(
         context,
@@ -64,6 +168,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           builder: (_) => MobileMoneyScreen(
             student: student,
             fee: fee,
+            remaining: rem,
+            initialAmount: amount,
           ),
         ),
       );
@@ -79,7 +185,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             className: student.className,
             feeId: fee.id,
             feeLabel: fee.label,
-            montant: fee.montant,
+            montant: amount,
             method: _method,
             chequeNumber: _method == PaymentMethod.cheque
                 ? _chequeCtrl.text.trim()
@@ -148,6 +254,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     );
   }
 
+  String _fmt(double n) =>
+      '${n.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]} ")} FCFA';
+
   @override
   Widget build(BuildContext context) {
     final students = ref.watch(studentProvider);
@@ -184,7 +293,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                         child: Text('${s.fullName} — ${s.className}'),
                       ))
                   .toList(),
-              onChanged: (v) => setState(() => _selectedStudentId = v),
+              onChanged: (v) {
+                setState(() => _selectedStudentId = v);
+                _refreshRemaining();
+              },
             ),
 
             const SizedBox(height: 16),
@@ -208,7 +320,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                             '${f.label} — ${f.montant.toStringAsFixed(0)} FCFA'),
                       ))
                   .toList(),
-              onChanged: (v) => setState(() => _selectedFeeId = v),
+              onChanged: (v) {
+                setState(() => _selectedFeeId = v);
+                _refreshRemaining();
+              },
             ),
 
             const SizedBox(height: 16),
@@ -239,36 +354,72 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
             const SizedBox(height: 28),
 
-            // ── Montant affiché ────────────────────────────────────
-            if (_selectedFeeId != null) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: successGreen.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: successGreen.withValues(alpha: 0.3)),
+            // ── Montant (reste dû, éditable, plafonné) ─────────────
+            if (_selectedFeeId != null && _selectedStudentId != null) ...[
+              if (_loadingRemaining)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: LinearProgressIndicator(),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Montant à encaisser',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: textDark)),
-                    Text(
-                      fees
-                          .firstWhere((f) => f.id == _selectedFeeId)
-                          .montantFormate,
-                      style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: successGreen),
-                    ),
-                  ],
+              if (_remaining != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: successGreen.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border:
+                        Border.all(color: successGreen.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Reste dû',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, color: textDark)),
+                          Text(
+                            _fmt(_remaining!),
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: successGreen),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _amountCtrl,
+                        keyboardType: TextInputType.number,
+                        enabled: (_remaining ?? 0) > 0,
+                        decoration: InputDecoration(
+                          labelText: 'Montant à encaisser (FCFA)',
+                          helperText:
+                              'Paiement partiel autorisé, max. ${_fmt(_remaining!)}',
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          isDense: true,
+                        ),
+                        onChanged: (_) {
+                          final v = _parsedAmount();
+                          if (v != null &&
+                              _remaining != null &&
+                              v > _remaining!) {
+                            _amountCtrl.text =
+                                _remaining!.toStringAsFixed(0);
+                            _amountCtrl.selection = TextSelection.fromPosition(
+                              TextPosition(offset: _amountCtrl.text.length),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
             ],
 
             // ── Bouton valider ─────────────────────────────────────
@@ -276,7 +427,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _isProcessing ? null : _process,
+                onPressed: _isProcessing || _loadingRemaining ? null : _process,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryBlue,
                   shape: RoundedRectangleBorder(

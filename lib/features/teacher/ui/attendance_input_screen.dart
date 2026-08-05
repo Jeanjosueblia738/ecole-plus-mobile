@@ -193,12 +193,13 @@ class _AttendanceInputScreenState extends ConsumerState<AttendanceInputScreen> {
       });
       if (!mounted) return;
       final msg = data['message']?.toString() ?? 'SMS traités';
-      final sim = data['simulated'] == true
-          ? '\n(Mode simulation — configurez SMS_WEBHOOK_URL)'
+      final simulated = data['simulated'] == true;
+      final sim = simulated
+          ? '\n(Mode simulation — aucun SMS réel envoyé. Configurez SMS_WEBHOOK_URL)'
           : '';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('$msg$sim'),
-        backgroundColor: const Color(0xFF16A34A),
+        backgroundColor: simulated ? warningYellow : successGreen,
         duration: const Duration(seconds: 4),
       ));
     } catch (e) {

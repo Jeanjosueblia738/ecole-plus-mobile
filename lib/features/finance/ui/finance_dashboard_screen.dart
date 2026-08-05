@@ -325,12 +325,12 @@ class _ActionTile extends StatelessWidget {
 }
 
 // ── Carte paiement en attente ──────────────────────────────────────────────
-class _PendingPaymentCard extends ConsumerWidget {
+class _PendingPaymentCard extends StatelessWidget {
   final dynamic payment;
   const _PendingPaymentCard({required this.payment});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
@@ -355,30 +355,25 @@ class _PendingPaymentCard extends ConsumerWidget {
               ],
             ),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              final ok = await ref
-                  .read(paymentProvider.notifier)
-                  .validatePayment(payment.id);
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(ok
-                      ? 'Paiement validé ✓'
-                      : 'Validation impossible — opération non disponible sur le serveur'),
-                  backgroundColor:
-                      ok ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: successGreen,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+          // validatePayment() renvoie toujours false (pas d'endpoint API).
+          Tooltip(
+            message: 'Confirmation via webhook opérateur uniquement',
+            child: ElevatedButton(
+              onPressed: null,
+              style: ElevatedButton.styleFrom(
+                disabledBackgroundColor: Colors.grey.shade300,
+                disabledForegroundColor: Colors.grey.shade600,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text(
+                'Non disponible — attente webhook',
+                style: TextStyle(fontSize: 10),
+                textAlign: TextAlign.center,
+              ),
             ),
-            child: const Text('Valider',
-                style: TextStyle(color: Colors.white, fontSize: 12)),
           ),
         ],
       ),

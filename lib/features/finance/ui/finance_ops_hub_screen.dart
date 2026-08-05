@@ -400,7 +400,33 @@ class _PayrollScreenState extends State<_PayrollScreen> {
                             if (status != 'PAID')
                               TextButton(
                                 onPressed: () async {
-                                  await FinanceApiService.payrollStatus(id, 'PAID');
+                                  final ok = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text('Marquer comme payé ?'),
+                                      content: const Text(
+                                        'Attention : ceci marque la paie PAID '
+                                        'sans effectuer de versement Wave. '
+                                        'Utilisez uniquement si le paiement a '
+                                        'déjà été fait hors plateforme.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, false),
+                                          child: const Text('Annuler'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, true),
+                                          child: const Text('Confirmer'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (ok != true) return;
+                                  await FinanceApiService.payrollStatus(
+                                      id, 'PAID');
                                   await _load();
                                 },
                                 child: const Text('Marquer payé'),

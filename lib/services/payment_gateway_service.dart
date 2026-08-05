@@ -5,6 +5,8 @@ import '../features/finance/data/finance_model.dart';
 // ─── Résultat d'une transaction Mobile Money ──────────────────────────────
 class MobileMoneyResult {
   final bool success;
+  final bool pending;
+  final bool simulated;
   final String? transactionId;
   final String? errorMessage;
   final String? status;
@@ -12,6 +14,8 @@ class MobileMoneyResult {
 
   const MobileMoneyResult({
     required this.success,
+    this.pending = false,
+    this.simulated = false,
     this.transactionId,
     this.errorMessage,
     this.status,
@@ -31,6 +35,10 @@ class PaymentGatewayService {
   static const notAvailableMessage =
       'Paiement Mobile Money indisponible. '
       'L’école doit configurer son compte marchand (Paramètres → Mobile Money).';
+
+  static const simulatedMessage =
+      'Paiement simulé — ce n’est pas un paiement réel. '
+      'Configurez le compte marchand Wave de l’école pour encaisser réellement.';
 
   static Future<MobileMoneyResult> processMobileMoney({
     required MobileMoneyOperator operator,
@@ -59,25 +67,53 @@ class PaymentGatewayService {
       final data = response.data as Map<String, dynamic>? ?? {};
       final status = data['status']?.toString() ?? 'PENDING';
       final statusUpper = status.toUpperCase();
-      // SUCCESS = confirmé ; PENDING = initié côté opérateur (pas un échec dur).
-      final accepted =
-          statusUpper == 'SUCCESS' || statusUpper == 'PENDING';
-      final pendingMsg = statusUpper == 'PENDING'
-          ? (data['message']?.toString() ??
-              data['ussdHint']?.toString() ??
-              'Paiement initié — confirmation opérateur en attente.')
-          : null;
+      final txId =
+          data['transactionId']?.toString() ?? data['externalId']?.toString();
+      final apiMessage = data['message']?.toString() ??
+          data['ussdHint']?.toString();
+
+      // Simulation API : jamais traité comme un paiement réel.
+      if (data['simulated'] == true) {
+        return MobileMoneyResult(
+          success: false,
+          pending: false,
+          simulated: true,
+          status: status,
+          transactionId: txId,
+          errorMessage: apiMessage ?? simulatedMessage,
+          message: apiMessage ?? simulatedMessage,
+        );
+      }
+
+      if (statusUpper == 'SUCCESS') {
+        return MobileMoneyResult(
+          success: true,
+          pending: false,
+          status: status,
+          transactionId: txId,
+          message: apiMessage ?? 'Paiement confirmé',
+        );
+      }
+
+      if (statusUpper == 'PENDING') {
+        return MobileMoneyResult(
+          success: false,
+          pending: true,
+          status: status,
+          transactionId: txId,
+          message: apiMessage ??
+              'Paiement initié — en attente de validation par l’opérateur.',
+        );
+      }
+
+      // FAILED et autres
       return MobileMoneyResult(
-        success: accepted,
+        success: false,
+        pending: false,
         status: status,
-        transactionId:
-            data['transactionId']?.toString() ?? data['externalId']?.toString(),
-        message: pendingMsg ?? data['message']?.toString(),
-        errorMessage: accepted
-            ? null
-            : (data['message']?.toString() ??
-                data['ussdHint']?.toString() ??
-                'Paiement refusé ou échoué.'),
+        transactionId: txId,
+        errorMessage: apiMessage ?? 'Paiement refusé ou échoué.',
+        message: apiMessage,
       );
     } on DioException catch (e) {
       final msg = e.response?.data is Map

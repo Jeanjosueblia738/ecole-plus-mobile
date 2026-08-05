@@ -346,7 +346,7 @@ class _FeeCard extends StatelessWidget {
                   );
                   return;
                 }
-                final result = await Navigator.push<bool>(
+                final result = await Navigator.push<Object?>(
                   context,
                   MaterialPageRoute(
                     builder: (_) => _MobileMoneyPaymentSheet(
@@ -358,6 +358,7 @@ class _FeeCard extends StatelessWidget {
                     ),
                   ),
                 );
+                // true = confirmé ; 'pending' / false = pas encore payé
                 if (result == true) onPaymentDone();
               },
               icon: const Icon(Icons.phone_android, size: 18),
@@ -435,19 +436,25 @@ class _MobileMoneyPaymentSheetState extends State<_MobileMoneyPaymentSheet> {
 
       if (!mounted) return;
 
-      if (result.success) {
-        final isPending =
-            (result.status ?? '').toUpperCase() == 'PENDING';
+      if (result.pending) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               result.message ??
-                  (isPending
-                      ? 'Paiement initié — confirmation opérateur en attente'
-                      : 'Paiement confirmé'),
+                  'Paiement initié — en attente de validation par l’opérateur.',
             ),
-            backgroundColor:
-                isPending ? const Color(0xFFB45309) : successGreen,
+            backgroundColor: warningYellow,
+          ),
+        );
+        Navigator.pop(context, 'pending');
+        return;
+      }
+
+      if (result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Paiement confirmé'),
+            backgroundColor: successGreen,
           ),
         );
         Navigator.pop(context, true);
@@ -574,19 +581,20 @@ class _MobileMoneyPaymentSheetState extends State<_MobileMoneyPaymentSheet> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFEF9C3),
+              color: infoLight,
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: infoBlue.withValues(alpha: 0.25)),
             ),
             child: const Row(
               children: [
-                Icon(Icons.info_outline, color: Color(0xFF92400E), size: 16),
+                Icon(Icons.info_outline, color: infoBlue, size: 16),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Paiement Mobile Money non disponible pour le moment '
-                    '(passerelle non intégrée). Aucun paiement ne sera '
-                    'enregistré comme réel.',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+                    'Le paiement passe par le compte marchand de l’école. '
+                    'La confirmation définitive arrive après validation '
+                    'par l’opérateur Mobile Money.',
+                    style: TextStyle(fontSize: 12, color: textMedium),
                   ),
                 ),
               ],
@@ -679,13 +687,6 @@ class _MobileMoneyPaymentSheetState extends State<_MobileMoneyPaymentSheet> {
             ),
           ),
 
-          const SizedBox(height: 16),
-          Center(
-            child: Text(
-              '🔒 Paiement sécurisé — Vos données sont protégées',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-            ),
-          ),
           const SizedBox(height: 20),
         ]),
       ),

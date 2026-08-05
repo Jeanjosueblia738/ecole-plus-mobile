@@ -147,20 +147,22 @@ class _SmsCreditsScreenState extends ConsumerState<SmsCreditsScreen> {
       if (!mounted) return;
       final simulated = res['simulated'] == true;
       final msg = res['message']?.toString().trim();
-      final credits = res['credits'];
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             simulated
-                ? '${credits ?? pack['credits']} SMS crédités (simulation).'
+                ? (msg?.isNotEmpty == true
+                    ? msg!
+                    : 'Simulation — aucun crédit SMS réel n’a été ajouté. '
+                        'Configurez Wave école pour un achat réel.')
                 : (msg?.isNotEmpty == true
                     ? msg!
                     : 'Paiement initié — finalisez sur Wave si demandé.'),
           ),
-          backgroundColor: simulated ? successGreen : primaryBlue,
+          backgroundColor: simulated ? warningYellow : primaryBlue,
         ),
       );
-      await _load();
+      if (!simulated) await _load();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
