@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/student_provider.dart';
 import '../../../core/services/grades_api_service.dart';
+import '../../../core/services/subjects_api_service.dart';
 import '../../../core/sync/offline_outbox.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/dio_error_message.dart';
@@ -43,7 +44,8 @@ class GradeInputScreen extends ConsumerStatefulWidget {
 }
 
 class _GradeInputScreenState extends ConsumerState<GradeInputScreen> {
-  Subject _selectedSubject = kSubjects.first;
+  List<Subject> _subjects = List<Subject>.from(kDefaultSubjects);
+  late Subject _selectedSubject;
   EvalType _evalType = EvalType.controle;
   final Map<String, TextEditingController> _controllers = {};
   bool _isSaving = false;
@@ -53,16 +55,26 @@ class _GradeInputScreenState extends ConsumerState<GradeInputScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialSubject != null && widget.initialSubject!.isNotEmpty) {
-      final match = kSubjects
-          .where((s) =>
-              s.name.toLowerCase() == widget.initialSubject!.toLowerCase())
-          .toList();
-      if (match.isNotEmpty) {
-        _selectedSubject = match.first;
-      }
+    _selectedSubject = _subjects.first;
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    final subjects = await SubjectsApiService.listOrDefaults();
+    if (!mounted) return;
+    Subject selected = subjects.first;
+    final initial = widget.initialSubject?.trim();
+    if (initial != null && initial.isNotEmpty) {
+      final match = subjects.where(
+        (s) => s.name.toLowerCase() == initial.toLowerCase(),
+      );
+      if (match.isNotEmpty) selected = match.first;
     }
-    _loadStudents();
+    setState(() {
+      _subjects = subjects;
+      _selectedSubject = selected;
+    });
+    await _loadStudents();
   }
 
   Future<void> _loadStudents() async {
@@ -202,21 +214,27 @@ class _GradeInputScreenState extends ConsumerState<GradeInputScreen> {
             color: primaryBlue.withValues(alpha: 0.05),
             child: Column(
               children: [
-                DropdownButtonFormField<Subject>(
-                  initialValue: _selectedSubject,
+                DropdownButtonFormField<String>(
+                  initialValue: _subjects.any((s) => s.name == _selectedSubject.name)
+                      ? _selectedSubject.name
+                      : _subjects.first.name,
                   decoration: const InputDecoration(
                     labelText: 'Matière',
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
-                  items: kSubjects
+                  items: _subjects
                       .map((s) => DropdownMenuItem(
-                            value: s,
+                            value: s.name,
                             child: Text('${s.name} (coef ${s.coefficient})'),
                           ))
                       .toList(),
                   onChanged: (v) {
-                    if (v != null) setState(() => _selectedSubject = v);
+                    if (v == null) return;
+                    final match = _subjects.where((s) => s.name == v);
+                    if (match.isNotEmpty) {
+                      setState(() => _selectedSubject = match.first);
+                    }
                   },
                 ),
                 const SizedBox(height: 10),

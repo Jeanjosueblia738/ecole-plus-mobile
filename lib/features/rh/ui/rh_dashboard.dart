@@ -8,6 +8,7 @@ import '../../settings/ui/settings_screen.dart';
 import '../../staff/ui/campus_qr_scan_screen.dart';
 import '../../staff/ui/presence_alerts_screen.dart';
 import '../../staff/ui/staff_presence_today_screen.dart';
+import '../../messaging/ui/messaging_screen.dart';
 import 'rh_hours_overview_screen.dart';
 
 /// Dashboard RH — absences staff, présence, alertes, suivi heures (pas la caisse).
@@ -129,6 +130,17 @@ class RhDashboard extends ConsumerWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const RhHoursOverviewScreen()),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _ActionTile(
+            icon: Icons.chat_outlined,
+            title: 'Messagerie',
+            subtitle: 'Communication interne',
+            color: primaryBlue,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MessagingScreen()),
             ),
           ),
         ],

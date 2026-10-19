@@ -20,6 +20,7 @@ import '../../staff/ui/presence_alerts_screen.dart';
 import '../../staff/ui/staff_presence_today_screen.dart';
 import '../../campus/ui/campus_hub_screen.dart';
 import '../../sms/ui/sms_credits_screen.dart';
+import '../../messaging/ui/messaging_screen.dart';
 
 class AccountantDashboard extends ConsumerStatefulWidget {
   const AccountantDashboard({super.key});
@@ -280,6 +281,16 @@ class _AccountantDashboardState extends ConsumerState<AccountantDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const PresenceAlertsScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.chat_outlined,
+                title: 'Messagerie',
+                subtitle: 'Communication interne',
+                color: primaryBlue,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const MessagingScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.warning_amber_outlined,

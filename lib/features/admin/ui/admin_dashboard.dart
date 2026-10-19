@@ -12,6 +12,7 @@ import 'admin_stats_screen.dart';
 // AdminValidationScreen masqué : API sans endpoint validate pending (voir commentaire écran).
 import 'class_management_screen.dart';
 import 'academic_years_screen.dart';
+import 'subjects_screen.dart';
 import 'student_passage_screen.dart';
 import '../../analytics/ui/dropout_risk_screen.dart';
 import '../../student/ui/student_list_screen.dart';
@@ -312,6 +313,18 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const AcademicYearsScreen())),
+              ),
+              const SizedBox(height: 10),
+            ],
+            if (auth.isOwner || auth.isDirector) ...[
+              DashboardTile(
+                icon: Icons.menu_book_outlined,
+                title: 'Matières',
+                color: const Color(0xFF7C3AED),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const SubjectsScreen())),
               ),
               const SizedBox(height: 10),
             ],

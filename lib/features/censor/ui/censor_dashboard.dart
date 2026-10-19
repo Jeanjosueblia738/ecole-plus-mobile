@@ -23,6 +23,7 @@ import '../../staff/ui/staff_presence_today_screen.dart';
 import '../../discipline/ui/discipline_screen.dart';
 import '../../conseil/ui/conseil_board_screen.dart';
 import '../../campus/ui/campus_hub_screen.dart';
+import '../../admin/ui/subjects_screen.dart';
 
 class CensorDashboard extends ConsumerStatefulWidget {
   const CensorDashboard({super.key});
@@ -349,6 +350,16 @@ class _CensorDashboardState extends ConsumerState<CensorDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const ConseilBoardScreen()))),
+            const SizedBox(height: 10),
+            _buildAction(
+                Icons.menu_book_outlined,
+                'Matières',
+                'Catalogue et coefficients',
+                const Color(0xFF7C3AED),
+                () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const SubjectsScreen()))),
             const SizedBox(height: 10),
             _buildAction(
                 Icons.apartment_outlined,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/timetable_provider.dart';
+import '../../../core/services/subjects_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../features/grades/data/grade_model.dart';
 import '../data/timetable_model.dart';
@@ -24,7 +25,8 @@ class TimetableSlotForm extends ConsumerStatefulWidget {
 class _TimetableSlotFormState extends ConsumerState<TimetableSlotForm> {
   late WeekDay _day;
   TimeSlot _startSlot = kTeachingSlots.first;
-  String _subject = kSubjects.first.name;
+  List<Subject> _subjects = List<Subject>.from(kDefaultSubjects);
+  late String _subject;
   final _teacherCtrl = TextEditingController();
   final _roomCtrl = TextEditingController();
   bool _saving = false;
@@ -33,6 +35,19 @@ class _TimetableSlotFormState extends ConsumerState<TimetableSlotForm> {
   void initState() {
     super.initState();
     _day = widget.initialDay;
+    _subject = _subjects.first.name;
+    _loadSubjects();
+  }
+
+  Future<void> _loadSubjects() async {
+    final rows = await SubjectsApiService.listOrDefaults();
+    if (!mounted || rows.isEmpty) return;
+    setState(() {
+      _subjects = rows;
+      if (!_subjects.any((s) => s.name == _subject)) {
+        _subject = _subjects.first.name;
+      }
+    });
   }
 
   @override
@@ -150,7 +165,7 @@ class _TimetableSlotFormState extends ConsumerState<TimetableSlotForm> {
                   OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               isDense: true,
             ),
-            items: kSubjects
+            items: _subjects
                 .map(
                     (s) => DropdownMenuItem(value: s.name, child: Text(s.name)))
                 .toList(),

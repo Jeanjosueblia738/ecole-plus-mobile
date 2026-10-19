@@ -12,14 +12,21 @@ extension EvalTypeLabel on EvalType {
 
 // ─── Matière avec coefficient ──────────────────────────────────────────────
 class Subject {
+  final String? id;
   final String name;
   final int coefficient;
+  final bool isActive;
 
-  const Subject({required this.name, required this.coefficient});
+  const Subject({
+    this.id,
+    required this.name,
+    required this.coefficient,
+    this.isActive = true,
+  });
 }
 
-// Matières standard lycée/collège CI
-const kSubjects = [
+/// Secours local si l’API matières est indisponible (catalogue CI).
+const kDefaultSubjects = [
   Subject(name: 'Mathématiques', coefficient: 5),
   Subject(name: 'Français', coefficient: 4),
   Subject(name: 'Anglais', coefficient: 3),
@@ -31,6 +38,9 @@ const kSubjects = [
   Subject(name: 'EPS', coefficient: 2),
   Subject(name: 'Arts', coefficient: 1),
 ];
+
+/// @Deprecated Prefer [SubjectsApiService.listOrDefaults]
+const kSubjects = kDefaultSubjects;
 
 /// Normalise '1er' / 'T1' → 'T1' pour l'API Prisma.
 String apiTrimestre(String raw) {

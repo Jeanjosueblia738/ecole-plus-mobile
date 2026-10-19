@@ -16,6 +16,7 @@ import '../../staff/ui/campus_qr_scan_screen.dart';
 import '../../staff/ui/staff_presence_today_screen.dart';
 import '../../campus/ui/campus_hub_screen.dart';
 import '../../conseil/ui/conseil_board_screen.dart';
+import '../../messaging/ui/messaging_screen.dart';
 import '../../../core/utils/school_year.dart';
 
 class SecretaryDashboard extends ConsumerStatefulWidget {
@@ -270,6 +271,16 @@ class _SecretaryDashboardState extends ConsumerState<SecretaryDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const StaffPresenceTodayScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.chat_outlined,
+                title: 'Messagerie',
+                subtitle: 'Communication interne',
+                color: primaryBlue,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const MessagingScreen()))),
             const SizedBox(height: 10),
             _ActionTile(
                 icon: Icons.description_outlined,

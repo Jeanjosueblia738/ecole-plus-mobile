@@ -17,6 +17,7 @@ import '../../staff/ui/presence_alerts_screen.dart';
 import '../../staff/ui/staff_presence_today_screen.dart';
 import '../../discipline/ui/discipline_screen.dart';
 import '../../campus/ui/campus_hub_screen.dart';
+import '../../messaging/ui/messaging_screen.dart';
 
 class SurveillantDashboard extends ConsumerStatefulWidget {
   const SurveillantDashboard({super.key});
@@ -287,6 +288,16 @@ class _SurveillantDashboardState extends ConsumerState<SurveillantDashboard> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const StudentListScreen()))),
+            const SizedBox(height: 10),
+            _ActionTile(
+                icon: Icons.chat_outlined,
+                title: 'Messagerie',
+                subtitle: 'Communication interne',
+                color: primaryBlue,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const MessagingScreen()))),
           ]),
         ),
       ),
